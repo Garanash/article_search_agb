@@ -15,6 +15,75 @@ interface RequestSidebarProps {
   onSelect: (requestId: number | null) => void;
 }
 
+// Адаптивные стили для боковой панели
+const sidebarStyles = {
+  container: {
+    width: "280px",
+    minWidth: "250px",
+    maxWidth: "350px",
+    marginRight: "16px",
+    display: "flex",
+    flexDirection: "column" as const,
+    height: "100%",
+  },
+  
+  title: {
+    marginBottom: "12px",
+    fontWeight: 600,
+    fontSize: "18px",
+  },
+  
+  input: {
+    marginBottom: "8px",
+  },
+  
+  createButton: {
+    marginBottom: "16px",
+  },
+  
+  listItem: {
+    borderRadius: "6px",
+    cursor: "pointer",
+    marginBottom: "4px",
+    padding: "8px",
+    border: "1px solid #f0f0f0",
+    fontWeight: 400,
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  
+  activeListItem: {
+    background: "#e6f7ff",
+    borderRadius: "6px",
+    cursor: "pointer",
+    marginBottom: "4px",
+    padding: "8px",
+    border: "1.5px solid #1890ff",
+    fontWeight: 600,
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  
+  requestNumber: {
+    fontSize: "15px",
+  },
+  
+  requestCount: {
+    fontSize: "12px",
+    color: "#888",
+  },
+  
+  allArticlesButton: {
+    marginTop: "12px",
+  },
+  
+  drawer: {
+    width: "500px",
+  },
+};
+
 const RequestSidebar: React.FC<RequestSidebarProps> = ({ activeRequestId, onSelect }) => {
   const { token } = useAuth();
   const [requests, setRequests] = useState<Request[]>([]);
@@ -105,16 +174,16 @@ const RequestSidebar: React.FC<RequestSidebarProps> = ({ activeRequestId, onSele
   };
 
   return (
-    <div style={{ width: 280, marginRight: 16 }}>
-      <div style={{ marginBottom: 12, fontWeight: 600, fontSize: 18 }}>Запросы</div>
+    <div style={sidebarStyles.container} className="request-sidebar">
+      <div style={sidebarStyles.title}>Запросы</div>
       <Input
         placeholder="Номер нового запроса (например, ВЭД-20240704-12345)"
         value={newNumber}
         onChange={e => setNewNumber(e.target.value)}
         onPressEnter={handleCreate}
-        style={{ marginBottom: 8 }}
+        style={sidebarStyles.input}
       />
-      <Button block type="primary" onClick={handleCreate} style={{ marginBottom: 16 }}>
+      <Button block type="primary" onClick={handleCreate} style={sidebarStyles.createButton}>
         Создать запрос
       </Button>
       <List
@@ -122,16 +191,7 @@ const RequestSidebar: React.FC<RequestSidebarProps> = ({ activeRequestId, onSele
         loading={loading}
         renderItem={req => (
           <List.Item
-            style={{
-              background: req.id === activeRequestId ? '#e6f7ff' : undefined,
-              borderRadius: 6,
-              cursor: 'pointer',
-              marginBottom: 4,
-              padding: 8,
-              border: req.id === activeRequestId ? '1.5px solid #1890ff' : '1px solid #f0f0f0',
-              fontWeight: req.id === activeRequestId ? 600 : 400,
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-            }}
+            style={req.id === activeRequestId ? sidebarStyles.activeListItem : sidebarStyles.listItem}
             onClick={() => onSelect(req.id)}
             actions={[
               <Button size="small" onClick={e => { e.stopPropagation(); handlePreview(req); }}>👁️</Button>,
@@ -139,14 +199,14 @@ const RequestSidebar: React.FC<RequestSidebarProps> = ({ activeRequestId, onSele
             ]}
           >
             <div>
-              <div style={{ fontSize: 15 }}>{req.number}</div>
-              <div style={{ fontSize: 12, color: '#888' }}>Артикулов: {articleCounts[req.id] || 0}</div>
+              <div style={sidebarStyles.requestNumber}>{req.number}</div>
+              <div style={sidebarStyles.requestCount}>Артикулов: {articleCounts[req.id] || 0}</div>
             </div>
           </List.Item>
         )}
         locale={{ emptyText: 'Нет запросов' }}
       />
-      <Button block style={{ marginTop: 12 }} onClick={() => onSelect(null)} disabled={activeRequestId === null}>
+      <Button block style={sidebarStyles.allArticlesButton} onClick={() => onSelect(null)} disabled={activeRequestId === null}>
         Все артикулы
       </Button>
       <Drawer

@@ -1,0 +1,316 @@
+/* Дополнительные адаптивные стили для лучшей поддержки экранов от 13 до 27 дюймов */
+
+/* Адаптивные стили для очень маленьких экранов (13-14 дюймов) */
+@media (max-width: 1280px) {
+  .request-sidebar {
+    width: 220px !important;
+    min-width: 200px !important;
+  }
+  
+  .ant-table {
+    font-size: 12px !important;
+  }
+  
+  .ant-btn {
+    height: 28px !important;
+    font-size: 12px !important;
+    padding: 4px 8px !important;
+  }
+  
+  .ant-btn-lg {
+    height: 32px !important;
+  }
+  
+  .ant-input {
+    font-size: 12px !important;
+  }
+  
+  .ant-form-item-label > label {
+    font-size: 12px !important;
+  }
+}
+
+/* Адаптивные стили для средних экранов (15-17 дюймов) */
+@media (min-width: 1281px) and (max-width: 1600px) {
+  .request-sidebar {
+    width: 260px !important;
+  }
+  
+  .ant-table {
+    font-size: 14px !important;
+  }
+  
+  .ant-btn {
+    height: 32px !important;
+    font-size: 14px !important;
+  }
+}
+
+/* Адаптивные стили для больших экранов (18-21 дюймов) */
+@media (min-width: 1601px) and (max-width: 1920px) {
+  .request-sidebar {
+    width: 280px !important;
+  }
+  
+  .ant-table {
+    font-size: 14px !important;
+  }
+  
+  .ant-btn {
+    height: 36px !important;
+    font-size: 14px !important;
+  }
+}
+
+/* Адаптивные стили для очень больших экранов (22-27 дюймов) */
+@media (min-width: 1921px) {
+  .request-sidebar {
+    width: 320px !important;
+    max-width: 400px !important;
+  }
+  
+  .ant-table {
+    font-size: 16px !important;
+  }
+  
+  .ant-btn {
+    height: 44px !important;
+    font-size: 16px !important;
+  }
+  
+  .ant-btn-lg {
+    height: 52px !important;
+  }
+  
+  .ant-input {
+    font-size: 16px !important;
+  }
+  
+  .ant-form-item-label > label {
+    font-size: 16px !important;
+  }
+}
+
+/* Адаптивные стили для кнопок действий в таблице */
+@media (max-width: 1280px) {
+  .action-buttons {
+    flex-direction: column !important;
+    gap: 4px !important;
+  }
+  
+  .action-buttons .ant-btn {
+    width: 100% !important;
+    min-width: auto !important;
+  }
+}
+
+@media (min-width: 1281px) and (max-width: 1600px) {
+  .action-buttons {
+    gap: 8px !important;
+  }
+  
+  .action-buttons .ant-btn {
+    min-width: 160px !important;
+  }
+}
+
+@media (min-width: 1601px) {
+  .action-buttons {
+    gap: 12px !important;
+  }
+  
+  .action-buttons .ant-btn {
+    min-width: 180px !important;
+  }
+}
+
+/* Адаптивные стили для модальных окон */
+@media (max-width: 1280px) {
+  .ant-modal {
+    max-width: 95vw !important;
+    margin: 10px !important;
+  }
+  
+  .ant-modal-content {
+    padding: 12px !important;
+  }
+  
+  .ant-modal-header {
+    padding: 12px 16px !important;
+  }
+  
+  .ant-modal-body {
+    padding: 12px 16px !important;
+  }
+}
+
+@media (min-width: 1921px) {
+  .ant-modal {
+    max-width: 900px !important;
+  }
+  
+  .ant-modal-content {
+    padding: 32px !important;
+  }
+  
+  .ant-modal-header {
+    padding: 24px 32px !important;
+  }
+  
+  .ant-modal-body {
+    padding: 24px 32px !important;
+  }
+}
+
+/* Адаптивные стили для форм */
+@media (max-width: 1280px) {
+  .ant-form-item {
+    margin-bottom: 8px !important;
+  }
+  
+  .ant-form-item-label {
+    padding-bottom: 4px !important;
+  }
+}
+
+@media (min-width: 1921px) {
+  .ant-form-item {
+    margin-bottom: 24px !important;
+  }
+  
+  .ant-form-item-label {
+    padding-bottom: 8px !important;
+  }
+}
+
+/* Адаптивные стили для заголовков */
+@media (max-width: 1280px) {
+  .ant-typography h1 {
+    font-size: 18px !important;
+  }
+  
+  .ant-typography h2 {
+    font-size: 16px !important;
+  }
+  
+  .ant-typography h3 {
+    font-size: 14px !important;
+  }
+  
+  .ant-typography h4 {
+    font-size: 13px !important;
+  }
+}
+
+@media (min-width: 1921px) {
+  .ant-typography h1 {
+    font-size: 32px !important;
+  }
+  
+  .ant-typography h2 {
+    font-size: 28px !important;
+  }
+  
+  .ant-typography h3 {
+    font-size: 24px !important;
+  }
+  
+  .ant-typography h4 {
+    font-size: 20px !important;
+  }
+}
+
+/* Адаптивные стили для отступов */
+@media (max-width: 1280px) {
+  .content-container {
+    gap: 8px !important;
+  }
+  
+  .ant-layout-content {
+    padding: 12px !important;
+  }
+}
+
+@media (min-width: 1921px) {
+  .content-container {
+    gap: 32px !important;
+  }
+  
+  .ant-layout-content {
+    padding: 40px !important;
+  }
+}
+
+/* Улучшенная прокрутка для таблиц */
+.article-table .ant-table-body {
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+}
+
+/* Адаптивные стили для карточек */
+@media (max-width: 1280px) {
+  .ant-card {
+    border-radius: 4px !important;
+  }
+  
+  .ant-card-head {
+    padding: 0 12px !important;
+  }
+  
+  .ant-card-body {
+    padding: 12px !important;
+  }
+}
+
+@media (min-width: 1921px) {
+  .ant-card {
+    border-radius: 12px !important;
+  }
+  
+  .ant-card-head {
+    padding: 0 24px !important;
+  }
+  
+  .ant-card-body {
+    padding: 24px !important;
+  }
+}
+
+/* Адаптивные стили для списков */
+@media (max-width: 1280px) {
+  .ant-list-item {
+    padding: 8px 0 !important;
+  }
+}
+
+@media (min-width: 1921px) {
+  .ant-list-item {
+    padding: 16px 0 !important;
+  }
+}
+
+/* Адаптивные стили для вкладок */
+@media (max-width: 1280px) {
+  .ant-tabs-tab {
+    padding: 8px 12px !important;
+    font-size: 13px !important;
+  }
+}
+
+@media (min-width: 1921px) {
+  .ant-tabs-tab {
+    padding: 12px 20px !important;
+    font-size: 16px !important;
+  }
+} 
+
+/* Центрирование заголовков таблицы поставщиков */
+.article-table .ant-table-thead > tr > th {
+  text-align: center !important;
+}
+
+.article-table .ant-table-thead > tr > th > span {
+  text-align: center !important;
+  display: block !important;
+  width: 100% !important;
+} 

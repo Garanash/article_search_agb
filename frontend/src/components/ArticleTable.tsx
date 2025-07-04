@@ -39,7 +39,31 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
   const [whoisStatus, setWhoisStatus] = useState<{ [key: string]: 'valid' | 'invalid' | 'checking' | undefined }>({});
   // 1. Кнопка массовой проверки whois
   const handleWhoisCheckAll = async (articleId: number) => {
-    const list = suppliers[articleId] || [];
+    let list = suppliers[articleId] || [];
+    // Удаляем дубликаты по website (оставляем первую запись для каждого сайта)
+    const seen = new Set<string>();
+    const uniqueSuppliers: typeof list = [];
+    const duplicatesToDelete: typeof list = [];
+    for (const supplier of list) {
+      if (!supplier.website) {
+        uniqueSuppliers.push(supplier);
+        continue;
+      }
+      if (seen.has(supplier.website)) {
+        duplicatesToDelete.push(supplier);
+      } else {
+        seen.add(supplier.website);
+        uniqueSuppliers.push(supplier);
+      }
+    }
+    // Удаляем дубликаты из базы
+    if (duplicatesToDelete.length > 0 && token) {
+      await Promise.all(
+        duplicatesToDelete.map(supplier => supplier.id && deleteSupplier(token, supplier.id))
+      );
+      setSuppliers(prev => ({ ...prev, [articleId]: uniqueSuppliers }));
+      list = uniqueSuppliers;
+    }
     for (const supplier of list) {
       if (supplier.website) {
         const res = await whoisCheck([supplier.website]);
@@ -137,6 +161,10 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
     );
   };
 
+  // Состояние: для каких артикулов уже была проверка
+  const [checkedArticles, setCheckedArticles] = useState<{ [id: number]: boolean }>({});
+
+  // useEffect для автоматической проверки при первой загрузке
   useEffect(() => {
     if (token) {
       setLoading(true);
@@ -151,12 +179,12 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
               filtered = data.filter((a: any) => !a.request_id);
             }
             setArticles(filtered);
-            // Автоматически подгружаем поставщиков для всех артикулов
+            // Автоматически подгружаем поставщиков для всех артикулов (без валидации)
             const allSuppliers: { [key: number]: any[] } = {};
             await Promise.all(
               filtered.map(async (article: any) => {
                 try {
-                  const found = await getSuppliers(token, article.id);
+                  let found = await getSuppliers(token, article.id);
                   allSuppliers[article.id] = found;
                 } catch {
                   allSuppliers[article.id] = [];
@@ -187,6 +215,7 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
     }
   };
 
+  // Сброс флага checkedArticles при изменении состава компаний (например, после поиска поставщиков)
   const handleSearchSuppliers = async (articleId: number) => {
     if (!token || !articleId) {
       message.error("Ошибка: некорректный articleId или отсутствует токен");
@@ -195,8 +224,19 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
     setSupLoading((prev) => ({ ...prev, [articleId]: true }));
     try {
       await searchSuppliers(token, articleId);
-      const found = await getSuppliers(token, articleId);
-      setSuppliers({ ...suppliers, [articleId]: found });
+      let found = await getSuppliers(token, articleId);
+      
+      // Проверяем только если ещё не было
+      if (!checkedArticles[articleId]) {
+        // Удаляем дубликаты и проверяем whois только при первом поиске
+        found = await removeSupplierDuplicates(articleId, found);
+        setSuppliers(prev => ({ ...prev, [articleId]: found }));
+        await checkAllWhois(found, articleId);
+        setCheckedArticles(prev => ({ ...prev, [articleId]: true }));
+      } else {
+        setSuppliers(prev => ({ ...prev, [articleId]: found }));
+      }
+      
       message.success("Поставщики найдены");
     } catch {
       message.error("Ошибка поиска поставщиков");
@@ -205,12 +245,60 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
     }
   };
 
+  // Удаляем дубликаты по website и возвращаем уникальных, а дубликаты удаляем из базы
+  const removeSupplierDuplicates = async (articleId: number, list: any[]) => {
+    if (!token) return list;
+    const seen = new Set<string>();
+    const uniqueSuppliers: typeof list = [];
+    const duplicatesToDelete: typeof list = [];
+    for (const supplier of list) {
+      if (!supplier.website) {
+        uniqueSuppliers.push(supplier);
+        continue;
+      }
+      if (seen.has(supplier.website)) {
+        duplicatesToDelete.push(supplier);
+      } else {
+        seen.add(supplier.website);
+        uniqueSuppliers.push(supplier);
+      }
+    }
+    if (duplicatesToDelete.length > 0) {
+      await Promise.all(
+        duplicatesToDelete.map(supplier => supplier.id && deleteSupplier(token, supplier.id))
+      );
+    }
+    return uniqueSuppliers;
+  };
+
+  // Массoвая проверка whois для всех компаний
+  const checkAllWhois = async (suppliersList: any[], articleId?: number) => {
+    for (const supplier of suppliersList) {
+      if (supplier.website) {
+        const res = await whoisCheck([supplier.website]);
+        const isValid = res.valid && res.valid.includes(supplier.website);
+        if (!isValid && token && supplier.id && articleId) {
+          // Удаляем из БД и из suppliers
+          await deleteSupplier(token, supplier.id);
+          setSuppliers(prev => {
+            const arr = Array.isArray(prev[articleId]) ? [...prev[articleId]] : [];
+            return { ...prev, [articleId]: arr.filter(s => s.id !== supplier.id) };
+          });
+        } else {
+          // Обновляем статус только если сайт валиден
+          handleWhoisCheck(supplier.website);
+        }
+      }
+    }
+  };
+
+  // handleShowSuppliers: просто загружаем поставщиков без валидации
   const handleShowSuppliers = async (articleId: number) => {
     if (token) {
       setSupLoading((prev) => ({ ...prev, [articleId]: true }));
       try {
-        const found = await getSuppliers(token, articleId);
-        setSuppliers({ ...suppliers, [articleId]: found });
+        let found = await getSuppliers(token, articleId);
+        setSuppliers(prev => ({ ...prev, [articleId]: found }));
       } catch {
         message.error("Ошибка загрузки поставщиков");
       } finally {
@@ -250,19 +338,9 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
             return { ...prev, [articleId]: updated };
           });
           setEditingEmail((prev) => ({ ...prev, [supplier.id]: false }));
-          setTimeout(() => setSuppliers(prev => ({ ...prev })), 0);
 
+          // Сохраняем в базу данных
           await updateSupplierEmail(token, supplier.id, email);
-
-          // Через 1 секунду синхронизируем с сервером (чтобы email гарантированно сохранился)
-          setTimeout(() => {
-            (async () => {
-              if (articleId) {
-                const found = await getSuppliers(token, articleId);
-                setSuppliers(prev => ({ ...prev, [articleId]: found }));
-              }
-            })();
-          }, 1000);
 
           message.success(`Email найден: ${email}`);
         } else {
@@ -292,19 +370,9 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
         });
         setEditingEmail((prev) => ({ ...prev, [supplier.id]: false }));
         setManualEmails((prev) => ({ ...prev, [supplier.id]: "" }));
-        setTimeout(() => setSuppliers(prev => ({ ...prev })), 0);
 
+        // Сохраняем в базу данных
         await updateSupplierEmail(token, supplier.id, email);
-
-        // Через 1 секунду синхронизируем с сервером (чтобы email гарантированно сохранился)
-        setTimeout(() => {
-          (async () => {
-            if (articleId) {
-              const found = await getSuppliers(token, articleId);
-              setSuppliers(prev => ({ ...prev, [articleId]: found }));
-            }
-          })();
-        }, 1000);
 
         message.success("Email сохранён");
       } catch {
@@ -355,25 +423,31 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
 
   const supplierColumns: ColumnsType<any> = [
     {
-      title: "Компания",
+      title: <span style={{ textAlign: 'center', width: '100%' }}>Компания</span>,
       dataIndex: "name",
       key: "name",
       width: supplierColWidths.name,
       ellipsis: false,
       sorter: (a, b) => a.name.localeCompare(b.name),
       showSorterTooltip: false,
-      render: (text: string) => <div style={{whiteSpace:'pre-line', wordBreak:'break-word', maxWidth:supplierColWidths.name}}>{text}</div>,
+      render: (text: string) => (
+        <div style={{ 
+          whiteSpace: 'pre-line', 
+          wordBreak: 'break-word', 
+          maxWidth: supplierColWidths.name,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '100%',
+          textAlign: 'center'
+        }}>
+          {text}
+        </div>
+      ),
       onHeaderCell: (col: any) => ({ width: supplierColWidths.name, onResize: handleResize('name') }),
     },
     {
-      title: (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-          <span style={{ textAlign: 'center', width: '100%' }}>Сайт</span>
-          <Button size="small" type="default" style={{ marginTop: 2, minWidth: 70, padding: '0 8px' }} onClick={() => handleWhoisCheckAll(currentArticleId || 0)}>
-            whois all
-          </Button>
-        </div>
-      ),
+      title: <span style={{ textAlign: 'center', width: '100%' }}>Сайт</span>,
       dataIndex: "website",
       key: "website",
       width: supplierColWidths.website,
@@ -381,51 +455,28 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
       sorter: (a, b) => (a.website || '').localeCompare(b.website || ''),
       showSorterTooltip: false,
       render: (text: string, supplier: any) => (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
+        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
           <Button
             type="default"
             href={text}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ width: 90, minWidth: 90, padding: 0 }}
-          >
-            Сайт
-          </Button>
-          <Button
-            size="small"
             style={{
               width: 90,
               minWidth: 90,
               padding: 0,
-              background:
-                whoisStatus[supplier.website] === 'valid' ? '#d6f5d6' :
-                whoisStatus[supplier.website] === 'invalid' ? '#ffd6d6' : undefined,
-              borderColor:
-                whoisStatus[supplier.website] === 'valid' ? '#52c41a' :
-                whoisStatus[supplier.website] === 'invalid' ? '#ff4d4f' : undefined,
-              color: whoisStatus[supplier.website] === 'valid' ? '#389e0d' :
-                whoisStatus[supplier.website] === 'invalid' ? '#a8071a' : undefined
+              border: whoisStatus[supplier.website] === 'valid' ? '2px solid #52c41a' : undefined,
+              boxShadow: whoisStatus[supplier.website] === 'valid' ? '0 0 0 2px #b7eb8f' : undefined
             }}
-            onClick={() => handleWhoisCheck(supplier.website)}
-            loading={whoisStatus[supplier.website] === 'checking'}
-            disabled={whoisStatus[supplier.website] === 'checking'}
-            icon={whoisStatus[supplier.website] === 'checking' ? <LoadingOutlined spin style={{ fontSize: 14 }} /> : null}
           >
-            Whois
+            Сайт
           </Button>
         </div>
       ),
       onHeaderCell: (col: any) => ({ width: supplierColWidths.website, onResize: handleResize('website') }),
     },
     {
-      title: (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-          <span style={{ textAlign: 'center', width: '100%' }}>Email</span>
-          <Button size="small" type="default" style={{ marginTop: 2, minWidth: 70, padding: '0 8px' }} onClick={handleValidateAllEmails}>
-            Валидация всех
-          </Button>
-        </div>
-      ),
+      title: <span style={{ textAlign: 'center', width: '100%' }}>Email</span>,
       dataIndex: "email",
       key: "email",
       width: supplierColWidths.email,
@@ -434,20 +485,33 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
       showSorterTooltip: false,
       render: (_: string, supplier: any, idx: number) => {
         if (!supplier.id) {
-          return <span style={{ color: '#888' }}>Нет данных</span>;
+          return (
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              width: '100%',
+              color: '#888' 
+            }}>
+              Нет данных
+            </div>
+          );
         }
         if (supplier.email) {
-          const isInvalid = invalidEmails[supplier.id];
           return (
-            <span>
-              <a href={`mailto:${supplier.email}`} style={isInvalid ? { color: 'red', fontWeight: 600 } : {}}>{supplier.email}</a>
-              {Boolean(supplier.email_validated) && <span style={{ marginLeft: 6 }}>✅</span>}
-            </span>
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              width: '100%'
+            }}>
+              <a href={`mailto:${supplier.email}`}>{supplier.email}</a>
+            </div>
           );
         }
         if (editingEmail[supplier.id]) {
           return (
-            <div style={{ display: 'flex', gap: 4 }}>
+            <div style={{ display: 'flex', gap: 4, alignItems: 'center', justifyContent: 'center', width: '100%' }}>
               <Input
                 size="small"
                 value={manualEmails[supplier.id] || ""}
@@ -455,19 +519,19 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
                 style={{ width: 90 }}
                 placeholder="Введите email"
               />
-              <Button size="small" type="primary" onClick={() => handleManualEmailSave(supplier, supplier.article_id)}>OK</Button>
+              <Button size="small" type="primary" onClick={() => handleManualEmailSave(supplier, currentArticleId || 0)}>OK</Button>
               <Button size="small" onClick={() => setEditingEmail(prev => ({ ...prev, [supplier.id]: false }))}>Отмена</Button>
             </div>
           );
         }
         return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center', justifyContent: 'center', width: '100%' }}>
             <Tooltip title="Поиск email">
               <Button
                 size="small"
                 icon={<SearchOutlined />}
                 loading={emailSearchLoading[supplier.id]}
-                onClick={() => handleEmailSearch(supplier, supplier.article_id)}
+                onClick={() => handleEmailSearch(supplier, currentArticleId || 0)}
               >
                 Поиск email
               </Button>
@@ -487,39 +551,56 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
       onHeaderCell: (col: any) => ({ width: supplierColWidths.email, onResize: handleResize('email') }),
     },
     {
-      title: "Страна",
+      title: <span style={{ textAlign: 'center', width: '100%' }}>Страна</span>,
       dataIndex: "country",
       key: "country",
       width: supplierColWidths.country,
       ellipsis: false,
       sorter: (a, b) => (a.country || '').localeCompare(b.country || ''),
       showSorterTooltip: false,
-      render: (text: string) => <div style={{whiteSpace:'pre-line', wordBreak:'break-word', maxWidth:supplierColWidths.country}}>{text}</div>,
+      render: (text: string) => (
+        <div style={{
+          whiteSpace: 'pre-line', 
+          wordBreak: 'break-word', 
+          maxWidth: supplierColWidths.country,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '100%',
+          textAlign: 'center'
+        }}>
+          {text}
+        </div>
+      ),
       onHeaderCell: (col: any) => ({ width: supplierColWidths.country, onResize: handleResize('country') }),
     },
     {
-      title: "Письмо",
+      title: <span style={{ textAlign: 'center', width: '100%' }}>Письмо</span>,
       key: "emailAction",
       width: supplierColWidths.emailAction,
       sorter: false,
       showSorterTooltip: false,
       render: (_: any, supplier: any) => (
-        <Button icon={<MailOutlined />} onClick={() => setEmailDialogSupplier(supplier)}>
-          Письмо
-        </Button>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+          <Button icon={<MailOutlined />} onClick={() => setEmailDialogSupplier(supplier)}>
+            Письмо
+          </Button>
+        </div>
       ),
       onHeaderCell: (col: any) => ({ width: supplierColWidths.emailAction, onResize: handleResize('emailAction') }),
     },
     {
-      title: "Удаление",
+      title: <span style={{ textAlign: 'center', width: '100%' }}>Удаление</span>,
       key: "deleteSupplier",
       width: 60,
       sorter: false,
       showSorterTooltip: false,
       render: (_: any, supplier: any) => (
-        <Button danger size="small" onClick={() => handleRemoveSupplier(supplier.article_id, supplier.id)}>
-          Удалить
-        </Button>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+          <Button danger size="small" onClick={() => handleRemoveSupplier(currentArticleId || 0, supplier.id)}>
+            Удалить
+          </Button>
+        </div>
       ),
       onHeaderCell: (col: any) => ({ width: 60, onResize: handleResize('deleteSupplier') }),
     },
@@ -622,9 +703,28 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
     });
   };
 
+  // Автоматическая ширина для столбца "Страна"
+  useEffect(() => {
+    // Собираем все страны из suppliers
+    const allCountries: string[] = [];
+    Object.values(suppliers).forEach(supList => {
+      supList.forEach(sup => {
+        if (sup.country && typeof sup.country === 'string') {
+          allCountries.push(sup.country);
+        }
+      });
+    });
+    if (allCountries.length > 0) {
+      const maxLen = Math.max(...allCountries.map(c => c.length));
+      // Примерно 10px на символ + запас, максимум как на 12 символов
+      const width = Math.max(80, Math.min(152, maxLen * 10 + 32));
+      setSupplierColWidths(prev => ({ ...prev, country: width }));
+    }
+  }, [suppliers]);
+
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', minHeight: '100vh' }}>
-      <Card style={{ marginBottom: 32, maxWidth: 2200, minWidth: 1200 }}>
+    <div style={{ display: 'flex', justifyContent: 'center', minHeight: '100vh', width: '100%' }}>
+      <Card style={{ marginBottom: 32, width: '100%', maxWidth: '100%' }}>
         <Title level={4}>Артикулы</Title>
         {/* Кнопка создания запроса */}
         {!activeRequestId && articlesToAdd.length > 0 && (
@@ -667,6 +767,7 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
         </Space>
         <Spin spinning={loading} tip="Загрузка...">
           <Table
+            className="article-table"
             dataSource={Array.isArray(articles) ? articles : []}
             rowKey="id"
             pagination={false}
@@ -701,7 +802,7 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
                 key: "actions",
                 width: 400,
                 render: (_, article) => (
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }} className="action-buttons">
                     <Button
                       type="primary"
                       size="large"
@@ -712,13 +813,16 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
                     >
                       Найти поставщиков
                     </Button>
-                    <Button danger onClick={() => handleDelete(article.id)}>
-                      Удалить
-                    </Button>
-                    {/* Кнопка убрать из инвойса */}
+                    {/* Кнопка удалить только если не выбран запрос */}
+                    {!activeRequestId && (
+                      <Button danger onClick={() => handleDelete(article.id)}>
+                        Удалить
+                      </Button>
+                    )}
+                    {/* Кнопка убрать из запроса */}
                     {activeRequestId && (
-                      <Button onClick={() => handleRemoveFromRequest(article.id)}>
-                        Убрать из инвойса
+                      <Button danger onClick={() => handleRemoveFromRequest(article.id)}>
+                        Убрать из запроса
                       </Button>
                     )}
                   </div>

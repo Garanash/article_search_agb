@@ -6,4 +6,7 @@ passlib[bcrypt]
 python-jose
 aiohttp
 aiosmtplib
-httpx 
+httpx
+openai
+python-whois 
+python-multipart
