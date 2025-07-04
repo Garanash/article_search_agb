@@ -7,6 +7,8 @@ from . import crud, google_search, schemas, models
 from fastapi import BackgroundTasks
 from typing import List
 from pydantic import BaseModel
+from sqlalchemy.exc import IntegrityError
+from fastapi import status
 
 app = FastAPI()
 
@@ -40,16 +42,21 @@ def login(username: str = Form(...), password: str = Form(...)):
 
 @app.post("/articles/")
 def add_article(code: str = Form(...), db: Session = Depends(get_db)):
-    article = Article(code=code)
+    # Проверяем, есть ли уже артикул с таким code и request_id == null
+    existing = db.query(models.Article).filter(models.Article.code == code, models.Article.request_id == None).first()
+    if existing:
+        return {"id": existing.id, "code": existing.code, "request_id": existing.request_id}
+    # Если есть артикул с таким code, но он уже в запросе — можно создать новый (или вернуть ошибку, если запрещено)
+    article = models.Article(code=code, user_id=1)
     db.add(article)
     db.commit()
     db.refresh(article)
-    return {"id": article.id, "code": article.code}
+    return {"id": article.id, "code": article.code, "request_id": article.request_id}
 
 @app.get("/articles/")
 def get_articles(db: Session = Depends(get_db)):
-    articles = db.query(Article).all()
-    return [{"id": a.id, "code": a.code} for a in articles]
+    articles = db.query(models.Article).all()
+    return [{"id": a.id, "code": a.code, "request_id": a.request_id} for a in articles]
 
 @app.delete("/articles/{article_id}")
 def delete_article(article_id: int, db: Session = Depends(get_db)):
@@ -130,6 +137,71 @@ def update_supplier_email_validated(supplier_id: int, req: EmailValidatedRequest
     if not supplier:
         raise HTTPException(status_code=404, detail="Supplier not found")
     return {"id": supplier.id, "email_validated": supplier.email_validated}
+
+@app.post("/requests/", response_model=schemas.RequestOut)
+def create_request(req: schemas.RequestCreate, db: Session = Depends(get_db)):
+    request = models.Request(number=req.number)
+    db.add(request)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Request with this number already exists"
+        )
+    db.refresh(request)
+    return {
+        "id": request.id,
+        "number": request.number,
+        "created_at": request.created_at.isoformat()
+    }
+
+@app.get("/requests/", response_model=List[schemas.RequestOut])
+def get_requests(db: Session = Depends(get_db)):
+    requests = db.query(models.Request).all()
+    return [
+        {
+            "id": inv.id,
+            "number": inv.number,
+            "created_at": inv.created_at.isoformat() if inv.created_at else None
+        }
+        for inv in requests
+    ]
+
+@app.delete("/requests/{request_id}")
+def delete_request(request_id: int, db: Session = Depends(get_db)):
+    # Сбросить request_id у всех артикулов
+    db.query(models.Article).filter(models.Article.request_id == request_id).update({models.Article.request_id: None})
+    # Удалить сам запрос
+    request = db.query(models.Request).filter(models.Request.id == request_id).first()
+    if not request:
+        raise HTTPException(status_code=404, detail="Request not found")
+    db.delete(request)
+    db.commit()
+    return {"status": "deleted"}
+
+@app.post("/requests/{request_id}/add_article/{article_id}")
+def add_article_to_request(request_id: int, article_id: int, db: Session = Depends(get_db)):
+    article = db.query(models.Article).filter(models.Article.id == article_id).first()
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found")
+    article.request_id = request_id
+    db.commit()
+    return {"status": "added"}
+
+@app.post("/requests/{request_id}/remove_article/{article_id}")
+def remove_article_from_request(request_id: int, article_id: int, db: Session = Depends(get_db)):
+    article = db.query(models.Article).filter(models.Article.id == article_id, models.Article.request_id == request_id).first()
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found in this request")
+    article.request_id = None
+    db.commit()
+    return {"status": "removed"}
+
+@app.get("/requests/{request_id}/articles", response_model=List[schemas.ArticleOut])
+def get_articles_by_request(request_id: int, db: Session = Depends(get_db)):
+    return db.query(models.Article).filter(models.Article.request_id == request_id).all()
 
 app.add_middleware(
     CORSMiddleware,

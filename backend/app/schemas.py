@@ -11,12 +11,20 @@ class UserOut(BaseModel):
     class Config:
         from_attributes = True
 
-class ArticleCreate(BaseModel):
+class RequestCreate(BaseModel):
     code: str
+
+class RequestOut(BaseModel):
+    id: int
+    number: str
+    created_at: str
+    class Config:
+        orm_mode = True
 
 class ArticleOut(BaseModel):
     id: int
     code: str
+    request_id: Optional[int]
     class Config:
         from_attributes = True
 

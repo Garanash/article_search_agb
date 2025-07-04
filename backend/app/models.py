@@ -10,12 +10,21 @@ class User(Base):
     hashed_password = Column(String)
     email = Column(String, unique=True, nullable=True)
 
+class Request(Base):
+    __tablename__ = "requests"
+    id = Column(Integer, primary_key=True, index=True)
+    number = Column(String, unique=True, index=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    articles = relationship("Article", back_populates="request")
+
 class Article(Base):
     __tablename__ = "articles"
     id = Column(Integer, primary_key=True, index=True)
     code = Column(String, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
+    request_id = Column(Integer, ForeignKey("requests.id"), nullable=True)
     suppliers = relationship("Supplier", back_populates="article")
+    request = relationship("Request", back_populates="articles")
 
 class Supplier(Base):
     __tablename__ = "suppliers"

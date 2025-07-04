@@ -130,4 +130,52 @@ export const searchEmailPerplexity = async (company_name: string, website: strin
     body: JSON.stringify({ company_name, website, region })
   });
   return res.json();
+};
+
+// --- Request API ---
+export const getRequests = async (token: string) => {
+  const res = await fetch("http://localhost:8000/requests/", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await res.json();
+};
+
+export const createRequest = async (token: string, number: string) => {
+  const res = await fetch("http://localhost:8000/requests/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ number }),
+  });
+  return await res.json();
+};
+
+export const addArticleToRequest = async (token: string, requestId: number, articleId: number) => {
+  const res = await fetch(`http://localhost:8000/requests/${requestId}/add_article/${articleId}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await res.json();
+};
+
+export const removeArticleFromRequest = async (token: string, requestId: number, articleId: number) => {
+  const res = await fetch(`http://localhost:8000/requests/${requestId}/remove_article/${articleId}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await res.json();
+};
+
+export const getArticlesByRequest = async (token: string, requestId: number) => {
+  const res = await fetch(`http://localhost:8000/requests/${requestId}/articles`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await res.json();
+};
+
+export const deleteRequest = async (token: string, requestId: number) => {
+  const res = await fetch(`http://localhost:8000/requests/${requestId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await res.json();
 }; 

@@ -1,18 +1,23 @@
-import React, { useEffect, useState } from "react";
-import { getArticles, addArticle, getSuppliers, searchSuppliers, deleteArticle, updateSupplierEmail, whoisCheck, searchEmailPerplexity, deleteSupplier, updateSupplierEmailValidated } from "../api/api";
+import React, { useEffect, useState, useRef } from "react";
+import { getArticles, addArticle, getSuppliers, searchSuppliers, deleteArticle, updateSupplierEmail, whoisCheck, searchEmailPerplexity, deleteSupplier, updateSupplierEmailValidated, createRequest, addArticleToRequest, removeArticleFromRequest, getRequests, getArticlesByRequest } from "../api/api";
 import { useAuth } from "../context/AuthContext";
 import SupplierRow from "./SupplierRow";
-import { Table, Button, Input, Space, message, Spin, Typography, Form, Card, Tooltip } from "antd";
+import { Table, Button, Input, Space, message, Spin, Typography, Form, Card, Tooltip, Modal, Select } from "antd";
 import { SearchOutlined, PlusOutlined, ReloadOutlined, MailOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import { Resizable } from 'react-resizable';
 import 'react-resizable/css/styles.css';
 import EmailDialog from "./EmailDialog";
 import { LoadingOutlined } from '@ant-design/icons';
+import Papa from "papaparse";
 
 const { Title } = Typography;
 
-const ArticleTable: React.FC = () => {
+interface ArticleTableProps {
+  activeRequestId: number | null;
+}
+
+const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
   const { token } = useAuth();
   const [articles, setArticles] = useState<any[]>([]);
   const [newCode, setNewCode] = useState("");
@@ -74,6 +79,26 @@ const ArticleTable: React.FC = () => {
     }
   };
   const [currentArticleId, setCurrentArticleId] = useState<number | null>(null);
+  // --- Invoice -> Request ---
+  const [showRequestModal, setShowRequestModal] = useState(false);
+  const [requestNumber, setRequestNumber] = useState("");
+  const [creatingRequest, setCreatingRequest] = useState(false);
+  const [requests, setRequests] = useState<any[]>([]);
+  const [sourceRequestIds, setSourceRequestIds] = useState<number[]>([]);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+
+  // Автогенерация номера запроса
+  const generateRequestNumber = () => {
+    const now = new Date();
+    return `ВЭД-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${now.getHours()}${now.getMinutes()}${now.getSeconds()}`;
+  };
+
+  // При открытии модалки — автозаполнять номер
+  useEffect(() => {
+    if (showRequestModal) {
+      setRequestNumber(generateRequestNumber());
+    }
+  }, [showRequestModal]);
 
   // useEffect для загрузки состояния из localStorage
   useEffect(() => {
@@ -88,6 +113,15 @@ const ArticleTable: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('whoisStatus', JSON.stringify(whoisStatus));
   }, [whoisStatus]);
+
+  // Получить инвойсы при монтировании
+  useEffect(() => {
+    if (token) {
+      getRequests(token)
+        .then(data => setRequests(Array.isArray(data) ? data : []))
+        .catch(e => message.error(e.message || 'Ошибка получения инвойсов. Проверьте соединение с сервером.'));
+    }
+  }, [token]);
 
   const handleResize = (dataIndex: string) => (e: any, { size }: any) => {
     setSupplierColWidths((prev) => ({ ...prev, [dataIndex]: size.width }));
@@ -109,11 +143,18 @@ const ArticleTable: React.FC = () => {
       getArticles(token)
         .then(async data => {
           if (Array.isArray(data)) {
-            setArticles(data);
+            // Фильтрация по инвойсу, если задан
+            let filtered;
+            if (activeRequestId) {
+              filtered = data.filter((a: any) => a.request_id === activeRequestId);
+            } else {
+              filtered = data.filter((a: any) => !a.request_id);
+            }
+            setArticles(filtered);
             // Автоматически подгружаем поставщиков для всех артикулов
             const allSuppliers: { [key: number]: any[] } = {};
             await Promise.all(
-              data.map(async (article: any) => {
+              filtered.map(async (article: any) => {
                 try {
                   const found = await getSuppliers(token, article.id);
                   allSuppliers[article.id] = found;
@@ -129,13 +170,15 @@ const ArticleTable: React.FC = () => {
         })
         .finally(() => setLoading(false));
     }
-  }, [token]);
+  }, [token, activeRequestId]);
 
   const handleAdd = async () => {
     if (token && newCode) {
       try {
-        const article = await addArticle(token, newCode);
-        setArticles(Array.isArray(articles) ? [...articles, article] : [article]);
+        await addArticle(token, newCode);
+        // После добавления — всегда обновлять список с сервера (чтобы подтянуть существующий артикул)
+        const newArticles = await getArticles(token);
+        setArticles(Array.isArray(newArticles) ? newArticles.filter((a: any) => !a.request_id) : []);
         setNewCode("");
         message.success("Артикул добавлен");
       } catch {
@@ -177,14 +220,17 @@ const ArticleTable: React.FC = () => {
   };
 
   const handleDelete = async (articleId: number) => {
-    if (token) {
-      try {
-        await deleteArticle(token, articleId);
-        setArticles(articles.filter((a) => a.id !== articleId));
-        message.success("Артикул удалён");
-      } catch {
-        message.error("Ошибка удаления артикула");
-      }
+    if (!token) return;
+    if (activeRequestId) {
+      // Если выбран инвойс — просто убрать артикул из инвойса
+      await removeArticleFromRequest(token, activeRequestId, articleId);
+      setArticles(articles.filter((a) => a.id !== articleId));
+      message.success("Артикул убран из инвойса");
+    } else {
+      // Если "Все артикулы" — полностью удалить артикул из базы (НЕ трогать request_id у других артикулов)
+      await deleteArticle(token, articleId);
+      setArticles(articles.filter((a) => a.id !== articleId));
+      message.success("Артикул удалён");
     }
   };
 
@@ -479,10 +525,130 @@ const ArticleTable: React.FC = () => {
     },
   ];
 
+  // Получить все артикулы, которые сейчас отображаются в таблице (для создания инвойса)
+  const articlesToAdd = articles.filter(a => selectedRowKeys.includes(a.id));
+
+  // Создание инвойса из текущих артикулов
+  const handleCreateRequest = async () => {
+    if (!token || !requestNumber || articlesToAdd.length === 0) return;
+    setCreatingRequest(true);
+    try {
+      // 1. Создать запрос
+      const request = await createRequest(token, requestNumber);
+      // 2. Привязать выбранные артикулы
+      await Promise.all(
+        articlesToAdd.map((a: any) => addArticleToRequest(token, request.id, a.id))
+      );
+      message.success("Запрос создан и артикулы добавлены!");
+      setShowRequestModal(false);
+      setRequestNumber("");
+      setSelectedRowKeys([]);
+      setArticles([]);
+      const [newArticles, newRequests] = await Promise.all([
+        getArticles(token),
+        getRequests(token)
+      ]);
+      setRequests(Array.isArray(newRequests) ? newRequests : []);
+    } catch (e: any) {
+      if (e && e.message && e.message.includes('UNIQUE constraint failed: requests.number')) {
+        message.error('Запрос с таким номером уже существует!');
+      } else {
+        message.error("Ошибка создания запроса");
+      }
+    } finally {
+      setCreatingRequest(false);
+    }
+  };
+
+  // Удаление артикула из инвойса
+  const handleRemoveFromRequest = async (articleId: number) => {
+    if (!token || !activeRequestId) return;
+    try {
+      await removeArticleFromRequest(token, activeRequestId, articleId);
+      message.success("Артикул убран из инвойса");
+      // Обновить список артикулов (убрать из текущего инвойса)
+      setArticles(prev => prev.filter(a => a.id !== articleId));
+    } catch {
+      message.error("Ошибка удаления артикула из инвойса");
+    }
+  };
+
+  // Импорт артикулов из CSV
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) {
+      message.error('Файл не выбран');
+      console.log('handleImport: файл не выбран');
+      return;
+    }
+    if (!token) {
+      message.error('Нет авторизации');
+      console.log('handleImport: нет токена');
+      return;
+    }
+    message.loading({ content: 'Импортируем...', key: 'import' });
+    console.log('handleImport: начинаем импорт', file.name);
+    Papa.parse(file, {
+      header: false,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        console.log('handleImport: результат парсинга', results);
+        const codes = results.data.map((row: any) => Array.isArray(row) ? row[0] : row);
+        const filtered = codes.filter((code: any) => typeof code === 'string' && code.trim());
+        if (filtered.length === 0) {
+          message.error({ content: 'В файле нет валидных артикулов', key: 'import' });
+          if (fileInputRef.current) fileInputRef.current.value = "";
+          return;
+        }
+        try {
+          const addResults = await Promise.allSettled(filtered.map((code: string) => addArticle(token, code.trim())));
+          console.log('handleImport: результаты добавления', addResults);
+          // После импорта — обновить список артикулов
+          const updatedArticles = await getArticles(token);
+          setArticles(Array.isArray(updatedArticles) ? updatedArticles.filter((a: any) => !a.request_id) : []);
+          message.success({ content: `Артикулы импортированы: ${filtered.length}`, key: 'import' });
+        } catch (err) {
+          message.error({ content: 'Ошибка при добавлении артикулов', key: 'import' });
+          console.error('handleImport: ошибка при добавлении артикулов', err);
+        }
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      },
+      error: (err) => {
+        message.error({ content: 'Ошибка импорта файла', key: 'import' });
+        console.error('handleImport: ошибка парсинга', err);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }
+    });
+  };
+
   return (
     <div style={{ display: 'flex', justifyContent: 'center', minHeight: '100vh' }}>
       <Card style={{ marginBottom: 32, maxWidth: 2200, minWidth: 1200 }}>
         <Title level={4}>Артикулы</Title>
+        {/* Кнопка создания запроса */}
+        {!activeRequestId && articlesToAdd.length > 0 && (
+          <Button type="primary" style={{ marginBottom: 16 }} onClick={() => setShowRequestModal(true)}>
+            Создать запрос из этих артикулов
+          </Button>
+        )}
+        <Modal
+          open={showRequestModal}
+          title="Создать запрос"
+          onCancel={() => setShowRequestModal(false)}
+          onOk={handleCreateRequest}
+          confirmLoading={creatingRequest}
+          okText="Создать"
+          cancelText="Отмена"
+        >
+          <Input
+            placeholder="Введите номер запроса"
+            value={requestNumber}
+            onChange={e => setRequestNumber(e.target.value)}
+            onPressEnter={handleCreateRequest}
+            disabled={creatingRequest}
+          />
+        </Modal>
         <Space style={{ marginBottom: 16 }}>
           <Input
             placeholder="Введите артикул"
@@ -494,6 +660,10 @@ const ArticleTable: React.FC = () => {
           <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
             Добавить
           </Button>
+          <label style={{ marginLeft: 12 }}>
+            <Button>Импорт CSV</Button>
+            <input ref={fileInputRef} type="file" accept=".csv" style={{ display: 'none' }} onChange={handleImport} />
+          </label>
         </Space>
         <Spin spinning={loading} tip="Загрузка...">
           <Table
@@ -502,6 +672,11 @@ const ArticleTable: React.FC = () => {
             pagination={false}
             bordered
             scroll={{ x: 500 }}
+            rowSelection={!activeRequestId ? {
+              selectedRowKeys,
+              onChange: setSelectedRowKeys,
+              preserveSelectedRowKeys: true,
+            } : undefined}
             columns={[
               {
                 title: "Артикул",
@@ -540,6 +715,12 @@ const ArticleTable: React.FC = () => {
                     <Button danger onClick={() => handleDelete(article.id)}>
                       Удалить
                     </Button>
+                    {/* Кнопка убрать из инвойса */}
+                    {activeRequestId && (
+                      <Button onClick={() => handleRemoveFromRequest(article.id)}>
+                        Убрать из инвойса
+                      </Button>
+                    )}
                   </div>
                 ),
                 sorter: false,

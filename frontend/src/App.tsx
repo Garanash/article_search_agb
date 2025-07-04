@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import LoginForm from "./components/LoginForm";
 import ArticleTable from "./components/ArticleTable";
 import AnalyticsView from "./components/AnalyticsView";
+import RequestSidebar from "./components/RequestSidebar";
 import { Layout, Menu, Button, Tabs } from "antd";
 import { LogoutOutlined } from "@ant-design/icons";
 import "antd/dist/reset.css";
@@ -12,6 +13,7 @@ const { Header, Content, Footer } = Layout;
 const Main: React.FC = () => {
   const { token, setToken } = useAuth();
   const [tab, setTab] = React.useState('articles');
+  const [activeRequestId, setActiveRequestId] = React.useState<number | null>(null);
   if (!token) return <LoginForm />;
   return (
     <Layout style={{ minHeight: "100vh" }}>
@@ -28,7 +30,14 @@ const Main: React.FC = () => {
           items={[{
             key: 'articles',
             label: 'Артикулы',
-            children: <ArticleTable />
+            children: (
+              <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start' }}>
+                <RequestSidebar activeRequestId={activeRequestId} onSelect={setActiveRequestId} />
+                <div style={{ flex: 1 }}>
+                  <ArticleTable activeRequestId={activeRequestId} />
+                </div>
+              </div>
+            )
           }, {
             key: 'analytics',
             label: 'Аналитика',
