@@ -9,12 +9,14 @@ interface ChangePasswordModalProps {
   visible: boolean;
   onCancel: () => void;
   onSuccess: () => void;
+  requireCurrentPassword?: boolean;
 }
 
 const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
   visible,
   onCancel,
-  onSuccess
+  onSuccess,
+  requireCurrentPassword = true
 }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -27,7 +29,7 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
 
     setLoading(true);
     try {
-      await changePassword(values.currentPassword, values.newPassword);
+      await changePassword(requireCurrentPassword ? values.currentPassword : undefined, values.newPassword);
       message.success('Пароль успешно изменен');
       form.resetFields();
       onSuccess();
@@ -79,19 +81,21 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
         onFinish={handleSubmit}
         requiredMark={false}
       >
-        <Form.Item
-          name="currentPassword"
-          label="Текущий пароль"
-          rules={[
-            { required: true, message: 'Введите текущий пароль' }
-          ]}
-        >
-          <Input.Password
-            prefix={<LockOutlined />}
-            placeholder="Введите текущий пароль"
-            iconRender={(visible) => (visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />)}
-          />
-        </Form.Item>
+        {requireCurrentPassword && (
+          <Form.Item
+            name="currentPassword"
+            label="Текущий пароль"
+            rules={[
+              { required: true, message: 'Введите текущий пароль' }
+            ]}
+          >
+            <Input.Password
+              prefix={<LockOutlined />}
+              placeholder="Введите текущий пароль"
+              iconRender={(visible) => (visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />)}
+            />
+          </Form.Item>
+        )}
 
         <Form.Item
           name="newPassword"

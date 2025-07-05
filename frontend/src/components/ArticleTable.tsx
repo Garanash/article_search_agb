@@ -15,9 +15,11 @@ const { Title } = Typography;
 
 interface ArticleTableProps {
   activeRequestId: number | null;
+  requests: any[];
+  setRequests: React.Dispatch<React.SetStateAction<any[]>>;
 }
 
-const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
+const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId, requests, setRequests }) => {
   const { token } = useAuth();
   const [articles, setArticles] = useState<any[]>([]);
   const [newCode, setNewCode] = useState("");
@@ -107,7 +109,6 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [requestNumber, setRequestNumber] = useState("");
   const [creatingRequest, setCreatingRequest] = useState(false);
-  const [requests, setRequests] = useState<any[]>([]);
   const [sourceRequestIds, setSourceRequestIds] = useState<number[]>([]);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
@@ -137,15 +138,6 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
   useEffect(() => {
     localStorage.setItem('whoisStatus', JSON.stringify(whoisStatus));
   }, [whoisStatus]);
-
-  // Получить инвойсы при монтировании
-  useEffect(() => {
-    if (token) {
-      getRequests()
-        .then(data => setRequests(Array.isArray(data) ? data : []))
-        .catch(e => message.error(e.message || 'Ошибка получения инвойсов. Проверьте соединение с сервером.'));
-    }
-  }, [token]);
 
   const handleResize = (dataIndex: string) => (e: any, { size }: any) => {
     setSupplierColWidths((prev) => ({ ...prev, [dataIndex]: size.width }));
@@ -622,11 +614,16 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
       setShowRequestModal(false);
       setRequestNumber("");
       setSelectedRowKeys([]);
-      setArticles([]);
+      
+      // Обновляем список артикулов и запросов
       const [newArticles, newRequests] = await Promise.all([
         getArticles(),
         getRequests()
       ]);
+      
+      // Фильтруем артикулы, которые не привязаны к запросам
+      const filteredArticles = Array.isArray(newArticles) ? newArticles.filter((a: any) => !a.request_id) : [];
+      setArticles(filteredArticles);
       setRequests(Array.isArray(newRequests) ? newRequests : []);
     } catch (e: any) {
       if (e && e.message && e.message.includes('UNIQUE constraint failed: requests.number')) {

@@ -19,8 +19,8 @@ def create_article(db: Session, code: str, user_id: int):
     db.refresh(db_article)
     return db_article
 
-def add_supplier(db: Session, article_id: int, name: str, website: str, email: str, country: str):
-    supplier = models.Supplier(article_id=article_id, name=name, website=website, email=email, country=country)
+def add_supplier(db: Session, article_id: int, name: str, website: str, email: str, country: str, user_id: int):
+    supplier = models.Supplier(article_id=article_id, name=name, website=website, email=email, country=country, user_id=user_id)
     db.add(supplier)
     db.commit()
     db.refresh(supplier)

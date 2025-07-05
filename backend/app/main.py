@@ -3,39 +3,38 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.orm import sessionmaker, declarative_base, Session
 import os
+import datetime
 from . import crud, google_search, schemas, models, auth
 from . import chat_api
+from .routers import support_tickets, admin_dashboard
 from fastapi import BackgroundTasks
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel
 from sqlalchemy.exc import IntegrityError
 from fastapi import status
 import sys
 sys.path.append('..')
-from api import documents_api, users_api, perplexity_api
+from api import documents_api, users_api, support_api, auth_api, suppliers_api, requests_api, analytics_api
+import csv
+from fastapi.responses import StreamingResponse, JSONResponse
+from io import StringIO
+from fastapi import UploadFile, File
 
 app = FastAPI()
 
-# Настройка базы данных SQLite
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-SQLALCHEMY_DATABASE_URL = f"sqlite:///{os.path.join(BASE_DIR, '..', 'test1234.db')}"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
+# Настройка CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  # React dev server
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-class Article(Base):
-    __tablename__ = "articles"
-    id = Column(Integer, primary_key=True, index=True)
-    code = Column(String, index=True)
+# Используем настройки базы данных из database.py
+from .database import engine, Base, get_db
 
 Base.metadata.create_all(bind=engine)
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 @app.post("/token")
 def login(username: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
@@ -46,7 +45,7 @@ def login(username: str = Form(...), password: str = Form(...), db: Session = De
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token_expires = auth.datetime.timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token_expires = datetime.timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = auth.create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
@@ -80,7 +79,7 @@ def get_articles(db: Session = Depends(get_db)):
 
 @app.delete("/articles/{article_id}")
 def delete_article(article_id: int, db: Session = Depends(get_db)):
-    article = db.query(Article).filter(Article.id == article_id).first()
+    article = db.query(models.Article).filter(models.Article.id == article_id).first()
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
     db.delete(article)
@@ -93,7 +92,7 @@ def get_suppliers(article_id: int, db: Session = Depends(get_db)):
 
 @app.post("/search_suppliers/{article_id}", response_model=List[schemas.SupplierOut])
 async def search_suppliers(article_id: int, current_user: models.User = Depends(auth.get_current_user), db: Session = Depends(get_db)):
-    article = db.query(Article).filter(Article.id == article_id).first()
+    article = db.query(models.Article).filter(models.Article.id == article_id).first()
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
     # Удаляем старых поставщиков для этого артикула
@@ -104,7 +103,7 @@ async def search_suppliers(article_id: int, current_user: models.User = Depends(
     for region in regions:
         found = await google_search.search_suppliers_perplexity(article.code, region)
         for s in found:
-            supplier = crud.add_supplier(db, article_id, s["name"], s["website"], s["email"], s["country"])
+            supplier = crud.add_supplier(db, article_id, s["name"], s["website"], s["email"], s["country"], current_user.id)
             suppliers.append(supplier)
     
     # Записываем аналитику
@@ -156,7 +155,7 @@ class EmailValidatedRequest(BaseModel):
     validated: bool
 
 class ChangePasswordRequest(BaseModel):
-    current_password: str
+    current_password: Optional[str] = None
     new_password: str
 
 @app.patch("/suppliers/{supplier_id}/email_validated")
@@ -172,100 +171,21 @@ def change_password(
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Смена пароля пользователем"""
-    # Проверяем текущий пароль
-    if not auth.verify_password(req.current_password, current_user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Неверный текущий пароль"
-        )
+    """Сменить пароль пользователя"""
+    if req.current_password is not None:
+        # Проверяем текущий пароль
+        if not auth.verify_password(req.current_password, current_user.hashed_password):
+            raise HTTPException(status_code=400, detail="Неверный текущий пароль")
     
     # Хешируем новый пароль
-    hashed_new_password = auth.get_password_hash(req.new_password)
+    hashed_password = auth.get_password_hash(req.new_password)
     
-    # Обновляем пароль и сбрасываем флаг принудительной смены
-    current_user.hashed_password = hashed_new_password
+    # Обновляем пароль в базе
+    current_user.hashed_password = hashed_password
     current_user.force_password_change = False
     db.commit()
     
     return {"message": "Пароль успешно изменен"}
-
-@app.post("/requests/", response_model=schemas.RequestOut)
-def create_request(req: schemas.RequestCreate, current_user: models.User = Depends(auth.get_current_user), db: Session = Depends(get_db)):
-    request = models.Request(number=req.number)
-    db.add(request)
-    try:
-        db.commit()
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Request with this number already exists"
-        )
-    db.refresh(request)
-    
-    # Записываем аналитику
-    crud.add_analytics(db, current_user.id, "Создан запрос", f"Номер запроса: {req.number}")
-    
-    return {
-        "id": request.id,
-        "number": request.number,
-        "created_at": request.created_at.isoformat()
-    }
-
-@app.get("/requests/", response_model=List[schemas.RequestOut])
-def get_requests(db: Session = Depends(get_db)):
-    requests = db.query(models.Request).all()
-    return [
-        {
-            "id": inv.id,
-            "number": inv.number,
-            "created_at": inv.created_at.isoformat() if inv.created_at else None
-        }
-        for inv in requests
-    ]
-
-@app.delete("/requests/{request_id}")
-def delete_request(request_id: int, db: Session = Depends(get_db)):
-    # Сбросить request_id у всех артикулов
-    db.query(models.Article).filter(models.Article.request_id == request_id).update({models.Article.request_id: None})
-    # Удалить сам запрос
-    request = db.query(models.Request).filter(models.Request.id == request_id).first()
-    if not request:
-        raise HTTPException(status_code=404, detail="Request not found")
-    db.delete(request)
-    db.commit()
-    return {"status": "deleted"}
-
-@app.post("/requests/{request_id}/add_article/{article_id}")
-def add_article_to_request(request_id: int, article_id: int, db: Session = Depends(get_db)):
-    article = db.query(models.Article).filter(models.Article.id == article_id).first()
-    if not article:
-        raise HTTPException(status_code=404, detail="Article not found")
-    article.request_id = request_id
-    db.commit()
-    return {"status": "added"}
-
-@app.post("/requests/{request_id}/remove_article/{article_id}")
-def remove_article_from_request(request_id: int, article_id: int, db: Session = Depends(get_db)):
-    article = db.query(models.Article).filter(models.Article.id == article_id, models.Article.request_id == request_id).first()
-    if not article:
-        raise HTTPException(status_code=404, detail="Article not found in this request")
-    article.request_id = None
-    db.commit()
-    return {"status": "removed"}
-
-@app.get("/requests/{request_id}/articles", response_model=List[schemas.ArticleOut])
-def get_articles_by_request(request_id: int, db: Session = Depends(get_db)):
-    articles = db.query(models.Article).filter(models.Article.request_id == request_id).all()
-    return [
-        {
-            "id": a.id,
-            "code": a.code,
-            "request_id": a.request_id
-        }
-        for a in articles
-    ]
 
 @app.get("/analytics/")
 def get_analytics(current_user: models.User = Depends(auth.get_current_user), db: Session = Depends(get_db)):
@@ -381,17 +301,102 @@ def get_users_with_bots(current_user: models.User = Depends(auth.get_current_use
     
     return result
 
-# Настройка CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+@app.get("/api/users/profile", response_model=schemas.UserResponse)
+def get_user_profile(current_user: models.User = Depends(auth.get_current_user)):
+    """Получить профиль текущего пользователя"""
+    return current_user
+
+@app.get("/admin/metrics/")
+def get_admin_metrics(current_user: models.User = Depends(auth.get_current_user), db: Session = Depends(get_db)):
+    """Получить агрегированные метрики по базе (только для администратора)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Только для администратора")
+    return {
+        "users": db.query(models.User).count(),
+        "articles": db.query(models.Article).count(),
+        "suppliers": db.query(models.Supplier).count(),
+        "requests": db.query(models.Request).count(),
+        "analytics": db.query(models.Analytics).count(),
+        "bots": db.query(models.UserBot).count(),
+        "support_messages": db.query(models.SupportMessage).count(),
+        "tickets": db.query(models.SupportTicket).count(),
+        "events": db.query(models.SupportEvent).count(),
+        "documents": db.query(models.Document).count(),
+        "email_templates": db.query(models.EmailTemplate).count(),
+    }
+
+@app.get("/admin/export_csv/{table_name}")
+def export_table_csv(table_name: str, current_user: models.User = Depends(auth.get_current_user), db: Session = Depends(get_db)):
+    """Экспортировать таблицу в CSV (только для администратора)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Только для администратора")
+    model_map = {
+        "users": models.User,
+        "articles": models.Article,
+        "suppliers": models.Supplier,
+        "requests": models.Request,
+        "analytics": models.Analytics,
+        "bots": models.UserBot,
+        "support_messages": models.SupportMessage,
+        "tickets": models.SupportTicket,
+        "events": models.SupportEvent,
+        "documents": models.Document,
+        "email_templates": models.EmailTemplate,
+    }
+    if table_name not in model_map:
+        raise HTTPException(status_code=400, detail="Неизвестная таблица")
+    model = model_map[table_name]
+    rows = db.query(model).all()
+    if not rows:
+        return StreamingResponse(StringIO(), media_type="text/csv")
+    output = StringIO()
+    writer = csv.writer(output)
+    columns = [c.name for c in model.__table__.columns]
+    writer.writerow(columns)
+    for row in rows:
+        writer.writerow([getattr(row, col) for col in columns])
+    output.seek(0)
+    return StreamingResponse(output, media_type="text/csv", headers={"Content-Disposition": f"attachment; filename={table_name}.csv"})
+
+@app.post("/admin/import_csv/{table_name}")
+async def import_table_csv(table_name: str, current_user: models.User = Depends(auth.get_current_user), db: Session = Depends(get_db), file: UploadFile = File(...)):
+    """Импортировать таблицу из CSV (только для администратора)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Только для администратора")
+    model_map = {
+        "users": models.User,
+        "articles": models.Article,
+        "suppliers": models.Supplier,
+        "requests": models.Request,
+        "analytics": models.Analytics,
+        "bots": models.UserBot,
+        "support_messages": models.SupportMessage,
+        "tickets": models.SupportTicket,
+        "events": models.SupportEvent,
+        "documents": models.Document,
+        "email_templates": models.EmailTemplate,
+    }
+    if table_name not in model_map:
+        raise HTTPException(status_code=400, detail="Неизвестная таблица")
+    model = model_map[table_name]
+    content = (await file.read()).decode("utf-8")
+    reader = csv.DictReader(StringIO(content))
+    count = 0
+    for row in reader:
+        obj = model(**row)
+        db.add(obj)
+        count += 1
+    db.commit()
+    return JSONResponse({"imported": count})
 
 # Подключение роутеров
 app.include_router(chat_api.router)
 app.include_router(documents_api.router, prefix="/api")
 app.include_router(users_api.router, prefix="/api")
-app.include_router(perplexity_api.router, prefix="/api") 
+app.include_router(auth_api.router, prefix="/api")
+app.include_router(suppliers_api.router, prefix="/api")
+app.include_router(requests_api.router, prefix="/api")
+app.include_router(analytics_api.router, prefix="/api")
+app.include_router(support_api.router, prefix="/api")
+app.include_router(support_tickets.router, prefix="/api")
+app.include_router(admin_dashboard.router, prefix="/api") 

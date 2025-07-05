@@ -13,6 +13,8 @@ interface Request {
 interface RequestSidebarProps {
   activeRequestId: number | null;
   onSelect: (requestId: number | null) => void;
+  requests: any[];
+  setRequests: React.Dispatch<React.SetStateAction<any[]>>;
 }
 
 // Адаптивные стили для боковой панели
@@ -84,9 +86,8 @@ const sidebarStyles = {
   },
 };
 
-const RequestSidebar: React.FC<RequestSidebarProps> = ({ activeRequestId, onSelect }) => {
+const RequestSidebar: React.FC<RequestSidebarProps> = ({ activeRequestId, onSelect, requests, setRequests }) => {
   const { token } = useAuth();
-  const [requests, setRequests] = useState<Request[]>([]);
   const [newNumber, setNewNumber] = useState("");
   const [loading, setLoading] = useState(false);
   const [previewVisible, setPreviewVisible] = useState(false);

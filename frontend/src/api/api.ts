@@ -121,32 +121,32 @@ export const searchEmailPerplexity = async (company_name: string, website: strin
 
 // --- Request API ---
 export const getRequests = async () => {
-  const response = await apiClient.get("/requests/");
+  const response = await apiClient.get("/api/requests/");
   return response.data;
 };
 
 export const createRequest = async (number: string) => {
-  const response = await apiClient.post("/requests/", { number });
+  const response = await apiClient.post("/api/requests/", { number });
   return response.data;
 };
 
 export const addArticleToRequest = async (requestId: number, articleId: number) => {
-  const response = await apiClient.post(`/requests/${requestId}/add_article/${articleId}`);
+  const response = await apiClient.post(`/api/requests/${requestId}/add-article/${articleId}`);
   return response.data;
 };
 
 export const removeArticleFromRequest = async (requestId: number, articleId: number) => {
-  const response = await apiClient.post(`/requests/${requestId}/remove_article/${articleId}`);
+  const response = await apiClient.post(`/api/requests/${requestId}/remove-article/${articleId}`);
   return response.data;
 };
 
 export const getArticlesByRequest = async (requestId: number) => {
-  const response = await apiClient.get(`/requests/${requestId}/articles`);
+  const response = await apiClient.get(`/api/requests/${requestId}/articles`);
   return response.data;
 };
 
 export const deleteRequest = async (requestId: number) => {
-  const response = await apiClient.delete(`/requests/${requestId}`);
+  const response = await apiClient.delete(`/api/requests/${requestId}`);
   return response.data;
 };
 
@@ -192,10 +192,9 @@ export const createUser = async (userData: {
   return response.data;
 };
 
-export const changePassword = async (currentPassword: string, newPassword: string) => {
-  const response = await apiClient.post("/change_password/", {
-    current_password: currentPassword,
-    new_password: newPassword
-  });
+export const changePassword = async (currentPassword: string | undefined, newPassword: string) => {
+  const body: any = { new_password: newPassword };
+  if (currentPassword !== undefined) body.current_password = currentPassword;
+  const response = await apiClient.post("/change_password/", body);
   return response.data;
 }; 

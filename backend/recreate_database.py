@@ -9,7 +9,7 @@ import datetime
 import sqlite3
 
 # Удаляем старую базу данных
-db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'test1234.db')
+db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app', 'test1234.db')
 if os.path.exists(db_path):
     os.remove(db_path)
     print("Старая база данных удалена")

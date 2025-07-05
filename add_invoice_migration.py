@@ -1,6 +1,9 @@
-import sqlite3
+#!/usr/bin/env python3
+"""
+Миграция для добавления поля invoice_number в таблицу requests
+"""
 
-DB_PATH = "backend/test1234.db"
+DB_PATH = "backend/app/test1234.db"
 conn = sqlite3.connect(DB_PATH)
 cur = conn.cursor()
 

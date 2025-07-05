@@ -13,7 +13,7 @@ class UserOut(BaseModel):
         from_attributes = True
 
 class RequestCreate(BaseModel):
-    code: str
+    number: str
 
 class RequestOut(BaseModel):
     id: int
@@ -134,35 +134,135 @@ class UserProfileResponse(BaseModel):
     class Config:
         from_attributes = True 
 
-# Схемы для Perplexity чата
-class PerplexityMessage(BaseModel):
+class SupportMessageBase(BaseModel):
+    message: str
+    department: Optional[str] = None
+
+class SupportMessageCreate(SupportMessageBase):
+    pass
+
+class SupportMessageResponse(SupportMessageBase):
+    id: int
+    user_id: int
+    is_from_admin: bool
+    is_read: bool
+    created_at: datetime
+    user_username: str = None
+    
+    class Config:
+        from_attributes = True
+
+class SupportMessageList(BaseModel):
+    messages: List[SupportMessageResponse]
+    total: int 
+
+class UserResponse(BaseModel):
+    id: int
+    username: str
+    email: Optional[str] = None
     role: str
-    content: str
+    department: Optional[str] = None
+    position: Optional[str] = None
+    phone: Optional[str] = None
+    company: Optional[str] = None
+    force_password_change: bool
+    created_at: datetime
+    updated_at: datetime
+    
+    @property
+    def is_admin(self) -> bool:
+        return self.role == "admin"
+    
+    class Config:
+        from_attributes = True 
 
-class PerplexityChatRequest(BaseModel):
-    messages: List[PerplexityMessage]
-    model: Optional[str] = "sonar"
-    max_tokens: Optional[int] = 1024
-    temperature: Optional[float] = 0.7
-    top_p: Optional[float] = 0.9
-    top_k: Optional[int] = 50
-    presence_penalty: Optional[float] = 0.0
-    frequency_penalty: Optional[float] = 0.0
-
-class PerplexityChatResponse(BaseModel):
-    id: str
-    model: str
-    created: int
-    choices: List[dict]
-    usage: dict
-
-class PerplexityModel(BaseModel):
-    id: str
-    name: str
+# Схемы для системы управления обращениями
+class SupportTicketBase(BaseModel):
+    title: str
     description: str
+    department: Optional[str] = None
+    priority: Optional[str] = "medium"
 
-class FileUploadRequest(BaseModel):
-    file_name: str
-    file_content: str  # base64 encoded
-    messages: List[PerplexityMessage]
-    model: Optional[str] = "sonar" 
+class SupportTicketCreate(SupportTicketBase):
+    user_id: Optional[int] = None
+
+class SupportTicketUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    department: Optional[str] = None
+    status: Optional[str] = None
+    priority: Optional[str] = None
+    assigned_to: Optional[int] = None
+    estimated_resolution: Optional[datetime] = None
+
+class SupportTicketResponse(SupportTicketBase):
+    id: int
+    user_id: int
+    status: str
+    priority: str
+    assigned_to: Optional[int] = None
+    created_at: datetime
+    updated_at: datetime
+    resolved_at: Optional[datetime] = None
+    closed_at: Optional[datetime] = None
+    first_response_at: Optional[datetime] = None
+    estimated_resolution: Optional[datetime] = None
+    user_username: str = None
+    assigned_admin_username: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+
+class SupportEventBase(BaseModel):
+    event_type: str
+    title: str
+    description: Optional[str] = None
+    event_date: Optional[datetime] = None  # deprecated
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+
+class SupportEventCreate(SupportEventBase):
+    pass
+
+class SupportEventUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    event_date: Optional[datetime] = None
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    is_completed: Optional[bool] = None
+
+class SupportEventResponse(SupportEventBase):
+    id: int
+    ticket_id: int
+    is_completed: bool
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+class SupportAnalytics(BaseModel):
+    total_tickets: int
+    open_tickets: int
+    closed_tickets: int
+    in_progress_tickets: int
+    resolved_tickets: int
+    average_response_time_hours: Optional[float] = None
+    average_resolution_time_hours: Optional[float] = None
+    tickets_by_department: dict
+    tickets_by_priority: dict
+    tickets_by_status: dict
+
+class CalendarEvent(BaseModel):
+    id: int
+    title: str
+    description: Optional[str] = None
+    event_date: Optional[datetime] = None
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    event_type: str
+    ticket_id: int
+    is_completed: bool
+    
+    class Config:
+        from_attributes = True 

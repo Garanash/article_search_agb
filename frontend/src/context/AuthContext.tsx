@@ -51,12 +51,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Загружаем данные пользователя при инициализации
   useEffect(() => {
+    let firstLoad = true;
     const loadUserProfile = async () => {
       if (token) {
         try {
           const userData = await getUserProfile();
           setUser(userData);
-          setForcePasswordChange(userData.force_password_change || false);
+          // Показываем модалку только при первом входе, если force_password_change
+          if (firstLoad && userData.force_password_change) {
+            setForcePasswordChange(true);
+          }
+          firstLoad = false;
         } catch (error) {
           console.error('Error loading user profile:', error);
           // Если не удалось загрузить профиль, очищаем токен
@@ -68,6 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     loadUserProfile();
+    // eslint-disable-next-line
   }, [token]);
 
   const setTokenAndStore = (t: string | null) => {
