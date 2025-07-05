@@ -5,6 +5,8 @@ from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 from . import models, database
 import datetime
+import secrets
+import string
 
 SECRET_KEY = "supersecretkey"
 ALGORITHM = "HS256"
@@ -12,6 +14,17 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+def generate_random_password(length: int = 12) -> str:
+    """Генерирует случайный пароль заданной длины"""
+    alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+    while True:
+        password = ''.join(secrets.choice(alphabet) for i in range(length))
+        if (any(c.islower() for c in password)
+                and any(c.isupper() for c in password)
+                and any(c.isdigit() for c in password)
+                and any(c in "!@#$%^&*" for c in password)):
+            return password
 
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
@@ -34,7 +47,7 @@ def authenticate_user(db: Session, username: str, password: str):
         return False
     return user
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(database.SessionLocal)):
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(database.get_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",

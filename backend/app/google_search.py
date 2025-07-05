@@ -131,19 +131,22 @@ async def search_suppliers_perplexity(article_code: str, region: str):
 
 async def search_email_perplexity(company_name: str, website: str, region: str) -> str:
     prompt = (
-        f"Найди рабочий email для отдела продаж, закупок или оптовых заказов компании {company_name} (сайт: {website}) в регионе {region}. "
+        f"Найди email для отдела продаж, закупок или оптовых заказов компании {company_name} (сайт: {website}) в регионе {region}. "
         f"Приоритет: sales@, orders@, wholesale@, info@, contact@, закупки@, опт@. "
-        f"Верни ТОЛЬКО email адрес без кавычек, комментариев или дополнительного текста. Если email не найден - верни пустую строку."
+        f"ВЕРНИ ТОЛЬКО EMAIL АДРЕС БЕЗ КАВЫЧЕК, КОММЕНТАРИЕВ, ПРИМЕЧАНИЙ ИЛИ ДОПОЛНИТЕЛЬНОГО ТЕКСТА. "
+        f"Если email не найден - верни пустую строку. "
+        f"НЕ ПИШИ НИЧЕГО КРОМЕ EMAIL АДРЕСА."
     )
     messages = [
         {
             "role": "system",
             "content": (
-                "Ты помощник для поиска email адресов компаний. "
+                "Ты помощник для поиска email адресов. "
                 "Твоя задача - найти рабочий email для коммерческих запросов. "
-                "Верни ТОЛЬКО email адрес (например: sales@company.com) или пустую строку. "
-                "НЕ добавляй комментарии, объяснения или дополнительный текст. "
-                "НЕ используй кавычки вокруг email."
+                "ВЕРНИ ТОЛЬКО EMAIL АДРЕС (например: sales@company.com) или пустую строку. "
+                "НЕ ДОБАВЛЯЙ КОММЕНТАРИИ, ОБЪЯСНЕНИЯ, ПРИМЕЧАНИЯ ИЛИ ДОПОЛНИТЕЛЬНЫЙ ТЕКСТ. "
+                "НЕ ИСПОЛЬЗУЙ КАВЫЧКИ ВОКРУГ EMAIL. "
+                "НЕ ПИШИ НИЧЕГО КРОМЕ EMAIL АДРЕСА ИЛИ ПУСТОЙ СТРОКИ."
             ),
         },
         {
@@ -162,11 +165,24 @@ async def search_email_perplexity(company_name: str, website: str, region: str) 
         )
         content = response.choices[0].message.content.strip()
         # Вырезаем email из ответа (или пустую строку)
-        match = re.search(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+", content)
+        # Сначала ищем стандартный email паттерн
+        match = re.search(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+", content)
         if match:
-            return match.group(0)
+            email = match.group(0)
+            # Проверяем, что это действительно email, а не часть комментария
+            if '@' in email and '.' in email.split('@')[1]:
+                return email
+        # Если не нашли по паттерну, но есть @ в контенте
         if '@' in content:
-            return content
+            # Разбиваем по строкам и ищем строку с email
+            lines = content.split('\n')
+            for line in lines:
+                line = line.strip()
+                if '@' in line and '.' in line.split('@')[1]:
+                    # Очищаем от лишних символов
+                    email = re.sub(r'[^\w@.-]', '', line)
+                    if '@' in email and '.' in email.split('@')[1]:
+                        return email
         return ""
     except Exception as e:
         print(f"Perplexity email search error: {e}")

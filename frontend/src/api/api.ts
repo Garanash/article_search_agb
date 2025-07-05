@@ -1,14 +1,31 @@
 import axios from "axios";
 
-const API = axios.create({
-  baseURL: "http://localhost:8000",
+const API_BASE_URL = "http://localhost:8000";
+
+// Получаем токен из localStorage
+const getToken = (): string | null => {
+  return localStorage.getItem('token');
+};
+
+// Создаем axios instance с перехватчиком для добавления токена
+const apiClient = axios.create({
+  baseURL: API_BASE_URL,
+});
+
+// Добавляем перехватчик запросов для автоматического добавления токена
+apiClient.interceptors.request.use((config) => {
+  const token = getToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
 export const login = async (username: string, password: string) => {
   const params = new URLSearchParams();
   params.append("username", username);
   params.append("password", password);
-  const response = await fetch("http://localhost:8000/token", {
+  const response = await fetch(`${API_BASE_URL}/token`, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded"
@@ -21,50 +38,41 @@ export const login = async (username: string, password: string) => {
   return response.json();
 };
 
-export const getArticles = async (token: string) => {
-  const res = await fetch("http://localhost:8000/articles/", { headers: { Authorization: `Bearer ${token}` } });
-  return res.json();
+export const getArticles = async () => {
+  const response = await apiClient.get("/articles/");
+  return response.data;
 };
 
-export const addArticle = async (token: string, code: string) => {
+export const addArticle = async (code: string) => {
   const params = new URLSearchParams();
   params.append("code", code);
-  const res = await fetch("http://localhost:8000/articles/", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
-    body: params
+  const response = await apiClient.post("/articles/", params, {
+    headers: { "Content-Type": "application/x-www-form-urlencoded" }
   });
-  return res.json();
+  return response.data;
 };
 
-export const deleteArticle = async (token: string, articleId: number) => {
-  const res = await fetch(`http://localhost:8000/articles/${articleId}`, {
-    method: "DELETE",
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return res.json();
+export const deleteArticle = async (articleId: number) => {
+  const response = await apiClient.delete(`/articles/${articleId}`);
+  return response.data;
 };
 
-export const getSuppliers = async (token: string, articleId: number) => {
-  const res = await fetch(`http://localhost:8000/suppliers/${articleId}`, { headers: { Authorization: `Bearer ${token}` } });
-  return res.json();
+export const getSuppliers = async (articleId: number) => {
+  const response = await apiClient.get(`/suppliers/${articleId}`);
+  return response.data;
 };
 
-export const searchSuppliers = async (token: string, articleId: number) => {
-  const res = await fetch(`http://localhost:8000/search_suppliers/${articleId}`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}` }
-  });
-  return res.json();
+export const searchSuppliers = async (articleId: number) => {
+  const response = await apiClient.post(`/search_suppliers/${articleId}`);
+  return response.data;
 };
 
-export const getEmailTemplates = async (token: string) => {
-  const res = await fetch("http://localhost:8000/email_templates/", { headers: { Authorization: `Bearer ${token}` } });
-  return res.json();
+export const getEmailTemplates = async () => {
+  const response = await apiClient.get("/email_templates/");
+  return response.data;
 };
 
 export const sendEmail = async (
-  token: string,
   sender: string,
   password: string,
   recipient: string,
@@ -73,109 +81,121 @@ export const sendEmail = async (
   smtp_server: string,
   smtp_port: number
 ) => {
-  const res = await fetch("http://localhost:8000/send_email/", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ sender, password, recipient, subject, body, smtp_server, smtp_port })
+  const response = await apiClient.post("/send_email/", {
+    sender, password, recipient, subject, body, smtp_server, smtp_port
   });
-  return res.json();
+  return response.data;
 };
 
-export const getAnalytics = async (token: string) => {
-  const res = await fetch("http://localhost:8000/analytics/", { headers: { Authorization: `Bearer ${token}` } });
-  return res.json();
+export const getAnalytics = async () => {
+  const response = await apiClient.get("/analytics/");
+  return response.data;
 };
 
-export const updateSupplierEmail = async (token: string, supplierId: number, email: string) => {
-  const res = await fetch(`http://localhost:8000/suppliers/${supplierId}/email`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ email })
-  });
-  return res.json();
+export const updateSupplierEmail = async (supplierId: number, email: string) => {
+  const response = await apiClient.patch(`/suppliers/${supplierId}/email`, { email });
+  return response.data;
 };
 
-export const deleteSupplier = async (token: string, supplierId: number) => {
-  const res = await fetch(`http://localhost:8000/suppliers/${supplierId}`, {
-    method: "DELETE",
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return res.json();
+export const deleteSupplier = async (supplierId: number) => {
+  const response = await apiClient.delete(`/suppliers/${supplierId}`);
+  return response.data;
 };
 
-export const updateSupplierEmailValidated = async (token: string, supplierId: number, validated: boolean) => {
-  const res = await fetch(`http://localhost:8000/suppliers/${supplierId}/email_validated`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ validated })
-  });
-  return res.json();
+export const updateSupplierEmailValidated = async (supplierId: number, validated: boolean) => {
+  const response = await apiClient.patch(`/suppliers/${supplierId}/email_validated`, { validated });
+  return response.data;
 };
 
 // Проверка сайтов через whois
 export const whoisCheck = async (sites: string[]) => {
-  const res = await fetch("http://localhost:8000/whois_check/", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ sites })
-  });
-  return res.json();
+  const response = await apiClient.post("/whois_check/", { sites });
+  return response.data;
 };
 
 // Поиск email через Perplexity
 export const searchEmailPerplexity = async (company_name: string, website: string, region: string) => {
-  const res = await fetch("http://localhost:8000/search_email_perplexity/", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ company_name, website, region })
-  });
-  return res.json();
+  const response = await apiClient.post("/search_email_perplexity/", { company_name, website, region });
+  return response.data;
 };
 
 // --- Request API ---
-export const getRequests = async (token: string) => {
-  const res = await fetch("http://localhost:8000/requests/", {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return await res.json();
+export const getRequests = async () => {
+  const response = await apiClient.get("/requests/");
+  return response.data;
 };
 
-export const createRequest = async (token: string, number: string) => {
-  const res = await fetch("http://localhost:8000/requests/", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ number }),
-  });
-  return await res.json();
+export const createRequest = async (number: string) => {
+  const response = await apiClient.post("/requests/", { number });
+  return response.data;
 };
 
-export const addArticleToRequest = async (token: string, requestId: number, articleId: number) => {
-  const res = await fetch(`http://localhost:8000/requests/${requestId}/add_article/${articleId}`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return await res.json();
+export const addArticleToRequest = async (requestId: number, articleId: number) => {
+  const response = await apiClient.post(`/requests/${requestId}/add_article/${articleId}`);
+  return response.data;
 };
 
-export const removeArticleFromRequest = async (token: string, requestId: number, articleId: number) => {
-  const res = await fetch(`http://localhost:8000/requests/${requestId}/remove_article/${articleId}`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return await res.json();
+export const removeArticleFromRequest = async (requestId: number, articleId: number) => {
+  const response = await apiClient.post(`/requests/${requestId}/remove_article/${articleId}`);
+  return response.data;
 };
 
-export const getArticlesByRequest = async (token: string, requestId: number) => {
-  const res = await fetch(`http://localhost:8000/requests/${requestId}/articles`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return await res.json();
+export const getArticlesByRequest = async (requestId: number) => {
+  const response = await apiClient.get(`/requests/${requestId}/articles`);
+  return response.data;
 };
 
-export const deleteRequest = async (token: string, requestId: number) => {
-  const res = await fetch(`http://localhost:8000/requests/${requestId}`, {
-    method: "DELETE",
-    headers: { Authorization: `Bearer ${token}` },
+export const deleteRequest = async (requestId: number) => {
+  const response = await apiClient.delete(`/requests/${requestId}`);
+  return response.data;
+};
+
+// --- Bot Management API ---
+export const getUserBots = async () => {
+  const response = await apiClient.get("/user_bots/");
+  return response.data;
+};
+
+export const assignBotToUser = async (userData: {
+  user_id: number;
+  bot_id: string;
+  bot_name: string;
+  bot_description: string;
+  bot_avatar: string;
+  bot_color: string;
+}) => {
+  const response = await apiClient.post("/admin/assign_bot/", userData);
+  return response.data;
+};
+
+export const removeBotFromUser = async (userId: number, botId: string) => {
+  const response = await apiClient.delete(`/admin/remove_bot/${userId}/${botId}`);
+  return response.data;
+};
+
+export const getUsersWithBots = async () => {
+  const response = await apiClient.get("/admin/users_with_bots/");
+  return response.data;
+};
+
+// --- User Management API ---
+export const createUser = async (userData: {
+  username: string;
+  email: string;
+  role: string;
+  department: string;
+  position: string;
+  phone: string;
+  company: string;
+}) => {
+  const response = await apiClient.post("/api/users/", userData);
+  return response.data;
+};
+
+export const changePassword = async (currentPassword: string, newPassword: string) => {
+  const response = await apiClient.post("/change_password/", {
+    current_password: currentPassword,
+    new_password: newPassword
   });
-  return await res.json();
+  return response.data;
 }; 

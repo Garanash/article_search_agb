@@ -21,7 +21,7 @@ const sidebarStyles = {
     width: "280px",
     minWidth: "250px",
     maxWidth: "350px",
-    marginRight: "16px",
+    marginLeft: "16px",
     display: "flex",
     flexDirection: "column" as const,
     height: "100%",
@@ -96,31 +96,30 @@ const RequestSidebar: React.FC<RequestSidebarProps> = ({ activeRequestId, onSele
   const [articleCounts, setArticleCounts] = useState<{ [id: number]: number }>({});
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const fetchRequests = async () => {
-    if (!token) return;
+  const loadRequests = async () => {
     setLoading(true);
     try {
-      const data = await getRequests(token);
+      const data = await getRequests();
       setRequests(Array.isArray(data) ? data : []);
-    } catch {
-      message.error("Ошибка загрузки запросов");
+    } catch (error) {
+      console.error("Error loading requests:", error);
+      message.error("Ошибка при загрузке запросов");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchRequests();
+    loadRequests();
     // eslint-disable-next-line
   }, [token]);
 
   useEffect(() => {
     const fetchCounts = async () => {
-      if (!token || !requests.length) return;
       const counts: { [id: number]: number } = {};
       await Promise.all(requests.map(async (req) => {
         try {
-          const arts = await getArticlesByRequest(token, req.id);
+          const arts = await getArticlesByRequest(req.id);
           counts[req.id] = Array.isArray(arts) ? arts.length : 0;
         } catch {
           counts[req.id] = 0;
@@ -137,7 +136,7 @@ const RequestSidebar: React.FC<RequestSidebarProps> = ({ activeRequestId, onSele
     setPreviewRequest(req);
     setPreviewVisible(true);
     try {
-      const arts = await getArticlesByRequest(token, req.id);
+      const arts = await getArticlesByRequest(req.id);
       setPreviewArticles(Array.isArray(arts) ? arts : []);
     } catch {
       setPreviewArticles([]);
@@ -149,7 +148,7 @@ const RequestSidebar: React.FC<RequestSidebarProps> = ({ activeRequestId, onSele
   const handleCreate = async () => {
     if (!token || !newNumber) return;
     try {
-      const req = await createRequest(token, newNumber);
+      const req = await createRequest(newNumber);
       setRequests(prev => [...prev, req]);
       setNewNumber("");
       message.success("Запрос создан");
@@ -165,7 +164,7 @@ const RequestSidebar: React.FC<RequestSidebarProps> = ({ activeRequestId, onSele
   const handleDelete = async (id: number) => {
     if (!token) return;
     try {
-      await deleteRequest(token, id);
+      await deleteRequest(id);
       setRequests(prev => prev.filter(req => req.id !== id));
       if (activeRequestId === id) onSelect(null);
     } catch {

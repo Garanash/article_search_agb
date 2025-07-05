@@ -3,7 +3,7 @@ import { login } from "../api/api";
 import { useAuth } from "../context/AuthContext";
 import { Form, Input, Button, Card, Typography, message } from "antd";
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 // Адаптивные стили для формы входа
 const loginStyles = {
@@ -34,7 +34,7 @@ const loginStyles = {
 };
 
 const LoginForm: React.FC = () => {
-  const { setToken } = useAuth();
+  const { setToken, setForcePasswordChange } = useAuth();
   const [loading, setLoading] = useState(false);
 
   const onFinish = async (values: { username: string; password: string }) => {
@@ -42,6 +42,13 @@ const LoginForm: React.FC = () => {
     try {
       const data = await login(values.username, values.password);
       setToken(data.access_token);
+      
+      // Если требуется смена пароля, устанавливаем флаг
+      if (data.force_password_change) {
+        setForcePasswordChange(true);
+        message.info('Требуется смена пароля при первом входе');
+      }
+      
       message.success("Успешный вход!");
     } catch {
       message.error("Неверный логин или пароль");
@@ -53,7 +60,12 @@ const LoginForm: React.FC = () => {
   return (
     <div style={loginStyles.container}>
       <Card style={loginStyles.card} className="login-form-card">
-        <Title level={3} style={loginStyles.title} className="login-form-title">Вход в систему</Title>
+        <Title level={3} style={loginStyles.title} className="login-form-title">
+          Вход в систему
+        </Title>
+        <div style={{ textAlign: "center", marginBottom: "24px" }}>
+          <Text type="secondary">ООО "Алмазгеобур"</Text>
+        </div>
         <Form 
           layout="vertical" 
           onFinish={onFinish}
@@ -85,6 +97,11 @@ const LoginForm: React.FC = () => {
             </Button>
           </Form.Item>
         </Form>
+        <div style={{ textAlign: "center", marginTop: "16px" }}>
+          <Text type="secondary" style={{ fontSize: "12px" }}>
+            Для входа используйте данные, предоставленные администратором
+          </Text>
+        </div>
       </Card>
     </div>
   );

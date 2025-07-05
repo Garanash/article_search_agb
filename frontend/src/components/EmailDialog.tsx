@@ -48,7 +48,7 @@ const EmailDialog: React.FC<{ supplier: any; onClose: () => void }> = ({ supplie
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (token) getEmailTemplates(token).then(setTemplates);
+    if (token) getEmailTemplates().then(setTemplates);
   }, [token]);
 
   const handleSend = async () => {
@@ -56,7 +56,6 @@ const EmailDialog: React.FC<{ supplier: any; onClose: () => void }> = ({ supplie
       setLoading(true);
       try {
         await sendEmail(
-          token,
           sender,
           password,
           supplier.email,

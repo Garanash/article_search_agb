@@ -59,7 +59,7 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
     // Удаляем дубликаты из базы
     if (duplicatesToDelete.length > 0 && token) {
       await Promise.all(
-        duplicatesToDelete.map(supplier => supplier.id && deleteSupplier(token, supplier.id))
+        duplicatesToDelete.map(supplier => supplier.id && deleteSupplier(supplier.id))
       );
       setSuppliers(prev => ({ ...prev, [articleId]: uniqueSuppliers }));
       list = uniqueSuppliers;
@@ -70,7 +70,7 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
         const isValid = res.valid && res.valid.includes(supplier.website);
         if (!isValid && token && supplier.id) {
           // Удаляем из БД и из suppliers
-          await deleteSupplier(token, supplier.id);
+          await deleteSupplier(supplier.id);
           setSuppliers(prev => {
             const arr = Array.isArray(prev[articleId]) ? [...prev[articleId]] : [];
             return { ...prev, [articleId]: arr.filter(s => s.id !== supplier.id) };
@@ -92,13 +92,13 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
       const email = supplier.email || "";
       const valid = typeof email === 'string' && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email);
       if (token && supplier.id) {
-        await updateSupplierEmailValidated(token, supplier.id, valid);
+        await updateSupplierEmailValidated(supplier.id, valid);
       }
     });
     await Promise.all(patchPromises);
     // После обновления — получить актуальных поставщиков
     if (token) {
-      const found = await getSuppliers(token, currentArticleId);
+      const found = await getSuppliers(currentArticleId);
       setSuppliers(prev => ({ ...prev, [currentArticleId]: found }));
     }
   };
@@ -141,7 +141,7 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
   // Получить инвойсы при монтировании
   useEffect(() => {
     if (token) {
-      getRequests(token)
+      getRequests()
         .then(data => setRequests(Array.isArray(data) ? data : []))
         .catch(e => message.error(e.message || 'Ошибка получения инвойсов. Проверьте соединение с сервером.'));
     }
@@ -168,7 +168,7 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
   useEffect(() => {
     if (token) {
       setLoading(true);
-      getArticles(token)
+      getArticles()
         .then(async data => {
           if (Array.isArray(data)) {
             // Фильтрация по инвойсу, если задан
@@ -184,7 +184,7 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
             await Promise.all(
               filtered.map(async (article: any) => {
                 try {
-                  let found = await getSuppliers(token, article.id);
+                  let found = await getSuppliers(article.id);
                   allSuppliers[article.id] = found;
                 } catch {
                   allSuppliers[article.id] = [];
@@ -203,9 +203,9 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
   const handleAdd = async () => {
     if (token && newCode) {
       try {
-        await addArticle(token, newCode);
+        await addArticle(newCode);
         // После добавления — всегда обновлять список с сервера (чтобы подтянуть существующий артикул)
-        const newArticles = await getArticles(token);
+        const newArticles = await getArticles();
         setArticles(Array.isArray(newArticles) ? newArticles.filter((a: any) => !a.request_id) : []);
         setNewCode("");
         message.success("Артикул добавлен");
@@ -223,8 +223,8 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
     }
     setSupLoading((prev) => ({ ...prev, [articleId]: true }));
     try {
-      await searchSuppliers(token, articleId);
-      let found = await getSuppliers(token, articleId);
+      await searchSuppliers(articleId);
+      let found = await getSuppliers(articleId);
       
       // Проверяем только если ещё не было
       if (!checkedArticles[articleId]) {
@@ -265,7 +265,7 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
     }
     if (duplicatesToDelete.length > 0) {
       await Promise.all(
-        duplicatesToDelete.map(supplier => supplier.id && deleteSupplier(token, supplier.id))
+        duplicatesToDelete.map(supplier => supplier.id && deleteSupplier(supplier.id))
       );
     }
     return uniqueSuppliers;
@@ -279,7 +279,7 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
         const isValid = res.valid && res.valid.includes(supplier.website);
         if (!isValid && token && supplier.id && articleId) {
           // Удаляем из БД и из suppliers
-          await deleteSupplier(token, supplier.id);
+          await deleteSupplier(supplier.id);
           setSuppliers(prev => {
             const arr = Array.isArray(prev[articleId]) ? [...prev[articleId]] : [];
             return { ...prev, [articleId]: arr.filter(s => s.id !== supplier.id) };
@@ -297,7 +297,7 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
     if (token) {
       setSupLoading((prev) => ({ ...prev, [articleId]: true }));
       try {
-        let found = await getSuppliers(token, articleId);
+        let found = await getSuppliers(articleId);
         setSuppliers(prev => ({ ...prev, [articleId]: found }));
       } catch {
         message.error("Ошибка загрузки поставщиков");
@@ -311,12 +311,12 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
     if (!token) return;
     if (activeRequestId) {
       // Если выбран инвойс — просто убрать артикул из инвойса
-      await removeArticleFromRequest(token, activeRequestId, articleId);
+      await removeArticleFromRequest(activeRequestId, articleId);
       setArticles(articles.filter((a) => a.id !== articleId));
       message.success("Артикул убран из инвойса");
     } else {
       // Если "Все артикулы" — полностью удалить артикул из базы (НЕ трогать request_id у других артикулов)
-      await deleteArticle(token, articleId);
+      await deleteArticle(articleId);
       setArticles(articles.filter((a) => a.id !== articleId));
       message.success("Артикул удалён");
     }
@@ -340,7 +340,7 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
           setEditingEmail((prev) => ({ ...prev, [supplier.id]: false }));
 
           // Сохраняем в базу данных
-          await updateSupplierEmail(token, supplier.id, email);
+          await updateSupplierEmail(supplier.id, email);
 
           message.success(`Email найден: ${email}`);
         } else {
@@ -372,14 +372,12 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
         setManualEmails((prev) => ({ ...prev, [supplier.id]: "" }));
 
         // Сохраняем в базу данных
-        await updateSupplierEmail(token, supplier.id, email);
+        await updateSupplierEmail(supplier.id, email);
 
-        message.success("Email сохранён");
+        message.success(`Email сохранен: ${email}`);
       } catch {
         message.error("Ошибка сохранения email");
       }
-    } else {
-      message.error("Ошибка: некорректные данные для сохранения email");
     }
   };
 
@@ -409,7 +407,7 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
       return newSuppliers;
     });
     try {
-      await deleteSupplier(token, supplierId);
+      await deleteSupplier(supplierId);
       message.success("Поставщик удалён");
     } catch {
       // Откатить, если ошибка
@@ -615,10 +613,10 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
     setCreatingRequest(true);
     try {
       // 1. Создать запрос
-      const request = await createRequest(token, requestNumber);
+      const request = await createRequest(requestNumber);
       // 2. Привязать выбранные артикулы
       await Promise.all(
-        articlesToAdd.map((a: any) => addArticleToRequest(token, request.id, a.id))
+        articlesToAdd.map((a: any) => addArticleToRequest(request.id, a.id))
       );
       message.success("Запрос создан и артикулы добавлены!");
       setShowRequestModal(false);
@@ -626,8 +624,8 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
       setSelectedRowKeys([]);
       setArticles([]);
       const [newArticles, newRequests] = await Promise.all([
-        getArticles(token),
-        getRequests(token)
+        getArticles(),
+        getRequests()
       ]);
       setRequests(Array.isArray(newRequests) ? newRequests : []);
     } catch (e: any) {
@@ -645,7 +643,7 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
   const handleRemoveFromRequest = async (articleId: number) => {
     if (!token || !activeRequestId) return;
     try {
-      await removeArticleFromRequest(token, activeRequestId, articleId);
+      await removeArticleFromRequest(activeRequestId, articleId);
       message.success("Артикул убран из инвойса");
       // Обновить список артикулов (убрать из текущего инвойса)
       setArticles(prev => prev.filter(a => a.id !== articleId));
@@ -683,10 +681,10 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId }) => {
           return;
         }
         try {
-          const addResults = await Promise.allSettled(filtered.map((code: string) => addArticle(token, code.trim())));
+          const addResults = await Promise.allSettled(filtered.map((code: string) => addArticle(code.trim())));
           console.log('handleImport: результаты добавления', addResults);
           // После импорта — обновить список артикулов
-          const updatedArticles = await getArticles(token);
+          const updatedArticles = await getArticles();
           setArticles(Array.isArray(updatedArticles) ? updatedArticles.filter((a: any) => !a.request_id) : []);
           message.success({ content: `Артикулы импортированы: ${filtered.length}`, key: 'import' });
         } catch (err) {

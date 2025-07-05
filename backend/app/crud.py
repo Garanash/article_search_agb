@@ -42,6 +42,57 @@ def add_analytics(db: Session, user_id: int, action: str, details: str):
 def get_analytics(db: Session, user_id: int):
     return db.query(models.Analytics).filter(models.Analytics.user_id == user_id).all()
 
+def get_user_bots(db: Session, user_id: int):
+    """Получить всех ботов, назначенных пользователю"""
+    return db.query(models.UserBot).filter(models.UserBot.user_id == user_id, models.UserBot.is_active == True).all()
+
+def assign_bot_to_user(db: Session, user_id: int, bot_id: str, bot_name: str, bot_description: str, bot_avatar: str, bot_color: str):
+    """Назначить бота пользователю"""
+    # Проверяем, не назначен ли уже этот бот пользователю
+    existing = db.query(models.UserBot).filter(
+        models.UserBot.user_id == user_id, 
+        models.UserBot.bot_id == bot_id
+    ).first()
+    
+    if existing:
+        # Если бот уже назначен, просто активируем его
+        existing.is_active = True
+        db.commit()
+        db.refresh(existing)
+        return existing
+    
+    # Создаем новое назначение
+    user_bot = models.UserBot(
+        user_id=user_id,
+        bot_id=bot_id,
+        bot_name=bot_name,
+        bot_description=bot_description,
+        bot_avatar=bot_avatar,
+        bot_color=bot_color
+    )
+    db.add(user_bot)
+    db.commit()
+    db.refresh(user_bot)
+    return user_bot
+
+def remove_bot_from_user(db: Session, user_id: int, bot_id: str):
+    """Удалить бота у пользователя (деактивировать)"""
+    user_bot = db.query(models.UserBot).filter(
+        models.UserBot.user_id == user_id,
+        models.UserBot.bot_id == bot_id
+    ).first()
+    
+    if user_bot:
+        user_bot.is_active = False
+        db.commit()
+        db.refresh(user_bot)
+        return user_bot
+    return None
+
+def get_all_users_with_bots(db: Session):
+    """Получить всех пользователей с их назначенными ботами"""
+    return db.query(models.User).all()
+
 def delete_supplier(db: Session, supplier_id: int):
     supplier = db.query(models.Supplier).filter(models.Supplier.id == supplier_id).first()
     if supplier:
