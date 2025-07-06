@@ -13,6 +13,10 @@ export interface User {
   force_password_change?: boolean;
   created_at?: string;
   updated_at?: string;
+  first_name?: string;
+  last_name?: string;
+  patronymic?: string;
+  avatar_url?: string;
 }
 
 type AuthContextType = {

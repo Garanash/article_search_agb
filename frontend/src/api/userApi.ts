@@ -46,4 +46,24 @@ export const getUserProfile = async (): Promise<User> => {
   }
 
   return response.json();
+};
+
+// Загрузка аватара пользователя (заглушка, если нет backend endpoint)
+export const uploadUserAvatar = async (file: File): Promise<string> => {
+  const token = getToken();
+  if (!token) throw new Error('No authentication token');
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await fetch(`${API_BASE_URL}/api/users/avatar`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    },
+    body: formData
+  });
+  if (!response.ok) {
+    throw new Error('Ошибка загрузки аватара');
+  }
+  const data = await response.json();
+  return data.avatar_url;
 }; 

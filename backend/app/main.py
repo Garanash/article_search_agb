@@ -16,11 +16,26 @@ import sys
 sys.path.append('..')
 from api import documents_api, users_api, support_api, auth_api, suppliers_api, requests_api, analytics_api
 import csv
-from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.responses import StreamingResponse, JSONResponse, Response
 from io import StringIO
 from fastapi import UploadFile, File
+import io
+import json
+import pandas as pd
+from fastapi.staticfiles import StaticFiles
+from app.models import User, PhoneBook
 
 app = FastAPI()
+
+# Раздача аватарок пользователей
+AVATAR_DIR = os.path.join(os.path.dirname(__file__), '..', 'uploads', 'avatars')
+os.makedirs(AVATAR_DIR, exist_ok=True)
+app.mount("/static/avatars", StaticFiles(directory=AVATAR_DIR), name="avatars")
+
+# Раздача изображений новостей
+NEWS_DIR = os.path.join(os.path.dirname(__file__), '..', 'uploads', 'news')
+os.makedirs(NEWS_DIR, exist_ok=True)
+app.mount("/static/news", StaticFiles(directory=NEWS_DIR), name="news")
 
 # Настройка CORS
 app.add_middleware(
@@ -388,6 +403,210 @@ async def import_table_csv(table_name: str, current_user: models.User = Depends(
         count += 1
     db.commit()
     return JSONResponse({"imported": count})
+
+@app.get("/api/admin/table/{table_name}")
+def get_table_data(table_name: str, current_user: models.User = Depends(auth.get_current_user), db: Session = Depends(get_db)):
+    allowed_roles = ["admin", "директор", "ceo", "CEO"]
+    if current_user.role not in allowed_roles:
+        raise HTTPException(status_code=403, detail="Нет доступа")
+    model_map = {
+        "users": models.User,
+        "articles": models.Article,
+        "suppliers": models.Supplier,
+        "requests": models.Request,
+        "analytics": models.Analytics,
+        "bots": models.UserBot,
+        "support_messages": models.SupportMessage,
+        "tickets": models.SupportTicket,
+        "events": models.SupportEvent,
+        "documents": models.Document,
+        "email_templates": models.EmailTemplate,
+    }
+    if table_name not in model_map:
+        raise HTTPException(status_code=400, detail="Неизвестная таблица")
+    model = model_map[table_name]
+    rows = db.query(model).limit(1000).all()
+    result = []
+    for row in rows:
+        result.append({c.name: getattr(row, c.name) for c in model.__table__.columns})
+    return result
+
+@app.post("/api/admin/table/{table_name}")
+def add_table_row(table_name: str, row: dict, current_user: models.User = Depends(auth.get_current_user), db: Session = Depends(get_db)):
+    allowed_roles = ["admin", "директор", "ceo", "CEO"]
+    if current_user.role not in allowed_roles:
+        raise HTTPException(status_code=403, detail="Нет доступа")
+    model_map = {
+        "users": models.User,
+        "articles": models.Article,
+        "suppliers": models.Supplier,
+        "requests": models.Request,
+        "analytics": models.Analytics,
+        "bots": models.UserBot,
+        "support_messages": models.SupportMessage,
+        "tickets": models.SupportTicket,
+        "events": models.SupportEvent,
+        "documents": models.Document,
+        "email_templates": models.EmailTemplate,
+    }
+    if table_name not in model_map:
+        raise HTTPException(status_code=400, detail="Неизвестная таблица")
+    model = model_map[table_name]
+    obj = model(**row)
+    db.add(obj)
+    db.commit()
+    db.refresh(obj)
+    return { "id": getattr(obj, "id", None) }
+
+@app.delete("/api/admin/table/{table_name}/{row_id}")
+def delete_table_row(table_name: str, row_id: int, current_user: models.User = Depends(auth.get_current_user), db: Session = Depends(get_db)):
+    allowed_roles = ["admin", "директор", "ceo", "CEO"]
+    if current_user.role not in allowed_roles:
+        raise HTTPException(status_code=403, detail="Нет доступа")
+    model_map = {
+        "users": models.User,
+        "articles": models.Article,
+        "suppliers": models.Supplier,
+        "requests": models.Request,
+        "analytics": models.Analytics,
+        "bots": models.UserBot,
+        "support_messages": models.SupportMessage,
+        "tickets": models.SupportTicket,
+        "events": models.SupportEvent,
+        "documents": models.Document,
+        "email_templates": models.EmailTemplate,
+    }
+    if table_name not in model_map:
+        raise HTTPException(status_code=400, detail="Неизвестная таблица")
+    model = model_map[table_name]
+    obj = db.query(model).get(row_id)
+    if not obj:
+        raise HTTPException(status_code=404, detail="Строка не найдена")
+    db.delete(obj)
+    db.commit()
+    return {"deleted": True}
+
+@app.get("/api/admin/export_xlsx/{table_name}")
+def export_table_xlsx(table_name: str, current_user: models.User = Depends(auth.get_current_user), db: Session = Depends(get_db)):
+    allowed_roles = ["admin", "директор", "ceo", "CEO"]
+    if current_user.role not in allowed_roles:
+        raise HTTPException(status_code=403, detail="Нет доступа")
+    model_map = {
+        "users": models.User,
+        "articles": models.Article,
+        "suppliers": models.Supplier,
+        "requests": models.Request,
+        "analytics": models.Analytics,
+        "bots": models.UserBot,
+        "support_messages": models.SupportMessage,
+        "tickets": models.SupportTicket,
+        "events": models.SupportEvent,
+        "documents": models.Document,
+        "email_templates": models.EmailTemplate,
+    }
+    if table_name not in model_map:
+        raise HTTPException(status_code=400, detail="Неизвестная таблица")
+    model = model_map[table_name]
+    rows = db.query(model).all()
+    data = [{c.name: getattr(row, c.name) for c in model.__table__.columns} for row in rows]
+    df = pd.DataFrame(data)
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False)
+    output.seek(0)
+    return StreamingResponse(output, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": f"attachment; filename={table_name}.xlsx"})
+
+@app.get("/api/admin/export_json/{table_name}")
+def export_table_json(table_name: str, current_user: models.User = Depends(auth.get_current_user), db: Session = Depends(get_db)):
+    allowed_roles = ["admin", "директор", "ceo", "CEO"]
+    if current_user.role not in allowed_roles:
+        raise HTTPException(status_code=403, detail="Нет доступа")
+    model_map = {
+        "users": models.User,
+        "articles": models.Article,
+        "suppliers": models.Supplier,
+        "requests": models.Request,
+        "analytics": models.Analytics,
+        "bots": models.UserBot,
+        "support_messages": models.SupportMessage,
+        "tickets": models.SupportTicket,
+        "events": models.SupportEvent,
+        "documents": models.Document,
+        "email_templates": models.EmailTemplate,
+    }
+    if table_name not in model_map:
+        raise HTTPException(status_code=400, detail="Неизвестная таблица")
+    model = model_map[table_name]
+    rows = db.query(model).all()
+    data = [{c.name: getattr(row, c.name) for c in model.__table__.columns} for row in rows]
+    json_str = json.dumps(data, ensure_ascii=False, indent=2)
+    return Response(
+        content=json_str,
+        media_type="application/json",
+        headers={"Content-Disposition": f"attachment; filename={table_name}.json"}
+    )
+
+@app.post("/api/admin/import_xlsx/{table_name}")
+async def import_table_xlsx(table_name: str, current_user: models.User = Depends(auth.get_current_user), db: Session = Depends(get_db), file: UploadFile = File(...)):
+    allowed_roles = ["admin", "директор", "ceo", "CEO"]
+    if current_user.role not in allowed_roles:
+        raise HTTPException(status_code=403, detail="Нет доступа")
+    model_map = {
+        "users": models.User,
+        "articles": models.Article,
+        "suppliers": models.Supplier,
+        "requests": models.Request,
+        "analytics": models.Analytics,
+        "bots": models.UserBot,
+        "support_messages": models.SupportMessage,
+        "tickets": models.SupportTicket,
+        "events": models.SupportEvent,
+        "documents": models.Document,
+        "email_templates": models.EmailTemplate,
+    }
+    if table_name not in model_map:
+        raise HTTPException(status_code=400, detail="Неизвестная таблица")
+    model = model_map[table_name]
+    content = await file.read()
+    df = pd.read_excel(io.BytesIO(content))
+    count = 0
+    for _, row in df.iterrows():
+        obj = model(**row.to_dict())
+        db.add(obj)
+        count += 1
+    db.commit()
+    return {"imported": count}
+
+@app.post("/api/admin/import_json/{table_name}")
+async def import_table_json(table_name: str, current_user: models.User = Depends(auth.get_current_user), db: Session = Depends(get_db), file: UploadFile = File(...)):
+    allowed_roles = ["admin", "директор", "ceo", "CEO"]
+    if current_user.role not in allowed_roles:
+        raise HTTPException(status_code=403, detail="Нет доступа")
+    model_map = {
+        "users": models.User,
+        "articles": models.Article,
+        "suppliers": models.Supplier,
+        "requests": models.Request,
+        "analytics": models.Analytics,
+        "bots": models.UserBot,
+        "support_messages": models.SupportMessage,
+        "tickets": models.SupportTicket,
+        "events": models.SupportEvent,
+        "documents": models.Document,
+        "email_templates": models.EmailTemplate,
+    }
+    if table_name not in model_map:
+        raise HTTPException(status_code=400, detail="Неизвестная таблица")
+    model = model_map[table_name]
+    content = await file.read()
+    data = json.loads(content)
+    count = 0
+    for row in data:
+        obj = model(**row)
+        db.add(obj)
+        count += 1
+    db.commit()
+    return {"imported": count}
 
 # Подключение роутеров
 app.include_router(chat_api.router)

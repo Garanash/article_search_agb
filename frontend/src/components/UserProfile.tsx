@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Descriptions, Button, Avatar, Typography, Space, Divider, Tag, Row, Col } from 'antd';
-import { UserOutlined, MailOutlined, PhoneOutlined, TeamOutlined, CalendarOutlined, EditOutlined } from '@ant-design/icons';
+import { Card, Descriptions, Button, Avatar, Typography, Space, Divider, Tag, Row, Col, Upload, Modal, message } from 'antd';
+import { UserOutlined, MailOutlined, PhoneOutlined, TeamOutlined, CalendarOutlined, EditOutlined, UploadOutlined } from '@ant-design/icons';
 import { useAuth, User } from '../context/AuthContext';
 import EditProfile from './EditProfile';
+import { uploadUserAvatar, updateUserProfile } from '../api/userApi';
 
 const { Title, Text } = Typography;
 
@@ -11,7 +12,7 @@ interface UserProfileProps {
 }
 
 const UserProfile: React.FC<UserProfileProps> = ({ onEditProfile }) => {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [userStats, setUserStats] = useState({
     totalArticles: 0,
@@ -19,6 +20,8 @@ const UserProfile: React.FC<UserProfileProps> = ({ onEditProfile }) => {
     totalRequests: 0,
     lastActivity: new Date().toLocaleDateString('ru-RU')
   });
+  const [isAvatarModalVisible, setIsAvatarModalVisible] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | undefined>(user?.avatar_url);
 
   useEffect(() => {
     // Здесь можно загрузить статистику пользователя
@@ -29,7 +32,8 @@ const UserProfile: React.FC<UserProfileProps> = ({ onEditProfile }) => {
       totalRequests: 23,
       lastActivity: new Date().toLocaleDateString('ru-RU')
     });
-  }, []);
+    setAvatarUrl(user?.avatar_url);
+  }, [user]);
 
   const getRoleColor = (role: string | undefined) => {
     switch (role?.toLowerCase()) {
@@ -64,6 +68,22 @@ const UserProfile: React.FC<UserProfileProps> = ({ onEditProfile }) => {
     setIsEditing(false);
   };
 
+  const handleAvatarChange = async (info: any) => {
+    const file = info.file.originFileObj || info.file;
+    try {
+      const url = await uploadUserAvatar(file);
+      setAvatarUrl(url);
+      if (user) {
+        await updateUserProfile({ avatar_url: url });
+        updateUser({ ...user, avatar_url: url });
+      }
+      setIsAvatarModalVisible(false);
+      message.success('Аватар успешно обновлён!');
+    } catch (e) {
+      message.error('Ошибка загрузки аватара');
+    }
+  };
+
   // Если режим редактирования, показываем форму редактирования
   if (isEditing) {
     return (
@@ -74,17 +94,53 @@ const UserProfile: React.FC<UserProfileProps> = ({ onEditProfile }) => {
     );
   }
 
+  // Функция для вычисления разницы между датами в годах, месяцах и днях
+  function getTimeInSystem(createdAt?: string | Date): string {
+    if (!createdAt) return 'Неизвестно';
+    const start = new Date(createdAt);
+    const now = new Date();
+    let years = now.getFullYear() - start.getFullYear();
+    let months = now.getMonth() - start.getMonth();
+    let days = now.getDate() - start.getDate();
+
+    if (days < 0) {
+      months -= 1;
+      // Получаем количество дней в предыдущем месяце
+      const prevMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+      days += prevMonth.getDate();
+    }
+    if (months < 0) {
+      years -= 1;
+      months += 12;
+    }
+    let result = [];
+    if (years > 0) result.push(`${years} ${years === 1 ? 'год' : (years < 5 ? 'года' : 'лет')}`);
+    if (months > 0) result.push(`${months} ${months === 1 ? 'месяц' : (months < 5 ? 'месяца' : 'месяцев')}`);
+    if (days > 0) result.push(`${days} ${days === 1 ? 'день' : (days < 5 ? 'дня' : 'дней')}`);
+    if (result.length === 0) return 'меньше дня';
+    return result.join(' ');
+  }
+
   return (
-    <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
-      <Title level={2}>Личный кабинет</Title>
-      
+    <>
       <Row gutter={[24, 24]}>
         {/* Основная информация о пользователе */}
         <Col xs={24} lg={16}>
           <Card>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '24px' }}>
-              <Avatar size={80} icon={<UserOutlined />} style={{ marginRight: '16px' }} />
+              <Avatar
+                size={80}
+                icon={<UserOutlined />}
+                src={avatarUrl}
+                style={{ marginRight: '16px', cursor: 'pointer' }}
+                onClick={() => setIsAvatarModalVisible(true)}
+              />
               <div>
+                <Title level={4} style={{ margin: 0 }}>
+                  {user?.last_name || user?.first_name || user?.patronymic
+                    ? [user?.last_name, user?.first_name, user?.patronymic].filter(Boolean).join(' ')
+                    : 'ФИО не указано'}
+                </Title>
                 <Title level={3} style={{ margin: 0 }}>{user?.username || 'Пользователь'}</Title>
                 <Tag color={getRoleColor(user?.role)} style={{ marginTop: '8px' }}>
                   {getRoleLabel(user?.role)}
@@ -185,7 +241,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ onEditProfile }) => {
                 <Tag color="green">Активен</Tag>
               </Descriptions.Item>
               <Descriptions.Item label="Время в системе">
-                <Text>2 месяца 15 дней</Text>
+                <Text>{getTimeInSystem(user?.created_at)}</Text>
               </Descriptions.Item>
               <Descriptions.Item label="Последний вход">
                 <Text>{new Date().toLocaleString('ru-RU')}</Text>
@@ -194,7 +250,29 @@ const UserProfile: React.FC<UserProfileProps> = ({ onEditProfile }) => {
           </Card>
         </Col>
       </Row>
-    </div>
+
+      {/* Модальное окно для смены аватара */}
+      <Modal
+        title="Изменить аватар"
+        open={isAvatarModalVisible}
+        onCancel={() => setIsAvatarModalVisible(false)}
+        footer={null}
+      >
+        <Upload
+          showUploadList={false}
+          beforeUpload={() => false}
+          onChange={handleAvatarChange}
+          accept="image/*"
+        >
+          <Button icon={<UploadOutlined />}>Выбрать файл</Button>
+        </Upload>
+        {avatarUrl && (
+          <div style={{ marginTop: 16, textAlign: 'center' }}>
+            <Avatar size={80} src={avatarUrl} />
+          </div>
+        )}
+      </Modal>
+    </>
   );
 };
 

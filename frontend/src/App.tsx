@@ -3,15 +3,19 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import LoginForm from "./components/LoginForm";
 import ArticleTable from "./components/ArticleTable";
 import RequestSidebar from "./components/RequestSidebar";
-import ProfileManager from "./components/ProfileManager";
 import SupportChat from "./components/SupportChat";
 import AdminDashboard from "./components/AdminDashboard";
 import ChangePasswordModal from "./components/ChangePasswordModal";
-import { Layout, Menu, Button, Tabs, Dropdown, Space } from "antd";
-import { LogoutOutlined, UserOutlined, SettingOutlined, RobotOutlined, CustomerServiceOutlined, DashboardOutlined } from "@ant-design/icons";
+import ProfileManager from './components/ProfileManager';
+import { Layout, Menu, Button, Tabs, Dropdown, Space, Card, Form, Input, Select, Typography, message } from "antd";
+import { LogoutOutlined, UserOutlined, SettingOutlined, RobotOutlined, CustomerServiceOutlined, DashboardOutlined, SaveOutlined, FileTextOutlined } from "@ant-design/icons";
 import "antd/dist/reset.css";
+import ru_RU from 'antd/lib/locale/ru_RU';
+import { ConfigProvider } from 'antd';
 
 const { Header, Content, Footer } = Layout;
+const { Title, Text } = Typography;
+const { Option } = Select;
 
 // CSS стили для корпоративного дизайна
 const tabStyles = `
@@ -563,8 +567,9 @@ const Main: React.FC = () => {
       {
         key: 'profile',
         label: 'Профиль',
-        children: <ProfileManager onBack={() => setTab(isAdmin ? 'dashboard' : 'articles')} />
+        children: <ProfileManager onBack={undefined} />
       }
+      // Вкладка 'Настройки' удалена
     ];
     
     return baseTabs;
@@ -625,9 +630,11 @@ const Main: React.FC = () => {
 };
 
 const App: React.FC = () => (
-  <AuthProvider>
-    <Main />
-  </AuthProvider>
+  <ConfigProvider locale={ru_RU}>
+    <AuthProvider>
+      <Main />
+    </AuthProvider>
+  </ConfigProvider>
 );
 
 export default App; 

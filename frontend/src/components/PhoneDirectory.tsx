@@ -26,7 +26,8 @@ import {
   EnvironmentOutlined,
   ClockCircleOutlined,
   StarOutlined,
-  StarFilled
+  StarFilled,
+  PlusOutlined
 } from '@ant-design/icons';
 
 const { Search } = Input;
@@ -198,6 +199,22 @@ const PhoneDirectory: React.FC = () => {
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [employees, setEmployees] = useState(mockEmployees);
+  const [isAddModalVisible, setIsAddModalVisible] = useState(false);
+  const [addForm, setAddForm] = useState({
+    name: '',
+    position: '',
+    department: '',
+    phone: '',
+    mobile: '',
+    email: '',
+    office: '',
+    floor: '',
+    room: '',
+    extension: '',
+    avatar: '',
+    status: 'online',
+    isFavorite: false
+  });
 
   // Фильтрация сотрудников
   const filteredEmployees = employees.filter(employee => {
@@ -230,7 +247,27 @@ const PhoneDirectory: React.FC = () => {
     setIsModalVisible(true);
   };
 
-  // Колонки таблицы
+  const handleAddContact = () => {
+    if (!addForm.name || !addForm.phone) {
+      message.error('Пожалуйста, заполните хотя бы имя и рабочий телефон');
+      return;
+    }
+    setEmployees(prev => [
+      {
+        ...addForm,
+        id: Date.now(),
+        avatar: addForm.avatar || (addForm.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2)),
+      },
+      ...prev
+    ]);
+    setIsAddModalVisible(false);
+    setAddForm({
+      name: '', position: '', department: '', phone: '', mobile: '', email: '', office: '', floor: '', room: '', extension: '', avatar: '', status: 'online', isFavorite: false
+    });
+    message.success('Контакт добавлен!');
+  };
+
+  // Клонки таблицы
   const columns = [
     {
       title: 'Сотрудник',
@@ -327,73 +364,79 @@ const PhoneDirectory: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: '24px' }}>
-      <Card>
-        <div style={{ marginBottom: '24px' }}>
-          <Title level={3}>
-            <TeamOutlined style={{ marginRight: '8px' }} />
-            Телефонный справочник
-          </Title>
+    <>
+      <div style={{ marginBottom: '24px' }}>
+        <Title level={3}>
+          <TeamOutlined style={{ marginRight: '8px' }} />
+          Телефонный справочник
+        </Title>
+        <Text type="secondary">
+          Поиск и контакты сотрудников компании
+        </Text>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          style={{ float: 'right', marginTop: '-40px' }}
+          onClick={() => setIsAddModalVisible(true)}
+        >
+          Добавить контакт
+        </Button>
+      </div>
+
+      {/* Фильтры и поиск */}
+      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+        <Col xs={24} sm={12} md={8}>
+          <Search
+            placeholder="Поиск по имени, должности, телефону или email..."
+            value={searchText}
+            onChange={e => setSearchText(e.target.value)}
+            allowClear
+            style={{ width: '100%' }}
+          />
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Select
+            value={selectedDepartment}
+            onChange={setSelectedDepartment}
+            style={{ width: '100%' }}
+            placeholder="Выберите отдел"
+          >
+            {departments.map(dept => (
+              <Option key={dept} value={dept}>{dept}</Option>
+            ))}
+          </Select>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Button
+            type={showFavoritesOnly ? 'primary' : 'default'}
+            icon={<StarOutlined />}
+            onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+            style={{ width: '100%' }}
+          >
+            {showFavoritesOnly ? 'Все контакты' : 'Только избранные'}
+          </Button>
+        </Col>
+        <Col xs={24} sm={12} md={4}>
           <Text type="secondary">
-            Поиск и контакты сотрудников компании
+            Найдено: {filteredEmployees.length}
           </Text>
-        </div>
+        </Col>
+      </Row>
 
-        {/* Фильтры и поиск */}
-        <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-          <Col xs={24} sm={12} md={8}>
-            <Search
-              placeholder="Поиск по имени, должности, телефону или email..."
-              value={searchText}
-              onChange={e => setSearchText(e.target.value)}
-              allowClear
-              style={{ width: '100%' }}
-            />
-          </Col>
-          <Col xs={24} sm={12} md={6}>
-            <Select
-              value={selectedDepartment}
-              onChange={setSelectedDepartment}
-              style={{ width: '100%' }}
-              placeholder="Выберите отдел"
-            >
-              {departments.map(dept => (
-                <Option key={dept} value={dept}>{dept}</Option>
-              ))}
-            </Select>
-          </Col>
-          <Col xs={24} sm={12} md={6}>
-            <Button
-              type={showFavoritesOnly ? 'primary' : 'default'}
-              icon={<StarOutlined />}
-              onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
-              style={{ width: '100%' }}
-            >
-              {showFavoritesOnly ? 'Все контакты' : 'Только избранные'}
-            </Button>
-          </Col>
-          <Col xs={24} sm={12} md={4}>
-            <Text type="secondary">
-              Найдено: {filteredEmployees.length}
-            </Text>
-          </Col>
-        </Row>
-
-        {/* Таблица сотрудников */}
-        <Table
-          dataSource={filteredEmployees}
-          columns={columns}
-          rowKey="id"
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) => 
-              `${range[0]}-${range[1]} из ${total} сотрудников`
-          }}
-          scroll={{ x: 800 }}
-        />
-      </Card>
+      {/* Таблица сотрудников */}
+      <Table
+        dataSource={filteredEmployees}
+        columns={columns}
+        rowKey="id"
+        pagination={{
+          pageSize: 10,
+          showSizeChanger: true,
+          showQuickJumper: true,
+          showTotal: (total, range) => 
+            `${range[0]}-${range[1]} из ${total} сотрудников`
+        }}
+        scroll={{ x: 800 }}
+      />
 
       {/* Модальное окно с деталями сотрудника */}
       <Modal
@@ -425,7 +468,7 @@ const PhoneDirectory: React.FC = () => {
               </Descriptions.Item>
               <Descriptions.Item label="Статус">
                 <Tag color={statusColors[selectedEmployee.status as keyof typeof statusColors]}>
-                  {statusLabels[selectedEmployee.status as keyof typeof statusLabels]}
+                  {statusLabels[selectedEmployee.status as keyof typeof statusColors]}
                 </Tag>
               </Descriptions.Item>
             </Descriptions>
@@ -473,7 +516,88 @@ const PhoneDirectory: React.FC = () => {
           </div>
         )}
       </Modal>
-    </div>
+
+      {/* Модальное окно добавления контакта */}
+      <Modal
+        title="Добавить контакт"
+        open={isAddModalVisible}
+        onCancel={() => setIsAddModalVisible(false)}
+        onOk={handleAddContact}
+        okText="Добавить"
+        cancelText="Отмена"
+      >
+        <Input
+          style={{ marginBottom: 8 }}
+          placeholder="ФИО"
+          value={addForm.name}
+          onChange={e => setAddForm({ ...addForm, name: e.target.value })}
+        />
+        <Input
+          style={{ marginBottom: 8 }}
+          placeholder="Должность"
+          value={addForm.position}
+          onChange={e => setAddForm({ ...addForm, position: e.target.value })}
+        />
+        <Select
+          style={{ marginBottom: 8, width: '100%' }}
+          placeholder="Отдел"
+          value={addForm.department}
+          onChange={val => setAddForm({ ...addForm, department: val })}
+        >
+          {departments.filter(d => d !== 'Все отделы').map(dept => (
+            <Option key={dept} value={dept}>{dept}</Option>
+          ))}
+        </Select>
+        <Input
+          style={{ marginBottom: 8 }}
+          placeholder="Рабочий телефон"
+          value={addForm.phone}
+          onChange={e => setAddForm({ ...addForm, phone: e.target.value })}
+        />
+        <Input
+          style={{ marginBottom: 8 }}
+          placeholder="Мобильный телефон"
+          value={addForm.mobile}
+          onChange={e => setAddForm({ ...addForm, mobile: e.target.value })}
+        />
+        <Input
+          style={{ marginBottom: 8 }}
+          placeholder="Email"
+          value={addForm.email}
+          onChange={e => setAddForm({ ...addForm, email: e.target.value })}
+        />
+        <Input
+          style={{ marginBottom: 8 }}
+          placeholder="Офис"
+          value={addForm.office}
+          onChange={e => setAddForm({ ...addForm, office: e.target.value })}
+        />
+        <Input
+          style={{ marginBottom: 8 }}
+          placeholder="Этаж"
+          value={addForm.floor}
+          onChange={e => setAddForm({ ...addForm, floor: e.target.value })}
+        />
+        <Input
+          style={{ marginBottom: 8 }}
+          placeholder="Кабинет"
+          value={addForm.room}
+          onChange={e => setAddForm({ ...addForm, room: e.target.value })}
+        />
+        <Input
+          style={{ marginBottom: 8 }}
+          placeholder="Внутренний номер (доб.)"
+          value={addForm.extension}
+          onChange={e => setAddForm({ ...addForm, extension: e.target.value })}
+        />
+        <Input
+          style={{ marginBottom: 8 }}
+          placeholder="Буквы для аватара (опционально)"
+          value={addForm.avatar}
+          onChange={e => setAddForm({ ...addForm, avatar: e.target.value })}
+        />
+      </Modal>
+    </>
   );
 };
 

@@ -2,32 +2,42 @@ import axios from 'axios';
 
 const API_BASE_URL = 'http://localhost:8000';
 
-const getToken = () => localStorage.getItem('token');
+// Получаем токен из localStorage
+const getToken = (): string | null => {
+  return localStorage.getItem('token');
+};
+
+// Создаем axios instance с перехватчиком для добавления токена
+const apiClient = axios.create({
+  baseURL: API_BASE_URL,
+});
+
+// Добавляем перехватчик запросов для автоматического добавления токена
+apiClient.interceptors.request.use((config) => {
+  const token = getToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
 export const getAdminMetrics = async () => {
-  const token = getToken();
-  const response = await axios.get(`${API_BASE_URL}/admin/metrics/`, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
+  const response = await apiClient.get(`/admin/metrics/`);
   return response.data;
 };
 
 export const exportTableCsv = async (table: string) => {
-  const token = getToken();
-  const response = await axios.get(`${API_BASE_URL}/admin/export_csv/${table}`, {
-    headers: { Authorization: `Bearer ${token}` },
+  const response = await apiClient.get(`/admin/export_csv/${table}`, {
     responseType: 'blob',
   });
   return response.data;
 };
 
 export const importTableCsv = async (table: string, file: File) => {
-  const token = getToken();
   const formData = new FormData();
   formData.append('file', file);
-  const response = await axios.post(`${API_BASE_URL}/admin/import_csv/${table}`, formData, {
+  const response = await apiClient.post(`/admin/import_csv/${table}`, formData, {
     headers: {
-      Authorization: `Bearer ${token}`,
       'Content-Type': 'multipart/form-data',
     },
   });

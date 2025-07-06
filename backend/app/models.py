@@ -7,6 +7,9 @@ class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
+    first_name = Column(String, nullable=True)
+    last_name = Column(String, nullable=True)
+    patronymic = Column(String, nullable=True)
     hashed_password = Column(String)
     email = Column(String, unique=True, nullable=True)
     role = Column(String, default="user")
@@ -17,6 +20,7 @@ class User(Base):
     force_password_change = Column(Boolean, default=True)  # Принудительная смена пароля
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    avatar_url = Column(String, nullable=True)
 
     @property
     def is_admin(self) -> bool:
@@ -170,3 +174,23 @@ class SupportEvent(Base):
 
 # Добавляем обратные связи в модель User
 User.support_tickets = relationship("SupportTicket", foreign_keys=[SupportTicket.user_id], back_populates="user") 
+
+class PhoneBook(Base):
+    __tablename__ = "phonebook"
+    id = Column(Integer, primary_key=True, index=True)
+    full_name = Column(String, nullable=False)
+    department = Column(String, nullable=True)
+    position = Column(String, nullable=True)
+    phone = Column(String, nullable=True)
+    email = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow) 
+
+class News(Base):
+    __tablename__ = "news"
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, nullable=False)
+    text = Column(Text, nullable=False)
+    image_url = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow) 

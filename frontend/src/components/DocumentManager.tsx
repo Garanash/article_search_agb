@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Card, 
-  Tabs, 
   Button, 
   Space, 
   Typography, 
@@ -42,7 +41,6 @@ import { useAuth } from '../context/AuthContext';
 import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
-const { TabPane } = Tabs;
 const { Option } = Select;
 const { RangePicker } = DatePicker;
 const { TextArea } = Input;
@@ -182,7 +180,6 @@ const statusConfig = {
 
 const DocumentManager: React.FC = () => {
   const { user, isAdmin } = useAuth();
-  const [activeTab, setActiveTab] = useState('my-documents');
   const [documents, setDocuments] = useState(mockDocuments);
   const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
   const [isViewModalVisible, setIsViewModalVisible] = useState(false);
@@ -412,72 +409,66 @@ const DocumentManager: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: '24px' }}>
-      <Card>
-        <div style={{ marginBottom: '24px' }}>
-          <Title level={3}>
-            <FileTextOutlined style={{ marginRight: '8px' }} />
-            Документы и заявления
-          </Title>
-          <Text type="secondary">
-            Управление служебными документами и заявлениями
-          </Text>
-        </div>
+    <>
+      <div style={{ marginBottom: '24px' }}>
+        <Title level={3}>
+          <FileTextOutlined style={{ marginRight: '8px' }} />
+          Документы и заявления
+        </Title>
+        <Text type="secondary">
+          Управление служебными документами и заявлениями
+        </Text>
+      </div>
 
-        <Tabs activeKey={activeTab} onChange={setActiveTab}>
-          <TabPane tab="Мои документы" key="my-documents">
-            <div style={{ marginBottom: '16px' }}>
-              <Space wrap>
-                <Button 
-                  type="primary" 
-                  icon={<PlusOutlined />}
-                  onClick={() => handleCreateDocument('vacation')}
-                >
-                  Заявление на отпуск
-                </Button>
-                <Button 
-                  type="primary" 
-                  icon={<PlusOutlined />}
-                  onClick={() => handleCreateDocument('payment')}
-                >
-                  Заявление на выплаты
-                </Button>
-                <Button 
-                  type="primary" 
-                  icon={<PlusOutlined />}
-                  onClick={() => handleCreateDocument('resignation')}
-                >
-                  Заявление на увольнение
-                </Button>
-                <Button 
-                  icon={<PrinterOutlined />}
-                  onClick={handlePrintInstruction}
-                >
-                  Печать инструкции
-                </Button>
-              </Space>
-            </div>
-            
-            <Table
-              dataSource={myDocuments}
-              columns={documentColumns}
-              rowKey="id"
-              pagination={{ pageSize: 10 }}
-            />
-          </TabPane>
+      <div style={{ marginBottom: '16px' }}>
+        <Space wrap>
+          <Button 
+            type="primary" 
+            icon={<PlusOutlined />}
+            onClick={() => handleCreateDocument('vacation')}
+          >
+            Заявление на отпуск
+          </Button>
+          <Button 
+            type="primary" 
+            icon={<PlusOutlined />}
+            onClick={() => handleCreateDocument('payment')}
+          >
+            Заявление на выплаты
+          </Button>
+          <Button 
+            type="primary" 
+            icon={<PlusOutlined />}
+            onClick={() => handleCreateDocument('resignation')}
+          >
+            Заявление на увольнение
+          </Button>
+          <Button 
+            icon={<PrinterOutlined />}
+            onClick={handlePrintInstruction}
+          >
+            Печать инструкции
+          </Button>
+        </Space>
+      </div>
 
-          {isAdmin && (
-            <TabPane tab="Согласования" key="approvals">
-              <Table
-                dataSource={pendingApprovals}
-                columns={approvalColumns}
-                rowKey="id"
-                pagination={{ pageSize: 10 }}
-              />
-            </TabPane>
-          )}
-        </Tabs>
-      </Card>
+      <Table
+        dataSource={myDocuments}
+        columns={documentColumns}
+        rowKey="id"
+        pagination={{ pageSize: 10 }}
+        title={() => 'Мои документы'}
+      />
+
+      {isAdmin && (
+        <Table
+          dataSource={pendingApprovals}
+          columns={approvalColumns}
+          rowKey="id"
+          pagination={{ pageSize: 10 }}
+          title={() => 'Документы на согласование'}
+        />
+      )}
 
       {/* Модальное окно создания документа */}
       <Modal
@@ -580,7 +571,7 @@ const DocumentManager: React.FC = () => {
           </div>
         )}
       </Modal>
-    </div>
+    </>
   );
 };
 

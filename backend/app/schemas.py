@@ -118,6 +118,10 @@ class UserProfileUpdate(BaseModel):
     position: Optional[str] = None
     phone: Optional[str] = None
     company: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    patronymic: Optional[str] = None
+    avatar_url: Optional[str] = None
 
 class UserProfileResponse(BaseModel):
     id: int
@@ -130,6 +134,9 @@ class UserProfileResponse(BaseModel):
     company: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    patronymic: Optional[str] = None
 
     class Config:
         from_attributes = True 
@@ -168,6 +175,10 @@ class UserResponse(BaseModel):
     force_password_change: bool
     created_at: datetime
     updated_at: datetime
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    patronymic: Optional[str] = None
+    avatar_url: Optional[str] = None
     
     @property
     def is_admin(self) -> bool:
@@ -234,7 +245,7 @@ class SupportEventUpdate(BaseModel):
 
 class SupportEventResponse(SupportEventBase):
     id: int
-    ticket_id: int
+    ticket_id: Optional[int] = None
     is_completed: bool
     created_at: datetime
     
@@ -261,8 +272,56 @@ class CalendarEvent(BaseModel):
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     event_type: str
-    ticket_id: int
+    ticket_id: Optional[int] = None
     is_completed: bool
     
+    class Config:
+        from_attributes = True 
+
+class PhoneBookCreate(BaseModel):
+    full_name: str
+    department: Optional[str] = None
+    position: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+
+class PhoneBookUpdate(BaseModel):
+    full_name: Optional[str] = None
+    department: Optional[str] = None
+    position: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+
+class PhoneBookResponse(BaseModel):
+    id: int
+    full_name: str
+    department: Optional[str]
+    position: Optional[str]
+    phone: Optional[str]
+    email: Optional[str]
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True 
+
+class NewsCreate(BaseModel):
+    title: str
+    text: str
+    image_url: Optional[str] = None
+
+class NewsUpdate(BaseModel):
+    title: Optional[str] = None
+    text: Optional[str] = None
+    image_url: Optional[str] = None
+
+class NewsResponse(BaseModel):
+    id: int
+    title: str
+    text: str
+    image_url: Optional[str]
+    created_at: datetime
+    updated_at: datetime
+
     class Config:
         from_attributes = True 

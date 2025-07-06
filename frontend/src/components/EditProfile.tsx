@@ -46,7 +46,10 @@ const EditProfile: React.FC<EditProfileProps> = ({ onCancel, onSave }) => {
       department: user?.department || '',
       position: user?.position || '',
       phone: user?.phone || '',
-      company: user?.company || 'ООО "Алмазгеобур"'
+      company: user?.company || 'ООО "Алмазгеобур"',
+      first_name: user?.first_name || '',
+      last_name: user?.last_name || '',
+      patronymic: user?.patronymic || '',
     });
   }, [user, form]);
 
@@ -55,7 +58,9 @@ const EditProfile: React.FC<EditProfileProps> = ({ onCancel, onSave }) => {
     try {
       // Подготавливаем данные для API
       const profileData: Partial<User> = {
-        username: values.username,
+        first_name: values.first_name,
+        last_name: values.last_name,
+        patronymic: values.patronymic,
         department: values.department,
         position: values.position,
         phone: values.phone,
@@ -134,19 +139,40 @@ const EditProfile: React.FC<EditProfileProps> = ({ onCancel, onSave }) => {
           }}
         >
           <Row gutter={[16, 0]}>
+            <Col xs={24} md={8}>
+              <Form.Item
+                name="last_name"
+                label="Фамилия"
+                rules={[{ required: true, message: 'Введите фамилию' }]}
+              >
+                <Input placeholder="Введите фамилию" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={8}>
+              <Form.Item
+                name="first_name"
+                label="Имя"
+                rules={[{ required: true, message: 'Введите имя' }]}
+              >
+                <Input placeholder="Введите имя" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={8}>
+              <Form.Item
+                name="patronymic"
+                label="Отчество"
+              >
+                <Input placeholder="Введите отчество (необязательно)" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={[16, 0]}>
             <Col xs={24} md={12}>
               <Form.Item
                 name="username"
-                label="Имя пользователя"
-                rules={[
-                  { required: true, message: 'Введите имя пользователя' },
-                  { min: 3, message: 'Имя пользователя должно содержать минимум 3 символа' }
-                ]}
+                label="Имя пользователя (логин)"
               >
-                <Input 
-                  prefix={<UserOutlined />} 
-                  placeholder="Введите имя пользователя"
-                />
+                <Input prefix={<UserOutlined />} disabled />
               </Form.Item>
             </Col>
             

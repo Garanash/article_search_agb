@@ -3,6 +3,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { getRequests, createRequest, deleteRequest, getArticlesByRequest } from "../api/api";
 import { useAuth } from "../context/AuthContext";
 import { Button, List, Input, Drawer, message, Spin } from "antd";
+import { EyeOutlined } from "@ant-design/icons";
 
 interface Request {
   id: number;
@@ -194,8 +195,10 @@ const RequestSidebar: React.FC<RequestSidebarProps> = ({ activeRequestId, onSele
             style={req.id === activeRequestId ? sidebarStyles.activeListItem : sidebarStyles.listItem}
             onClick={() => onSelect(req.id)}
             actions={[
-              <Button size="small" onClick={e => { e.stopPropagation(); handlePreview(req); }}>👁️</Button>,
-              <Button size="small" danger onClick={e => { e.stopPropagation(); handleDelete(req.id); }}>Удалить</Button>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, maxWidth: 80 }}>
+                <Button size="small" style={{ padding: '0 6px', width: 60 }} onClick={e => { e.stopPropagation(); handlePreview(req); }}>👁️</Button>
+                <Button size="small" danger style={{ padding: '0 6px', width: 60 }} onClick={e => { e.stopPropagation(); handleDelete(req.id); }}>Удалить</Button>
+              </div>
             ]}
           >
             <div>
