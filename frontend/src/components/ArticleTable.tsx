@@ -720,7 +720,14 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId, requests, 
   return (
     <div style={{ display: 'flex', justifyContent: 'center', minHeight: '100vh', width: '100%' }}>
       <Card style={{ marginBottom: 32, width: '100%', maxWidth: '100%' }}>
-        <Title level={4}>Артикулы</Title>
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <Title level={3} style={{ margin: 0, color: '#1890ff' }}>
+            {activeRequestId ? 
+              requests.find(r => r.id === activeRequestId)?.number || 'Запрос ВЭД' 
+              : 'Все артикулы'
+            }
+          </Title>
+        </div>
         {/* Кнопка создания запроса */}
         {!activeRequestId && articlesToAdd.length > 0 && (
           <Button type="primary" style={{ marginBottom: 16 }} onClick={() => setShowRequestModal(true)}>

@@ -47,6 +47,7 @@ class Article(Base):
     code = Column(String, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     request_id = Column(Integer, ForeignKey("requests.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
     suppliers = relationship("Supplier", back_populates="article")
     request = relationship("Request", back_populates="articles")
 

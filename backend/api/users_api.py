@@ -6,9 +6,10 @@ from pydantic import BaseModel
 import os
 from fastapi.responses import JSONResponse
 from fastapi import Path
+from sqlalchemy import func
 
 from app.database import get_db
-from app.models import User, PhoneBook
+from app.models import User, PhoneBook, Article, Supplier, Request
 from app.models import News
 from app.schemas import UserProfileUpdate, UserProfileResponse
 from app.schemas import PhoneBookCreate, PhoneBookUpdate, PhoneBookResponse
@@ -856,4 +857,34 @@ async def get_roles_and_departments(
     return {
         "roles": roles,
         "departments": departments
+    } 
+
+@router.get("/statistics")
+async def get_user_statistics(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Получить статистику активности текущего пользователя"""
+    
+    # Подсчитываем артикулы, добавленные пользователем
+    total_articles = db.query(Article).filter(Article.user_id == current_user.id).count()
+    
+    # Подсчитываем поставщиков, найденных для артикулов пользователя
+    total_suppliers = db.query(Supplier).join(Article).filter(Article.user_id == current_user.id).count()
+    
+    # Подсчитываем запросы, созданные пользователем
+    total_requests = db.query(Request).filter(Request.user_id == current_user.id).count()
+    
+    # Получаем последнюю активность (последнее действие пользователя)
+    last_activity = db.query(func.max(Article.created_at)).filter(Article.user_id == current_user.id).scalar()
+    
+    # Если нет артикулов, используем дату создания пользователя
+    if not last_activity:
+        last_activity = current_user.created_at
+    
+    return {
+        "total_articles": total_articles,
+        "total_suppliers": total_suppliers,
+        "total_requests": total_requests,
+        "last_activity": last_activity.isoformat() if last_activity else None
     } 

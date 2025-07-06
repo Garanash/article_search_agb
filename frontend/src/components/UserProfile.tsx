@@ -4,6 +4,7 @@ import { UserOutlined, MailOutlined, PhoneOutlined, TeamOutlined, CalendarOutlin
 import { useAuth, User } from '../context/AuthContext';
 import EditProfile from './EditProfile';
 import { uploadUserAvatar, updateUserProfile } from '../api/userApi';
+import { getUserStatistics } from '../api/api';
 
 const { Title, Text } = Typography;
 
@@ -22,16 +23,36 @@ const UserProfile: React.FC<UserProfileProps> = ({ onEditProfile }) => {
   });
   const [isAvatarModalVisible, setIsAvatarModalVisible] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | undefined>(user?.avatar_url);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Здесь можно загрузить статистику пользователя
-    // Пока используем моковые данные
-    setUserStats({
-      totalArticles: 156,
-      totalSuppliers: 1247,
-      totalRequests: 23,
-      lastActivity: new Date().toLocaleDateString('ru-RU')
-    });
+    // Загружаем статистику пользователя из базы данных
+    const loadUserStatistics = async () => {
+      setLoading(true);
+      try {
+        const stats = await getUserStatistics();
+        setUserStats({
+          totalArticles: stats.total_articles || 0,
+          totalSuppliers: stats.total_suppliers || 0,
+          totalRequests: stats.total_requests || 0,
+          lastActivity: stats.last_activity ? new Date(stats.last_activity).toLocaleDateString('ru-RU') : new Date().toLocaleDateString('ru-RU')
+        });
+      } catch (error) {
+        console.error('Ошибка загрузки статистики:', error);
+        message.error('Не удалось загрузить статистику активности');
+        // Используем значения по умолчанию в случае ошибки
+        setUserStats({
+          totalArticles: 0,
+          totalSuppliers: 0,
+          totalRequests: 0,
+          lastActivity: new Date().toLocaleDateString('ru-RU')
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUserStatistics();
     setAvatarUrl(user?.avatar_url);
   }, [user]);
 
@@ -207,7 +228,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ onEditProfile }) => {
 
         {/* Статистика пользователя */}
         <Col xs={24} lg={8}>
-          <Card title="Статистика активности">
+          <Card title="Статистика активности" loading={loading}>
             <Space direction="vertical" style={{ width: '100%' }} size="large">
               <div style={{ textAlign: 'center' }}>
                 <Title level={2} style={{ color: '#1890ff', margin: 0 }}>{userStats.totalArticles}</Title>

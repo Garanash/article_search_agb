@@ -192,6 +192,11 @@ export const createUser = async (userData: {
   return response.data;
 };
 
+export const getUserStatistics = async () => {
+  const response = await apiClient.get("/api/users/statistics");
+  return response.data;
+};
+
 export const changePassword = async (currentPassword: string | undefined, newPassword: string) => {
   const body: any = { new_password: newPassword };
   if (currentPassword !== undefined) body.current_password = currentPassword;
