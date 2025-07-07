@@ -172,7 +172,7 @@ const mockDocuments = [
 
 // Статусы документов
 const statusConfig = {
-  pending: { color: 'orange', label: 'На согласовании', icon: <ClockCircleOutlined /> },
+  pending: { color: '#FCB813', label: 'На согласовании', icon: <ClockCircleOutlined /> },
   approved: { color: 'green', label: 'Согласовано', icon: <CheckOutlined /> },
   rejected: { color: 'red', label: 'Отклонено', icon: <CloseOutlined /> },
   draft: { color: 'default', label: 'Черновик', icon: <FileTextOutlined /> }

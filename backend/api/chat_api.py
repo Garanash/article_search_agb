@@ -6,6 +6,7 @@ import requests
 import json
 import os
 from datetime import datetime
+import traceback
 
 from app.database import get_db
 from app.models import User
@@ -16,6 +17,8 @@ router = APIRouter(prefix="/chat", tags=["chat"])
 # VseGPT API конфигурация
 VSEGPT_API_KEY = "sk-or-vv-0222bdfad78b2ee03399f91527fbd52b36793f8db856f1a7634f423ff6ec6b16"
 VSEGPT_BASE_URL = "https://api.vsegpt.ru/v1"
+
+IMAGE_MODELS = ["dall-e-3"]
 
 class ChatMessage(BaseModel):
     role: str
@@ -39,48 +42,75 @@ async def chat_completions(
     db: Session = Depends(get_db)
 ):
     """Отправить сообщение в VseGPT API"""
-    
     try:
-        # Подготавливаем заголовки для VseGPT API
         headers = {
             "Authorization": f"Bearer {VSEGPT_API_KEY}",
             "Content-Type": "application/json"
         }
-        
-        # Добавляем дополнительные заголовки если есть
         if request.extra_headers:
             headers.update(request.extra_headers)
-        
-        # Подготавливаем данные для запроса
+
+        # --- Ветка для генерации изображений ---
+        if request.model in IMAGE_MODELS:
+            prompt = ""
+            for msg in reversed(request.messages):
+                if msg.role == "user":
+                    prompt = msg.content
+                    break
+            payload = {
+                "model": request.model,
+                "prompt": prompt,
+                "n": 1,
+                "size": "1024x1024"
+            }
+            response = requests.post(
+                f"{VSEGPT_BASE_URL}/images/generations",
+                headers=headers,
+                json=payload,
+                timeout=60
+            )
+            if response.status_code != 200:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"VseGPT Image API error: {response.status_code} - {response.text}"
+                )
+            data = response.json()
+            image_url = data["data"][0]["url"]
+            content = f"![Сгенерированное изображение]({image_url})"
+            return {
+                "choices": [
+                    {
+                        "message": {
+                            "role": "assistant",
+                            "content": content
+                        }
+                    }
+                ],
+                "usage": {}
+            }
+
+        # --- Обычный чат ---
         payload = {
             "model": request.model,
             "messages": [msg.dict() for msg in request.messages],
             "temperature": request.temperature,
             "max_tokens": request.max_tokens
         }
-        
-        # Отправляем запрос к VseGPT API
         response = requests.post(
             f"{VSEGPT_BASE_URL}/chat/completions",
             headers=headers,
             json=payload,
             timeout=60
         )
-        
         if response.status_code != 200:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"VseGPT API error: {response.status_code} - {response.text}"
             )
-        
-        # Получаем ответ от VseGPT
         vsegpt_response = response.json()
-        
-        # Логируем использование API
         print(f"User {current_user.username} used VseGPT API with model {request.model}")
-        
         return vsegpt_response
-        
+
     except requests.exceptions.Timeout:
         raise HTTPException(
             status_code=status.HTTP_504_GATEWAY_TIMEOUT,
@@ -92,6 +122,8 @@ async def chat_completions(
             detail=f"VseGPT API request failed: {str(e)}"
         )
     except Exception as e:
+        print('--- ОШИБКА В /chat/completions ---')
+        print(traceback.format_exc())
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Internal server error: {str(e)}"

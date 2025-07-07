@@ -307,7 +307,7 @@ const SupportChat: React.FC = () => {
                             </Tag>
                           )}
                           {!message.is_read && !message.is_from_admin && (
-                            <Tag color="orange">
+                            <Tag color="#FCB813">
                               <ClockCircleOutlined /> Не прочитано
                             </Tag>
                           )}

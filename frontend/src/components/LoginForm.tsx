@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { login } from "../api/api";
 import { useAuth } from "../context/AuthContext";
 import { Form, Input, Button, Card, Typography, message } from "antd";
+import { EyeTwoTone, EyeInvisibleOutlined } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
 
@@ -29,7 +30,7 @@ const loginStyles = {
   title: {
     textAlign: "center" as const,
     marginBottom: "16px",
-    color: "#f4d03f",
+    color: "#FCB813",
     fontWeight: 700,
     letterSpacing: 1,
   },
@@ -37,9 +38,9 @@ const loginStyles = {
   submitButton: {
     height: "40px",
     fontSize: "16px",
-    background: "linear-gradient(90deg, #d4af37 0%, #f4d03f 100%)",
+    background: "linear-gradient(90deg, #d4af37 0%, #FCB813 100%)",
     border: "none",
-    color: "#23272f",
+    color: '#FCB813',
     fontWeight: 600,
   },
   logo: {
@@ -94,7 +95,6 @@ const LoginForm: React.FC = () => {
           alt="AGB Logo"
           style={loginStyles.logo}
         />
-        {/* Убрана надпись ООО "Алмазгеобур" */}
         <Form 
           layout="vertical" 
           onFinish={onFinish}
@@ -106,14 +106,20 @@ const LoginForm: React.FC = () => {
             label={<span style={loginStyles.label}>Логин</span>} 
             rules={[{ required: true, message: "Введите логин" }]}
           > 
-            <Input autoFocus style={loginStyles.input} />
+            <Input autoFocus style={{ ...loginStyles.input, color: '#fff' }} />
           </Form.Item>
           <Form.Item 
             name="password" 
             label={<span style={loginStyles.label}>Пароль</span>} 
             rules={[{ required: true, message: "Введите пароль" }]}
           > 
-            <Input.Password style={loginStyles.input} />
+            <Input.Password 
+              style={{ ...loginStyles.input, color: '#fff' }} 
+              iconRender={visible => visible 
+                ? <EyeTwoTone twoToneColor="#fff" style={{ color: '#fff' }} />
+                : <EyeInvisibleOutlined style={{ color: '#fff' }} />
+              }
+            />
           </Form.Item>
           <Form.Item>
             <Button 
@@ -121,7 +127,7 @@ const LoginForm: React.FC = () => {
               htmlType="submit" 
               block 
               loading={loading}
-              style={loginStyles.submitButton}
+              style={{ ...loginStyles.submitButton, color: '#111' }}
             >
               Войти
             </Button>

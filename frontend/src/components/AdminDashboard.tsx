@@ -705,7 +705,7 @@ const AdminDashboard: React.FC = () => {
               <p><strong>Зашифрованный пароль:</strong> <code style={{ fontSize: '10px', wordBreak: 'break-all' }}>{hashedPassword}</code></p>
             )}
             {forcePasswordChange && (
-              <p><strong>Статус пароля:</strong> <Tag color="orange">Требуется смена пароля</Tag></p>
+              <p><strong>Статус пароля:</strong> <Tag color="#FCB813">Требуется смена пароля</Tag></p>
             )}
             <p style={{ marginTop: '16px', color: '#666', fontSize: '12px' }}>
               💡 Для генерации нового пароля используйте кнопку "Новый пароль"
@@ -939,7 +939,7 @@ const AdminDashboard: React.FC = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'open': return 'red';
-      case 'in_progress': return 'orange';
+      case 'in_progress': return '#FCB813';
       case 'resolved': return 'green';
       case 'closed': return 'gray';
       default: return 'blue';
@@ -949,7 +949,7 @@ const AdminDashboard: React.FC = () => {
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'low': return 'green';
-      case 'medium': return 'orange';
+      case 'medium': return '#FCB813';
       case 'high': return 'red';
       case 'urgent': return 'purple';
       default: return 'blue';

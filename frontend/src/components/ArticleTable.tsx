@@ -920,8 +920,8 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId, requests, 
           />
         </Spin>
         {activeRequestId && groupedCompanies.length > 0 && (
-          <Card style={{ marginTop: 32, background: '#fffbe6', border: '1px solid #ffe066' }}>
-            <Title level={4} style={{ color: '#b7950b' }}>Запросить цены у компаний</Title>
+          <Card style={{ marginTop: 32, background: '#FCB8131A', border: '1px solid #FCB813' }}>
+            <Title level={4} style={{ color: '#FCB813' }}>Запросить цены у компаний</Title>
             <List
               dataSource={groupedCompanies}
               renderItem={company => (
@@ -944,7 +944,7 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId, requests, 
                   ]}
                 >
                   <List.Item.Meta
-                    title={<span><b>{company.name}</b> <Tag color="gold">{company.email}</Tag></span>}
+                    title={<span><b>{company.name}</b> <Tag color="#FCB813">{company.email}</Tag></span>}
                     description={<span>Артикулы: {company.articles.map(a => <Tag key={a}>{a}</Tag>)}</span>}
                   />
                 </List.Item>

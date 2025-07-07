@@ -79,10 +79,9 @@ const tabStyles = `
   
   /* Заголовок */
   .app-title {
-    background: linear-gradient(45deg, #d4af37, #f4d03f);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    background: none !important;
+    background-color: transparent !important;
+    color: #FCB813 !important;
     font-weight: 900 !important;
     font-size: 32px !important;
     letter-spacing: 2px;
@@ -92,8 +91,8 @@ const tabStyles = `
   
   /* Кнопка пользователя */
   .user-button {
-    background: #f4d03f !important;
-    border: 1px solid #d4af37 !important;
+    background: #FCB813 !important;
+    border: 1px solid #FCB813 !important;
     border-radius: 4px !important;
     padding: 8px 16px !important;
     transition: all 0.3s ease !important;
@@ -102,11 +101,11 @@ const tabStyles = `
   }
   
   .user-button:hover {
-    background: #ffe066 !important;
-    border-color: #d4af37 !important;
+    background: #FCB813 !important;
+    border-color: #FCB813 !important;
     color: #222 !important;
     transform: translateY(-1px) !important;
-    box-shadow: 0 2px 8px rgba(212, 175, 55, 0.2) !important;
+    box-shadow: 0 2px 8px rgba(252, 184, 19, 0.2) !important;
   }
   
   /* Основной контент */
@@ -129,7 +128,7 @@ const tabStyles = `
     left: 0;
     right: 0;
     height: 1px;
-    background: linear-gradient(90deg, transparent, #d4af37, transparent);
+    background: linear-gradient(90deg, transparent, #FCB813, transparent);
     border-radius: 6px 6px 0 0;
   }
   
@@ -178,7 +177,7 @@ const tabStyles = `
     left: 0;
     right: 0;
     height: 2px;
-    background: linear-gradient(90deg, transparent, #d4af37, transparent);
+    background: linear-gradient(90deg, transparent, #FCB813, transparent);
     opacity: 0;
     transition: opacity 0.3s ease;
   }
@@ -196,18 +195,18 @@ const tabStyles = `
   
   .ant-tabs-tab-active {
     background: #2c3e50 !important;
-    color: #d4af37 !important;
-    border-color: #d4af37 !important;
-    box-shadow: 0 2px 10px rgba(212, 175, 55, 0.2) !important;
+    color: #FCB813 !important;
+    border-color: #FCB813 !important;
+    box-shadow: 0 2px 10px rgba(252, 184, 19, 0.2) !important;
   }
   
   .ant-tabs-tab-active::before {
     opacity: 1;
-    background: #d4af37 !important;
+    background: #FCB813 !important;
   }
   
   .ant-tabs-tab-active .ant-tabs-tab-btn {
-    color: #d4af37 !important;
+    color: #FCB813 !important;
     font-weight: 700 !important;
   }
   
@@ -393,15 +392,15 @@ const tabStyles = `
   
   /* Корпоративные кнопки */
   .ant-btn-primary {
-    background: linear-gradient(135deg, #d4af37 0%, #f4d03f 100%) !important;
-    border-color: #d4af37 !important;
+    background: linear-gradient(135deg, #d4af37 0%, #FCB813 100%) !important;
+    border-color: #FCB813 !important;
     color: #333333 !important;
     font-weight: 600 !important;
   }
   
   .ant-btn-primary:hover {
-    background: linear-gradient(135deg, #f4d03f 0%, #d4af37 100%) !important;
-    border-color: #f4d03f !important;
+    background: linear-gradient(135deg, #FCB813 0%, #d4af37 100%) !important;
+    border-color: #FCB813 !important;
     color: #333333 !important;
     transform: translateY(-1px) !important;
     box-shadow: 0 2px 8px rgba(212, 175, 55, 0.3) !important;
@@ -473,17 +472,17 @@ const tabStyles = `
   .ant-btn, .ant-btn span {
     color: #333333 !important;
     background: transparent !important;
-    border-color: #d4af37 !important;
+    border-color: #FCB813 !important;
   }
   
   .ant-btn-primary {
-    background: linear-gradient(135deg, #d4af37 0%, #f4d03f 100%) !important;
+    background: linear-gradient(135deg, #d4af37 0%, #FCB813 100%) !important;
     color: #333333 !important;
-    border-color: #d4af37 !important;
+    border-color: #FCB813 !important;
   }
   
   .ant-btn-primary:hover {
-    background: linear-gradient(135deg, #f4d03f 0%, #d4af37 100%) !important;
+    background: linear-gradient(135deg, #FCB813 0%, #d4af37 100%) !important;
     color: #333333 !important;
   }
 
@@ -523,9 +522,9 @@ const tabStyles = `
   .ant-btn.user-button,
   .ant-btn.user-button:focus,
   .ant-btn.user-button:hover {
-    background: #f4d03f !important;
+    background: #FCB813 !important;
     color: #222 !important;
-    border: 1px solid #d4af37 !important;
+    border: 1px solid #FCB813 !important;
     font-weight: 600 !important;
   }
 `;
@@ -741,7 +740,7 @@ const Main: React.FC = () => {
             }}
             placement="bottomRight"
           >
-            <Button type="text" className="user-button" style={{ background: '#f4d03f', color: '#222', border: '1px solid #d4af37', fontWeight: 600 }}>
+            <Button type="text" className="user-button" style={{ background: '#FCB813', color: '#222', border: '1px solid #FCB813', fontWeight: 600 }}>
               <Space>
                 <UserOutlined />
                 {user?.username || 'Пользователь'}

@@ -274,3 +274,8 @@ body {
     font-size: 14px !important;
   }
 } 
+
+input, input:focus, input:hover, input:-webkit-autofill, input:-webkit-autofill:focus, input:-webkit-autofill:hover, input:-webkit-autofill:active, input:-internal-autofill-selected {
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+} 

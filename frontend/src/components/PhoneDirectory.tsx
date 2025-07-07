@@ -182,7 +182,7 @@ const departments = [
 // Статусы
 const statusColors = {
   online: 'green',
-  away: 'orange',
+  away: '#FCB813',
   offline: 'red'
 };
 

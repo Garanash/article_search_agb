@@ -47,6 +47,7 @@ import {
   BookOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../context/AuthContext';
+import ReactMarkdown from 'react-markdown';
 
 const { Text, Title } = Typography;
 const { TextArea } = Input;
@@ -212,7 +213,10 @@ const ChatBot: React.FC<ChatBotProps> = ({ onBack }) => {
           updatedAt: new Date(dialog.updatedAt),
           messages: dialog.messages.map((msg: any) => ({
             ...msg,
-            timestamp: new Date(msg.timestamp)
+            timestamp: new Date(msg.timestamp),
+            content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content),
+            reasoning: typeof msg.reasoning === 'string' ? msg.reasoning : (msg.reasoning ? JSON.stringify(msg.reasoning) : ''),
+            files: Array.isArray(msg.files) ? msg.files : []
           }))
         }));
         setDialogs(dialogsWithDates);
@@ -267,33 +271,6 @@ const ChatBot: React.FC<ChatBotProps> = ({ onBack }) => {
     console.log('🔧 Создание предустановленных пресетов...');
     const defaultPresets: ChatPreset[] = [
       {
-        id: '1',
-        name: 'Распознаватель документов и картинок',
-        model: 'vis-google/gemini-flash-1.5',
-        temperature: 0.3,
-        maxTokens: 2000,
-        systemPrompt: `Ты - специализированный ассистент для распознавания документов и изображений. Твои задачи:
-
-1. **OCR (Распознавание текста)**: Извлекай весь текст с изображений документов, сохраняя структуру и форматирование
-2. **Анализ изображений**: Описывай содержимое изображений, выделяя ключевые элементы
-3. **Обработка документов**: Анализируй документы (счета, договоры, справки и т.д.), извлекай важную информацию
-4. **Сравнение изображений**: Находи различия между несколькими изображениями
-
-**Инструкции для работы:**
-- Всегда начинай с краткого описания того, что видишь на изображении
-- При распознавании текста сохраняй оригинальную структуру (заголовки, абзацы, списки)
-- Выделяй важную информацию (даты, суммы, номера документов, имена)
-- Если текст нечеткий или частично нечитаемый, указывай это
-- При анализе документов структурируй информацию в удобном для чтения виде
-
-**Формат ответа:**
-1. Краткое описание изображения
-2. Извлеченный текст (если есть)
-3. Структурированная информация (для документов)
-4. Дополнительные наблюдения или рекомендации`,
-        createdAt: new Date()
-      },
-      {
         id: '2',
         name: 'Генератор изображений DALL-E',
         model: 'dall-e-3',
@@ -322,38 +299,6 @@ const ChatBot: React.FC<ChatBotProps> = ({ onBack }) => {
 2. Оптимизированный промпт для генерации
 3. Рекомендации по параметрам
 4. Дополнительные советы по улучшению результата`,
-        createdAt: new Date()
-      },
-      {
-        id: '3',
-        name: 'Распознавание речи Whisper',
-        model: 'stt-openai/whisper-1',
-        temperature: 0.3,
-        maxTokens: 1500,
-        systemPrompt: `Ты - специализированный ассистент для работы с аудио и распознавания речи. Твои задачи:
-
-1. **Распознавание речи**: Помогай с транскрипцией аудиофайлов
-2. **Обработка аудио**: Консультируй по работе с различными аудиоформатами
-3. **Генерация речи**: Помогай с созданием аудио из текста
-4. **Генерация музыки**: Консультируй по созданию музыки с помощью AI
-
-**Инструкции для работы:**
-- Объясняй процесс загрузки и обработки аудиофайлов
-- Помогай с выбором подходящих моделей для разных задач
-- Консультируй по настройке параметров распознавания
-- Предлагай решения для улучшения качества транскрипции
-
-**Поддерживаемые форматы:**
-- Аудио: MP3, WAV, M4A, FLAC
-- Модели распознавания: Whisper, другие STT модели
-- Модели генерации: TTS-1, Stable Audio
-- Языки: Русский, английский и другие
-
-**Формат ответа:**
-1. Анализ задачи пользователя
-2. Рекомендации по модели и параметрам
-3. Пошаговая инструкция
-4. Советы по улучшению качества`,
         createdAt: new Date()
       },
       {
@@ -393,46 +338,8 @@ const ChatBot: React.FC<ChatBotProps> = ({ onBack }) => {
 3. Рекомендации по параметрам
 4. Инструкция по процессу генерации`,
         createdAt: new Date()
-      },
-      {
-        id: '5',
-        name: 'Конвертер документов в текст',
-        model: 'utils/extract-text-1.0',
-        temperature: 0.3,
-        maxTokens: 3000,
-        systemPrompt: `Ты - специализированный ассистент для конвертации документов в текст. Твои задачи:
-
-1. **Извлечение текста из документов**: Помогай с конвертацией PDF, DOC, DOCX в текст
-2. **OCR обработка**: Консультируй по оптическому распознаванию символов
-3. **Обработка различных форматов**: Работа с разными типами документов
-4. **Структурирование данных**: Помогай организовать извлеченную информацию
-
-**Инструкции для работы:**
-- Объясняй процесс загрузки и обработки документов
-- Помогай с выбором подходящей модели для разных типов файлов
-- Консультируй по улучшению качества извлечения текста
-- Предлагай решения для сложных документов
-
-**Поддерживаемые форматы:**
-- Документы: PDF, DOC, DOCX, TXT
-- Модели: extract-text-1.0, pdf-ocr-1.0
-- Дополнительные опции: извлечение изображений, сохранение форматирования
-
-**Процесс обработки:**
-1. Загрузка документа в base64
-2. Выбор подходящей модели
-3. Отправка запроса на обработку
-4. Получение извлеченного текста
-
-**Формат ответа:**
-1. Анализ типа документа
-2. Рекомендации по модели обработки
-3. Пошаговая инструкция
-4. Советы по улучшению результата`,
-        createdAt: new Date()
       }
     ];
-    
     setPresets(defaultPresets);
     console.log(`✅ Создано ${defaultPresets.length} предустановленных пресетов:`);
     defaultPresets.forEach(preset => {
@@ -649,9 +556,14 @@ const ChatBot: React.FC<ChatBotProps> = ({ onBack }) => {
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: data.choices[0].message.content,
+        content: typeof data.choices[0].message.content === 'string'
+          ? data.choices[0].message.content
+          : JSON.stringify(data.choices[0].message.content),
         timestamp: new Date(),
-        reasoning: data.choices[0].message.reasoning
+        reasoning: typeof data.choices[0].message.reasoning === 'string'
+          ? data.choices[0].message.reasoning
+          : (data.choices[0].message.reasoning ? JSON.stringify(data.choices[0].message.reasoning) : ''),
+        files: Array.isArray(data.choices[0].message.files) ? data.choices[0].message.files : []
       };
 
       const finalDialog = {
@@ -763,7 +675,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ onBack }) => {
       maxWidth: '1400px', 
       margin: '0 auto', 
       padding: '24px',
-      height: 'calc(100vh - 100px)',
+      minHeight: '120vh',
       display: 'flex',
       flexDirection: 'column'
     }}>
@@ -783,13 +695,13 @@ const ChatBot: React.FC<ChatBotProps> = ({ onBack }) => {
               style={{ backgroundColor: '#1890ff' }}
             />
             <div>
-              <Title level={4} style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
+              <Title level={4} style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 12, background: 'transparent' }}>
                 IRON FELIX AI
               </Title>
               <Text type="secondary">Умный помощник для работы</Text>
               {balance && balance.data && (
                 <div style={{ marginTop: '4px' }}>
-                  <Tag color={balance.data.user_status === 0 ? 'green' : balance.data.user_status === 1 ? 'orange' : 'red'}>
+                  <Tag color={balance.data.user_status === 0 ? 'green' : balance.data.user_status === 1 ? '#FCB813' : 'red'}>
                     Баланс: {parseFloat(balance.data.credits).toFixed(2)} кредитов
                   </Tag>
                   {balance.data.user_status !== 0 && (
@@ -939,11 +851,17 @@ const ChatBot: React.FC<ChatBotProps> = ({ onBack }) => {
         <Card 
           style={{ 
             flex: 1,
-            borderRadius: '12px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-            overflow: 'hidden',
+            borderRadius: '16px',
+            boxShadow: '0 4px 24px rgba(0,0,0,0.10)',
             display: 'flex',
-            flexDirection: 'column'
+            alignItems: 'stretch',
+            justifyContent: 'center',
+            minHeight: '80vh',
+            maxWidth: '100%',
+            width: '100%',
+            padding: '32px',
+            margin: '0 auto',
+            background: '#fff'
           }}
           bodyStyle={{ 
             padding: '16px',
@@ -973,9 +891,9 @@ const ChatBot: React.FC<ChatBotProps> = ({ onBack }) => {
           {/* Область сообщений */}
           <div style={{ 
             flex: 1, 
-            overflowY: 'auto',
             padding: '8px',
-            marginBottom: '16px'
+            minHeight: '80vh',
+            marginBottom: 0
           }}>
             {currentDialog.messages.length === 0 ? (
               <div style={{ 
@@ -993,144 +911,225 @@ const ChatBot: React.FC<ChatBotProps> = ({ onBack }) => {
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {currentDialog.messages.map((message) => (
-                  <div
-                    key={message.id}
-                    style={{
-                      display: 'flex',
-                      justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start',
-                      gap: '12px'
-                    }}
-                  >
-                    {message.role === 'assistant' && (
-                      <Avatar 
-                        icon={<RobotOutlined />} 
-                        style={{ backgroundColor: '#1890ff' }}
-                      />
-                    )}
-                    
-                    <div style={{
-                      maxWidth: '70%',
-                      minWidth: '200px'
-                    }}>
-                      <Card
-                        size="small"
-                        style={{
-                          backgroundColor: message.role === 'user' ? '#1890ff' : '#f5f5f5',
-                          color: message.role === 'user' ? 'white' : 'inherit',
-                          borderRadius: '12px',
-                          border: 'none'
-                        }}
-                        bodyStyle={{ padding: '12px 16px' }}
-                      >
-                        <div style={{ 
-                          display: 'flex', 
-                          justifyContent: 'space-between', 
-                          alignItems: 'flex-start',
-                          marginBottom: '8px'
-                        }}>
-                          <Text 
-                            strong 
-                            style={{ 
-                              color: message.role === 'user' ? 'black' : 'inherit',
-                              fontSize: '12px'
-                            }}
-                          >
-                            {message.role === 'user' ? user?.username || 'Вы' : 'IRON FELIX AI'}
-                          </Text>
-                          <Space size="small">
+                {currentDialog.messages.map((message) => {
+                  // Тотальная защита от невалидных данных
+                  let safeContent = '';
+                  if (typeof message.content === 'string') {
+                    safeContent = message.content;
+                  } else if (Array.isArray(message.content)) {
+                    safeContent = (message.content as any[]).map(String).join(' ');
+                  } else if (message.content) {
+                    safeContent = String(message.content);
+                  } else {
+                    safeContent = '';
+                  }
+                  if (
+                    typeof safeContent !== 'string' ||
+                    Array.isArray(safeContent) ||
+                    (typeof safeContent === 'string' && safeContent.includes('$$typeof'))
+                  ) {
+                    safeContent = '[Ошибка данных]';
+                  }
+                  if (typeof safeContent === 'string') {
+                    safeContent = safeContent.replace(/\\u[0-9a-fA-F]{4}/g, '').replace(/\[object Object\]/g, '');
+                  }
+                  let imageUrl = '';
+                  if (typeof safeContent === 'string') {
+                    // Пробуем вытащить ссылку на изображение из markdown
+                    const match = safeContent.match(/!\[[^\]]*\]\(([^)]+)\)/);
+                    if (match && match[1]) {
+                      imageUrl = match[1];
+                    }
+                  }
+                  let safeReasoning = typeof message.reasoning === 'string' ? message.reasoning : (message.reasoning ? String(message.reasoning) : '');
+                  if (
+                    typeof safeReasoning !== 'string' ||
+                    Array.isArray(safeReasoning) ||
+                    (typeof safeReasoning === 'string' && safeReasoning.includes('$$typeof'))
+                  ) {
+                    safeReasoning = '';
+                  }
+                  let safeFiles = Array.isArray(message.files)
+                    ? message.files.map(f => {
+                        if (!f || typeof f !== 'object' || !('name' in f)) {
+                          return { name: typeof f === 'string' ? f : '[Некорректный файл]' };
+                        }
+                        return { ...f, name: typeof f.name === 'string' ? f.name : '[Некорректное имя файла]' };
+                      })
+                    : [];
+                  return (
+                    <div
+                      key={message.id}
+                      style={{
+                        display: 'flex',
+                        justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start',
+                        gap: '12px'
+                      }}
+                    >
+                      {message.role === 'assistant' && (
+                        <Avatar 
+                          icon={<RobotOutlined />} 
+                          style={{ backgroundColor: '#1890ff' }}
+                        />
+                      )}
+                      <div style={{ maxWidth: '70%', minWidth: '200px' }}>
+                        <Card
+                          size="small"
+                          style={{
+                            backgroundColor: message.role === 'user' ? '#1890ff' : '#f5f5f5',
+                            color: message.role === 'user' ? 'white' : 'inherit',
+                            borderRadius: '12px',
+                            border: 'none'
+                          }}
+                          bodyStyle={{ padding: '12px 16px' }}
+                        >
+                          <div style={{ 
+                            display: 'flex', 
+                            justifyContent: 'space-between', 
+                            alignItems: 'flex-start',
+                            marginBottom: '8px'
+                          }}>
                             <Text 
+                              strong 
                               style={{ 
-                                color: message.role === 'user' ? 'black' : '#8c8c8c',
-                                fontSize: '11px'
+                                color: message.role === 'user' ? 'black' : 'inherit',
+                                fontSize: '12px'
                               }}
                             >
-                              {formatTimestamp(message.timestamp)}
+                              {message.role === 'user' ? user?.username || 'Вы' : 'IRON FELIX AI'}
                             </Text>
-                            <Tooltip title="Копировать">
-                              <Button
-                                type="text"
-                                size="small"
-                                icon={<CopyOutlined />}
-                                onClick={() => copyMessage(message.content)}
+                            <Space size="small">
+                              <Text 
                                 style={{ 
                                   color: message.role === 'user' ? 'black' : '#8c8c8c',
-                                  padding: '0 4px'
+                                  fontSize: '11px'
+                                }}
+                              >
+                                {formatTimestamp(message.timestamp)}
+                              </Text>
+                              <Tooltip title="Копировать">
+                                <Button
+                                  type="text"
+                                  size="small"
+                                  icon={<CopyOutlined />}
+                                  onClick={() => copyMessage(safeContent)}
+                                  style={{ 
+                                    color: message.role === 'user' ? 'black' : '#8c8c8c',
+                                    padding: '0 4px'
+                                  }}
+                                />
+                              </Tooltip>
+                            </Space>
+                          </div>
+                          <div style={{ 
+                            whiteSpace: 'pre-wrap',
+                            lineHeight: '1.5',
+                            color: message.role === 'user' ? 'black' : 'inherit'
+                          }}>
+                            {message.role === 'assistant' && imageUrl ? (
+                              <img
+                                src={imageUrl}
+                                alt="Сгенерированное изображение"
+                                style={{
+                                  maxWidth: '100%',
+                                  borderRadius: 12,
+                                  margin: '12px 0',
+                                  boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
                                 }}
                               />
-                            </Tooltip>
-                          </Space>
-                        </div>
-                        
-                        <div style={{ 
-                          whiteSpace: 'pre-wrap',
-                          lineHeight: '1.5',
-                          color: message.role === 'user' ? 'black' : 'inherit'
-                        }}>
-                          {message.content}
-                        </div>
-
-                        {message.files && message.files.length > 0 && (
-                          <div style={{ marginTop: '12px' }}>
-                            <Divider style={{ margin: '8px 0' }} />
-                            <Text style={{ 
-                              color: message.role === 'user' ? 'rgba(255,255,255,0.8)' : '#8c8c8c',
-                              fontSize: '12px'
-                            }}>
-                              Прикрепленные файлы:
-                            </Text>
-                            <div style={{ marginTop: '8px' }}>
-                              {message.files.map((file, index) => (
-                                <Tag 
-                                  key={index}
-                                  icon={<FileOutlined />}
-                                  style={{ 
-                                    margin: '4px',
-                                    backgroundColor: message.role === 'user' ? 'rgba(255,255,255,0.2)' : '#f0f0f0'
+                            ) : message.role === 'assistant' ? (
+                              // Если markdown безопасен, рендерим его, иначе просто текст
+                              (typeof safeContent === 'string' && !safeContent.includes('$$typeof') && !Array.isArray(safeContent)) ? (
+                                <ReactMarkdown
+                                  components={{
+                                    img: ({node, ...props}) => (
+                                      <img
+                                        {...(props as any)}
+                                        style={{
+                                          maxWidth: '100%',
+                                          borderRadius: 12,
+                                          margin: '12px 0',
+                                          boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+                                        }}
+                                        alt={props.alt || 'image'}
+                                      />
+                                    )
                                   }}
                                 >
-                                  {file.name}
-                                </Tag>
-                              ))}
-                            </div>
+                                  {safeContent}
+                                </ReactMarkdown>
+                              ) : (
+                                safeContent
+                              )
+                            ) : (
+                              safeContent
+                            )}
                           </div>
-                        )}
-
-                        {message.reasoning && (
-                          <div style={{ marginTop: '12px' }}>
-                            <Divider style={{ margin: '8px 0' }} />
-                            <details>
-                              <summary style={{ 
-                                cursor: 'pointer',
+                          {safeFiles.length > 0 && (
+                            <div style={{ marginTop: '12px' }}>
+                              <Divider style={{ margin: '8px 0' }} />
+                              <Text style={{ 
                                 color: message.role === 'user' ? 'rgba(255,255,255,0.8)' : '#8c8c8c',
                                 fontSize: '12px'
                               }}>
-                                Показать размышления модели
-                              </summary>
-                              <div style={{ 
-                                marginTop: '8px',
-                                padding: '8px',
-                                backgroundColor: message.role === 'user' ? 'rgba(255,255,255,0.1)' : '#f0f0f0',
-                                borderRadius: '6px',
-                                fontSize: '12px',
-                                fontStyle: 'italic'
-                              }}>
-                                {message.reasoning}
+                                Прикрепленные файлы:
+                              </Text>
+                              <div style={{ marginTop: '8px' }}>
+                                {safeFiles.map((file, index) => {
+                                  if (typeof file.name !== 'string') {
+                                    console.error('file.name is not a string:', file.name, file);
+                                  }
+                                  return (
+                                    <Tag 
+                                      key={index}
+                                      icon={<FileOutlined />}
+                                      style={{ 
+                                        margin: '4px',
+                                        backgroundColor: message.role === 'user' ? 'rgba(255,255,255,0.2)' : '#f0f0f0'
+                                      }}
+                                    >
+                                      {typeof file.name === 'string' ? file.name : 'Файл'}
+                                    </Tag>
+                                  );
+                                })}
                               </div>
-                            </details>
-                          </div>
-                        )}
-                      </Card>
+                            </div>
+                          )}
+                          {safeReasoning && (
+                            <div style={{ marginTop: '12px' }}>
+                              <Divider style={{ margin: '8px 0' }} />
+                              <details>
+                                <summary style={{ 
+                                  cursor: 'pointer',
+                                  color: message.role === 'user' ? 'rgba(255,255,255,0.8)' : '#8c8c8c',
+                                  fontSize: '12px'
+                                }}>
+                                  Показать размышления модели
+                                </summary>
+                                <div style={{ 
+                                  marginTop: '8px',
+                                  padding: '8px',
+                                  backgroundColor: message.role === 'user' ? 'rgba(255,255,255,0.1)' : '#f0f0f0',
+                                  borderRadius: '6px',
+                                  fontSize: '12px',
+                                  fontStyle: 'italic'
+                                }}>
+                                  {typeof safeReasoning === 'string' ? safeReasoning : JSON.stringify(safeReasoning)}
+                                </div>
+                              </details>
+                            </div>
+                          )}
+                        </Card>
+                      </div>
+                      {message.role === 'user' && (
+                        <Avatar 
+                          icon={<UserOutlined />} 
+                          style={{ backgroundColor: '#52c41a' }}
+                        />
+                      )}
                     </div>
-
-                    {message.role === 'user' && (
-                      <Avatar 
-                        icon={<UserOutlined />} 
-                        style={{ backgroundColor: '#52c41a' }}
-                      />
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
                 
                 {isLoading && (
                   <div style={{
@@ -1324,6 +1323,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ onBack }) => {
                     danger 
                     icon={<DeleteOutlined />}
                     size="small"
+                    onClick={e => e.stopPropagation()}
                   />
                 </Popconfirm>
               ]}
@@ -1340,7 +1340,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ onBack }) => {
             >
               <List.Item.Meta
                 avatar={<Avatar icon={<MessageOutlined />} />}
-                title={getDialogName(dialog)}
+                title={typeof getDialogName(dialog) === 'string' ? getDialogName(dialog) : '[Некорректное имя]'}
                 description={
                   <div>
                     <Text type="secondary" style={{ fontSize: '12px' }}>
