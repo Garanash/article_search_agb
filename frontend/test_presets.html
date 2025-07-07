@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест пресетов ChatBot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .button {
+            background: #1890ff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover {
+            background: #40a9ff;
+        }
+        .button:disabled {
+            background: #d9d9d9;
+            cursor: not-allowed;
+        }
+        .log {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Тест пресетов ChatBot</h1>
+    
+    <div class="test-section">
+        <h3>📋 Проверка localStorage</h3>
+        <button class="button" onclick="checkLocalStorage()">Проверить localStorage</button>
+        <button class="button" onclick="clearLocalStorage()">Очистить localStorage</button>
+        <div id="localStorage-log" class="log"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>🔧 Создание пресетов</h3>
+        <button class="button" onclick="createPresets()">Создать пресеты</button>
+        <button class="button" onclick="loadPresets()">Загрузить пресеты</button>
+        <div id="presets-log" class="log"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>🎯 Тест кнопок пресетов</h3>
+        <button class="button" onclick="testPresetButton('Распознаватель документов и картинок')">Распознаватель</button>
+        <button class="button" onclick="testPresetButton('Генератор изображений DALL-E')">Изображения</button>
+        <button class="button" onclick="testPresetButton('Распознавание речи Whisper')">Речь</button>
+        <button class="button" onclick="testPresetButton('Генератор видео Kling')">Видео</button>
+        <button class="button" onclick="testPresetButton('Конвертер документов в текст')">Документы</button>
+        <div id="button-test-log" class="log"></div>
+    </div>
+
+    <script>
+        function log(elementId, message) {
+            const element = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            element.textContent += `[${timestamp}] ${message}\n`;
+            element.scrollTop = element.scrollHeight;
+        }
+
+        function checkLocalStorage() {
+            const logElement = 'localStorage-log';
+            log(logElement, '🔍 Проверка localStorage...');
+            
+            const dialogs = localStorage.getItem('chat_dialogs');
+            const folders = localStorage.getItem('chat_folders');
+            const presets = localStorage.getItem('chat_presets');
+            
+            log(logElement, `Диалоги: ${dialogs ? '✅ Есть' : '❌ Нет'}`);
+            log(logElement, `Папки: ${folders ? '✅ Есть' : '❌ Нет'}`);
+            log(logElement, `Пресеты: ${presets ? '✅ Есть' : '❌ Нет'}`);
+            
+            if (presets) {
+                try {
+                    const parsedPresets = JSON.parse(presets);
+                    log(logElement, `Количество пресетов: ${parsedPresets.length}`);
+                    parsedPresets.forEach((preset, index) => {
+                        log(logElement, `  ${index + 1}. ${preset.name} (${preset.model})`);
+                    });
+                } catch (e) {
+                    log(logElement, `❌ Ошибка парсинга пресетов: ${e.message}`);
+                }
+            }
+        }
+
+        function clearLocalStorage() {
+            const logElement = 'localStorage-log';
+            log(logElement, '🗑️ Очистка localStorage...');
+            
+            localStorage.removeItem('chat_dialogs');
+            localStorage.removeItem('chat_folders');
+            localStorage.removeItem('chat_presets');
+            
+            log(logElement, '✅ localStorage очищен');
+        }
+
+        function createPresets() {
+            const logElement = 'presets-log';
+            log(logElement, '🔧 Создание предустановленных пресетов...');
+            
+            const defaultPresets = [
+                {
+                    id: '1',
+                    name: 'Распознаватель документов и картинок',
+                    model: 'vis-google/gemini-flash-1.5',
+                    temperature: 0.3,
+                    maxTokens: 2000,
+                    systemPrompt: 'Ты - специализированный ассистент для распознавания документов и изображений...',
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: '2',
+                    name: 'Генератор изображений DALL-E',
+                    model: 'dall-e-3',
+                    temperature: 0.7,
+                    maxTokens: 1000,
+                    systemPrompt: 'Ты - специализированный ассистент для генерации изображений...',
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: '3',
+                    name: 'Распознавание речи Whisper',
+                    model: 'stt-openai/whisper-1',
+                    temperature: 0.3,
+                    maxTokens: 1500,
+                    systemPrompt: 'Ты - специализированный ассистент для работы с аудио...',
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: '4',
+                    name: 'Генератор видео Kling',
+                    model: 'txt2vid-kling/standart',
+                    temperature: 0.7,
+                    maxTokens: 2000,
+                    systemPrompt: 'Ты - специализированный ассистент для генерации видео...',
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: '5',
+                    name: 'Конвертер документов в текст',
+                    model: 'utils/extract-text-1.0',
+                    temperature: 0.3,
+                    maxTokens: 3000,
+                    systemPrompt: 'Ты - специализированный ассистент для конвертации документов...',
+                    createdAt: new Date().toISOString()
+                }
+            ];
+            
+            localStorage.setItem('chat_presets', JSON.stringify(defaultPresets));
+            log(logElement, `✅ Создано ${defaultPresets.length} пресетов`);
+            defaultPresets.forEach(preset => {
+                log(logElement, `  - ${preset.name} (${preset.model})`);
+            });
+        }
+
+        function loadPresets() {
+            const logElement = 'presets-log';
+            log(logElement, '📥 Загрузка пресетов из localStorage...');
+            
+            const storedPresets = localStorage.getItem('chat_presets');
+            if (storedPresets) {
+                try {
+                    const presets = JSON.parse(storedPresets);
+                    log(logElement, `✅ Загружено ${presets.length} пресетов`);
+                    presets.forEach(preset => {
+                        log(logElement, `  - ${preset.name} (${preset.model})`);
+                    });
+                } catch (e) {
+                    log(logElement, `❌ Ошибка загрузки пресетов: ${e.message}`);
+                }
+            } else {
+                log(logElement, '❌ Пресеты не найдены в localStorage');
+            }
+        }
+
+        function testPresetButton(presetName) {
+            const logElement = 'button-test-log';
+            log(logElement, `🎯 Тест кнопки пресета: "${presetName}"`);
+            
+            const storedPresets = localStorage.getItem('chat_presets');
+            if (!storedPresets) {
+                log(logElement, '❌ Пресеты не найдены в localStorage');
+                return;
+            }
+            
+            try {
+                const presets = JSON.parse(storedPresets);
+                const preset = presets.find(p => p.name === presetName);
+                
+                if (preset) {
+                    log(logElement, `✅ Пресет найден: ${preset.name}`);
+                    log(logElement, `  Модель: ${preset.model}`);
+                    log(logElement, `  Temperature: ${preset.temperature}`);
+                    log(logElement, `  MaxTokens: ${preset.maxTokens}`);
+                    log(logElement, `  SystemPrompt: ${preset.systemPrompt ? 'Есть' : 'Нет'}`);
+                } else {
+                    log(logElement, `❌ Пресет "${presetName}" не найден`);
+                    log(logElement, `Доступные пресеты:`);
+                    presets.forEach(p => {
+                        log(logElement, `  - ${p.name}`);
+                    });
+                }
+            } catch (e) {
+                log(logElement, `❌ Ошибка поиска пресета: ${e.message}`);
+            }
+        }
+
+        // Автоматическая проверка при загрузке страницы
+        window.onload = function() {
+            log('localStorage-log', '🚀 Страница загружена. Автоматическая проверка...');
+            checkLocalStorage();
+        };
+    </script>
+</body>
+</html> 

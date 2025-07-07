@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Row, Col, Tabs, Table, Button, Upload, message, Statistic, Spin, Space, Typography, Avatar, Tag, Select, Modal, Badge, Tooltip, DatePicker, Input, Form, Progress, Calendar, ConfigProvider } from 'antd';
-import { UploadOutlined, DownloadOutlined, DatabaseOutlined, CalendarOutlined, TeamOutlined, FileTextOutlined, CustomerServiceOutlined, UserOutlined, CheckCircleOutlined, ClockCircleOutlined, MessageOutlined, ExclamationCircleOutlined, EditOutlined, PlusOutlined, CloseCircleOutlined, BarChartOutlined, DeleteOutlined, FileExcelOutlined, PhoneOutlined } from '@ant-design/icons';
+import { Card, Row, Col, Tabs, Table, Button, Upload, message, Statistic, Spin, Space, Typography, Avatar, Tag, Select, Modal, Badge, Tooltip, DatePicker, Input, Form, Progress, Calendar, ConfigProvider, Divider } from 'antd';
+import { UploadOutlined, DownloadOutlined, DatabaseOutlined, CalendarOutlined, TeamOutlined, FileTextOutlined, CustomerServiceOutlined, UserOutlined, CheckCircleOutlined, ClockCircleOutlined, MessageOutlined, ExclamationCircleOutlined, EditOutlined, PlusOutlined, CloseCircleOutlined, BarChartOutlined, DeleteOutlined, FileExcelOutlined, PhoneOutlined, CopyOutlined } from '@ant-design/icons';
 import { getAdminMetrics, exportTableCsv, importTableCsv } from '../api/adminApi';
 import { useAuth } from '../context/AuthContext';
 import dayjs from 'dayjs';
@@ -502,7 +502,55 @@ const AdminDashboard: React.FC = () => {
       
       if (res.ok) {
         const data = await res.json();
-        message.success(`Пользователь создан! Логин: ${data.username}, Пароль: ${data.generated_password}`);
+        
+        // Показываем подробное сообщение с паролем и инструкциями
+        Modal.success({
+          title: 'Пользователь создан успешно!',
+          content: (
+            <div>
+              <p><strong>Логин:</strong> <span style={{ color: '#1890ff', fontWeight: 'bold' }}>{data.username}</span></p>
+              <p><strong>Email:</strong> {data.email}</p>
+              <p><strong>ФИО:</strong> {data.last_name} {data.first_name} {data.patronymic}</p>
+              <p><strong>Роль:</strong> {data.role}</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px' }}>
+                <p style={{ margin: 0 }}><strong>Сгенерированный пароль:</strong></p>
+                <span style={{ color: '#1890ff', fontWeight: 'bold', fontSize: '16px' }}>{data.generated_password}</span>
+                <Tooltip title="Копировать пароль">
+                  <Button 
+                    type="text" 
+                    icon={<CopyOutlined />} 
+                    size="small"
+                    onClick={() => copyPasswordToClipboard(data.generated_password)}
+                  />
+                </Tooltip>
+              </div>
+              <Divider />
+              <div style={{ backgroundColor: '#f6ffed', padding: '12px', borderRadius: '6px', marginTop: '12px' }}>
+                <h4 style={{ margin: '0 0 8px 0', color: '#52c41a' }}>📋 Инструкции для администратора:</h4>
+                <ol style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li><strong>Сохраните пароль</strong> - он показывается только один раз</li>
+                  <li><strong>Передайте логин и пароль пользователю</strong> безопасным способом</li>
+                  <li><strong>Предупредите пользователя</strong>, что при первом входе потребуется сменить пароль</li>
+                </ol>
+              </div>
+              <div style={{ backgroundColor: '#fff7e6', padding: '12px', borderRadius: '6px', marginTop: '12px' }}>
+                <h4 style={{ margin: '0 0 8px 0', color: '#fa8c16' }}>⚠️ Важно для пользователя:</h4>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Войти с логином: <strong>{data.username}</strong></li>
+                  <li>Использовать пароль: <strong>{data.generated_password}</strong></li>
+                  <li>Сменить пароль при первом входе (автоматически)</li>
+                  <li>Использовать новый пароль для дальнейших входов</li>
+                </ul>
+              </div>
+            </div>
+          ),
+          width: 600,
+          okText: 'Понятно',
+          onOk: () => {
+            message.success('Данные пользователя сохранены. Не забудьте передать логин и пароль!');
+          }
+        });
+        
         setUserModalVisible(false);
         userForm.resetFields();
         setUserEditData(null);
@@ -516,6 +564,15 @@ const AdminDashboard: React.FC = () => {
       console.error('Ошибка создания пользователя:', e);
       message.error('Ошибка создания пользователя');
     }
+  };
+
+  // Функция копирования пароля в буфер обмена
+  const copyPasswordToClipboard = (password: string) => {
+    navigator.clipboard.writeText(password).then(() => {
+      message.success('Пароль скопирован в буфер обмена');
+    }).catch(() => {
+      message.error('Не удалось скопировать пароль');
+    });
   };
 
   // Функция генерации нового пароля
@@ -536,7 +593,52 @@ const AdminDashboard: React.FC = () => {
           ...prev,
           [userId]: data.new_password
         }));
-        message.success(`Новый пароль: ${data.new_password}`);
+        
+        // Показываем подробное сообщение с инструкциями
+        Modal.success({
+          title: 'Новый пароль сгенерирован',
+          content: (
+            <div>
+              <p><strong>Пользователь:</strong> {data.username}</p>
+              <p><strong>Email:</strong> {data.email}</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <p style={{ margin: 0 }}><strong>Новый пароль:</strong></p>
+                <span style={{ color: '#1890ff', fontWeight: 'bold', fontSize: '16px' }}>{data.new_password}</span>
+                <Tooltip title="Копировать пароль">
+                  <Button 
+                    type="text" 
+                    icon={<CopyOutlined />} 
+                    size="small"
+                    onClick={() => copyPasswordToClipboard(data.new_password)}
+                  />
+                </Tooltip>
+              </div>
+              <Divider />
+              <div style={{ backgroundColor: '#f6ffed', padding: '12px', borderRadius: '6px', marginTop: '12px' }}>
+                <h4 style={{ margin: '0 0 8px 0', color: '#52c41a' }}>📋 Инструкции для администратора:</h4>
+                <ol style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li><strong>Сохраните пароль</strong> - он показывается только один раз</li>
+                  <li><strong>Передайте пароль пользователю</strong> безопасным способом</li>
+                  <li><strong>Предупредите пользователя</strong>, что при первом входе потребуется сменить пароль</li>
+                </ol>
+              </div>
+              <div style={{ backgroundColor: '#fff7e6', padding: '12px', borderRadius: '6px', marginTop: '12px' }}>
+                <h4 style={{ margin: '0 0 8px 0', color: '#fa8c16' }}>⚠️ Важно для пользователя:</h4>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Войти с новым паролем</li>
+                  <li>Сменить пароль при первом входе (автоматически)</li>
+                  <li>Использовать новый пароль для дальнейших входов</li>
+                </ul>
+              </div>
+            </div>
+          ),
+          width: 600,
+          okText: 'Понятно',
+          onOk: () => {
+            message.success('Пароль сохранен в памяти. Не забудьте передать его пользователю!');
+          }
+        });
+        
         // Обновляем список пользователей
         loadUsers();
       } else {

@@ -25,7 +25,7 @@ export const login = async (username: string, password: string) => {
   const params = new URLSearchParams();
   params.append("username", username);
   params.append("password", password);
-  const response = await fetch(`${API_BASE_URL}/token`, {
+  const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded"
@@ -201,5 +201,10 @@ export const changePassword = async (currentPassword: string | undefined, newPas
   const body: any = { new_password: newPassword };
   if (currentPassword !== undefined) body.current_password = currentPassword;
   const response = await apiClient.post("/change_password/", body);
+  return response.data;
+};
+
+export const getUserProfile = async () => {
+  const response = await apiClient.get("/api/users/profile");
   return response.data;
 }; 

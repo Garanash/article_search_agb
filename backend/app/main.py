@@ -618,4 +618,8 @@ app.include_router(requests_api.router, prefix="/api")
 app.include_router(analytics_api.router, prefix="/api")
 app.include_router(support_api.router, prefix="/api")
 app.include_router(support_tickets.router, prefix="/api")
-app.include_router(admin_dashboard.router, prefix="/api") 
+app.include_router(admin_dashboard.router, prefix="/api")
+
+# Подключаем новый роутер чата
+from api import chat_api as new_chat_api
+app.include_router(new_chat_api.router, prefix="/api") 
