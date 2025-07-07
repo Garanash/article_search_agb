@@ -322,6 +322,109 @@ class NewsResponse(BaseModel):
     image_url: Optional[str]
     created_at: datetime
     updated_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+# Схемы для системы писем
+class EmailCampaignCreate(BaseModel):
+    name: str
+    supplier_email: str
+    supplier_name: str
+    supplier_website: Optional[str] = None
+    supplier_country: Optional[str] = None
+    subject: str
+    body: str
+    article_ids: List[int]  # Список ID артикулов
+
+class EmailCampaignUpdate(BaseModel):
+    name: Optional[str] = None
+    subject: Optional[str] = None
+    body: Optional[str] = None
+    status: Optional[str] = None
+
+class EmailCampaignResponse(BaseModel):
+    id: int
+    name: str
+    supplier_email: str
+    supplier_name: str
+    supplier_website: Optional[str] = None
+    supplier_country: Optional[str] = None
+    status: str
+    subject: str
+    body: str
+    user_id: int
+    created_at: datetime
+    updated_at: datetime
+    sent_at: Optional[datetime] = None
+    last_reply_at: Optional[datetime] = None
+    articles_count: int
+    messages_count: int
+    
+    class Config:
+        from_attributes = True
+
+class EmailCampaignArticleResponse(BaseModel):
+    id: int
+    campaign_id: int
+    article_id: int
+    request_id: int
+    quantity: int
+    notes: Optional[str] = None
+    article_code: str
+    
+    class Config:
+        from_attributes = True
+
+class EmailMessageCreate(BaseModel):
+    message_type: str  # "sent" или "received"
+    subject: str
+    body: str
+    from_email: str
+    to_email: str
+    external_id: Optional[str] = None
+
+class EmailMessageResponse(BaseModel):
+    id: int
+    campaign_id: int
+    message_type: str
+    subject: str
+    body: str
+    from_email: str
+    to_email: str
+    external_id: Optional[str] = None
+    sent_at: datetime
+    read_at: Optional[datetime] = None
 
     class Config:
-        from_attributes = True 
+        from_attributes = True
+
+class EmailAttachmentResponse(BaseModel):
+    id: int
+    message_id: int
+    filename: str
+    file_path: str
+    file_size: Optional[int]
+    mime_type: Optional[str]
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+class SupplierGroupingRequest(BaseModel):
+    request_ids: List[int]  # Список ID запросов для группировки
+    template_id: Optional[int] = None  # ID шаблона письма
+
+class SupplierGroupingArticle(BaseModel):
+    code: str
+    quantity: int
+    requests: List[int]
+
+class SupplierGroupingResponse(BaseModel):
+    supplier_email: str
+    supplier_name: str
+    supplier_website: Optional[str] = None
+    supplier_country: Optional[str] = None
+    articles: List[SupplierGroupingArticle]
+    requests: List[int]
+    total_articles: int 

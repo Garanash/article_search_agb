@@ -8,8 +8,9 @@ import AdminDashboard from "./components/AdminDashboard";
 import ChangePasswordModal from "./components/ChangePasswordModal";
 import ProfileManager from './components/ProfileManager';
 import ChatBot from './components/ChatBot';
+import EmailCampaigns from './components/EmailCampaigns';
 import { Layout, Menu, Button, Tabs, Dropdown, Space, Card, Form, Input, Select, Typography, message } from "antd";
-import { LogoutOutlined, UserOutlined, SettingOutlined, RobotOutlined, CustomerServiceOutlined, DashboardOutlined, SaveOutlined, FileTextOutlined } from "@ant-design/icons";
+import { LogoutOutlined, UserOutlined, SettingOutlined, RobotOutlined, CustomerServiceOutlined, DashboardOutlined, SaveOutlined, FileTextOutlined, MailOutlined } from "@ant-design/icons";
 import "antd/dist/reset.css";
 import ru_RU from 'antd/lib/locale/ru_RU';
 import { ConfigProvider } from 'antd';
@@ -91,18 +92,19 @@ const tabStyles = `
   
   /* Кнопка пользователя */
   .user-button {
-    background: #34495e !important;
-    border: 1px solid #5a6c7d !important;
+    background: #f4d03f !important;
+    border: 1px solid #d4af37 !important;
     border-radius: 4px !important;
     padding: 8px 16px !important;
     transition: all 0.3s ease !important;
-    color: #ffffff !important;
-    font-weight: 500 !important;
+    color: #222 !important;
+    font-weight: 600 !important;
   }
   
   .user-button:hover {
-    background: #5a6c7d !important;
+    background: #ffe066 !important;
     border-color: #d4af37 !important;
+    color: #222 !important;
     transform: translateY(-1px) !important;
     box-shadow: 0 2px 8px rgba(212, 175, 55, 0.2) !important;
   }
@@ -517,6 +519,15 @@ const tabStyles = `
   ::-webkit-scrollbar-thumb {
     background: linear-gradient(135deg, #adb5bd, #6c757d) !important;
   }
+
+  .ant-btn.user-button,
+  .ant-btn.user-button:focus,
+  .ant-btn.user-button:hover {
+    background: #f4d03f !important;
+    color: #222 !important;
+    border: 1px solid #d4af37 !important;
+    font-weight: 600 !important;
+  }
 `;
 
 // Адаптивные стили для разных размеров экранов
@@ -730,7 +741,7 @@ const Main: React.FC = () => {
             }}
             placement="bottomRight"
           >
-            <Button type="text" className="user-button">
+            <Button type="text" className="user-button" style={{ background: '#f4d03f', color: '#222', border: '1px solid #d4af37', fontWeight: 600 }}>
               <Space>
                 <UserOutlined />
                 {user?.username || 'Пользователь'}

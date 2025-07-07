@@ -194,4 +194,74 @@ class News(Base):
     text = Column(Text, nullable=False)
     image_url = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow) 
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+# Новые модели для системы писем
+class EmailCampaign(Base):
+    __tablename__ = "email_campaigns"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)  # Название кампании
+    supplier_email = Column(String, nullable=False)  # Email поставщика
+    supplier_name = Column(String, nullable=True)  # Название поставщика
+    supplier_website = Column(String, nullable=True)  # Сайт поставщика
+    supplier_country = Column(String, nullable=True)  # Страна поставщика
+    status = Column(String, default="draft")  # draft, sent, replied, closed
+    subject = Column(String, nullable=False)  # Тема письма
+    body = Column(Text, nullable=False)  # Текст письма
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)  # Кто создал
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    sent_at = Column(DateTime, nullable=True)  # Когда отправлено
+    last_reply_at = Column(DateTime, nullable=True)  # Последний ответ
+    
+    # Связи
+    user = relationship("User", back_populates="email_campaigns")
+    articles = relationship("EmailCampaignArticle", back_populates="campaign")
+    messages = relationship("EmailMessage", back_populates="campaign")
+
+class EmailCampaignArticle(Base):
+    __tablename__ = "email_campaign_articles"
+    id = Column(Integer, primary_key=True, index=True)
+    campaign_id = Column(Integer, ForeignKey("email_campaigns.id"), nullable=False)
+    article_id = Column(Integer, ForeignKey("articles.id"), nullable=False)
+    request_id = Column(Integer, ForeignKey("requests.id"), nullable=True)  # Из какого запроса
+    quantity = Column(Integer, default=1)  # Количество
+    notes = Column(Text, nullable=True)  # Примечания
+    
+    # Связи
+    campaign = relationship("EmailCampaign", back_populates="articles")
+    article = relationship("Article")
+    request = relationship("Request")
+
+class EmailMessage(Base):
+    __tablename__ = "email_messages"
+    id = Column(Integer, primary_key=True, index=True)
+    campaign_id = Column(Integer, ForeignKey("email_campaigns.id"), nullable=False)
+    message_type = Column(String, nullable=False)  # sent, received
+    subject = Column(String, nullable=True)  # Тема письма
+    body = Column(Text, nullable=False)  # Текст письма
+    from_email = Column(String, nullable=False)  # От кого
+    to_email = Column(String, nullable=False)  # Кому
+    sent_at = Column(DateTime, default=datetime.datetime.utcnow)  # Когда отправлено/получено
+    is_read = Column(Boolean, default=False)  # Прочитано ли
+    external_id = Column(String, nullable=True)  # Внешний ID письма (для интеграции с почтовыми сервисами)
+    
+    # Связи
+    campaign = relationship("EmailCampaign", back_populates="messages")
+    attachments = relationship("EmailAttachment", back_populates="message")
+
+class EmailAttachment(Base):
+    __tablename__ = "email_attachments"
+    id = Column(Integer, primary_key=True, index=True)
+    message_id = Column(Integer, ForeignKey("email_messages.id"), nullable=False)
+    filename = Column(String, nullable=False)  # Имя файла
+    file_path = Column(String, nullable=False)  # Путь к файлу
+    file_size = Column(Integer, nullable=True)  # Размер файла
+    mime_type = Column(String, nullable=True)  # MIME тип
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    
+    # Связи
+    message = relationship("EmailMessage", back_populates="attachments")
+
+# Добавляем обратные связи в модель User
+User.email_campaigns = relationship("EmailCampaign", back_populates="user") 

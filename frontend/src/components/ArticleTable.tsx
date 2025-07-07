@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { getArticles, addArticle, getSuppliers, searchSuppliers, deleteArticle, updateSupplierEmail, whoisCheck, searchEmailPerplexity, deleteSupplier, updateSupplierEmailValidated, createRequest, addArticleToRequest, removeArticleFromRequest, getRequests, getArticlesByRequest } from "../api/api";
 import { useAuth } from "../context/AuthContext";
 import SupplierRow from "./SupplierRow";
-import { Table, Button, Input, Space, message, Spin, Typography, Form, Card, Tooltip, Modal, Select } from "antd";
+import { Table, Button, Input, Space, message, Spin, Typography, Form, Card, Tooltip, Modal, Select, List, Tag, Alert } from "antd";
 import { SearchOutlined, PlusOutlined, ReloadOutlined, MailOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import { Resizable } from 'react-resizable';
@@ -39,6 +39,7 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId, requests, 
   });
   const [emailSearchLoading, setEmailSearchLoading] = useState<{ [key: number]: boolean }>({});
   const [whoisStatus, setWhoisStatus] = useState<{ [key: string]: 'valid' | 'invalid' | 'checking' | undefined }>({});
+  const [emailStatuses, setEmailStatuses] = useState<{ [email: string]: string }>({});
   // 1. Кнопка массовой проверки whois
   const handleWhoisCheckAll = async (articleId: number) => {
     let list = suppliers[articleId] || [];
@@ -565,21 +566,6 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId, requests, 
       onHeaderCell: (col: any) => ({ width: supplierColWidths.country, onResize: handleResize('country') }),
     },
     {
-      title: <span style={{ textAlign: 'center', width: '100%' }}>Письмо</span>,
-      key: "emailAction",
-      width: supplierColWidths.emailAction,
-      sorter: false,
-      showSorterTooltip: false,
-      render: (_: any, supplier: any) => (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
-          <Button icon={<MailOutlined />} onClick={() => setEmailDialogSupplier(supplier)}>
-            Письмо
-          </Button>
-        </div>
-      ),
-      onHeaderCell: (col: any) => ({ width: supplierColWidths.emailAction, onResize: handleResize('emailAction') }),
-    },
-    {
       title: <span style={{ textAlign: 'center', width: '100%' }}>Удаление</span>,
       key: "deleteSupplier",
       width: 60,
@@ -716,6 +702,76 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId, requests, 
       setSupplierColWidths(prev => ({ ...prev, country: width }));
     }
   }, [suppliers]);
+
+  // Ключевые слова для группировки брендов с разными приписками
+  const BRAND_KEYWORDS = [
+    'donaldson', 'bosch', 'caterpillar', 'komatsu', 'volvo', 'hitachi', 'cummins', 'doosan', 'liebherr', 'hyundai', 'kubota', 'yanmar', 'perkins', 'jcb', 'case', 'new holland', 'clark', 'toyota', 'mitsubishi', 'hyster', 'manitou', 'bobcat', 'terex', 'atlas copco', 'ingersoll', 'sandvik', 'sumitomo', 'kobelco', 'daewoo', 'isuzu', 'maz', 'kamaz', 'iveco', 'scania', 'man', 'mercedes', 'volkswagen', 'ford', 'renault', 'peugeot', 'citroen', 'fiat', 'nissan', 'mazda', 'honda', 'subaru', 'suzuki', 'mitsubishi', 'lexus', 'toyota', 'kia', 'hyundai', 'ssangyong', 'daewoo', 'chevrolet', 'opel', 'lada', 'ваз', 'газ', 'уаз', 'зил', 'урал', 'паз', 'луидор', 'дональдсон', 'бош', 'катерпиллар', 'комацу', 'вольво', 'хитачи', 'кубота', 'янмар', 'перкинс', 'джи си би', 'кейc', 'кларк', 'тойота', 'митсубиси', 'маниту', 'бобкэт', 'терекс', 'атлас копко', 'ингерсолл', 'сэндвик', 'сумитомо', 'кобелко', 'исузу', 'маз', 'камаз', 'мерседес', 'форд', 'рено', 'пежо', 'фиат', 'ниссан', 'мазда', 'хонда', 'субару', 'сузуки', 'лексус', 'киа', 'сангёнг', 'шевроле', 'опель', 'лада', 'ваз', 'газ', 'уаз', 'зил', 'урал', 'паз', 'луидор'
+  ];
+
+  // Группировка компаний по email, названию и бренду (без дубликатов)
+  const groupedCompanies = React.useMemo(() => {
+    if (!activeRequestId || articles.length === 0) return [];
+    const companyMap: { [key: string]: { name: string; email: string; articles: string[] } } = {};
+    articles.forEach(article => {
+      const supps = suppliers[article.id] || [];
+      supps.forEach(supp => {
+        let key = '';
+        let normalizedName = (supp.name || '').toLowerCase().replace(/[ё]/g, 'е');
+        // Проверяем по ключевым словам брендов
+        const brand = BRAND_KEYWORDS.find(kw => normalizedName.includes(kw));
+        if (brand) {
+          key = 'brand:' + brand;
+        } else if (supp.email && typeof supp.email === 'string' && supp.email.trim()) {
+          key = supp.email.trim().toLowerCase();
+        } else if (supp.name && typeof supp.name === 'string' && supp.name.trim()) {
+          key = 'name:' + normalizedName;
+        } else {
+          return;
+        }
+        if (!companyMap[key]) {
+          companyMap[key] = {
+            name: supp.name,
+            email: supp.email || '',
+            articles: []
+          };
+        } else {
+          // Если email пустой, но у дубликата есть email — обновим
+          if (!companyMap[key].email && supp.email) {
+            companyMap[key].email = supp.email;
+          }
+        }
+        if (!companyMap[key].articles.includes(article.code)) {
+          companyMap[key].articles.push(article.code);
+        }
+      });
+    });
+    return Object.values(companyMap);
+  }, [activeRequestId, articles, suppliers]);
+
+  // Функция отправки письма через внешний API
+  const handleSendEmail = async (company: { name: string; email: string; articles: string[] }) => {
+    setEmailStatuses(prev => ({ ...prev, [company.email]: "⏳ Отправляется..." }));
+    const messageText = `Напиши письмо ${company.name} и запроси комерческое предложение на артикулы: ${company.articles.join(", ")}`;
+    try {
+      const res = await fetch('https://api.ai.almazgeobur.ru/api/v1.0/ask/BCcVaD0QZ6i43Y4jMqYInCZISQsxp7qz', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bot_id: 19837,
+          chat_id: "chat_" + Date.now(),
+          message: messageText
+        })
+      });
+      const data = await res.json();
+      if (data.done) {
+        setEmailStatuses(prev => ({ ...prev, [company.email]: "✅ Отправлено" }));
+      } else {
+        setEmailStatuses(prev => ({ ...prev, [company.email]: "❌ Ошибка: API не вернул результат" }));
+      }
+    } catch (e: any) {
+      setEmailStatuses(prev => ({ ...prev, [company.email]: `❌ Ошибка: ${e.message}` }));
+    }
+  };
 
   return (
     <div style={{ display: 'flex', justifyContent: 'center', minHeight: '100vh', width: '100%' }}>
@@ -863,6 +919,41 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId, requests, 
             }}
           />
         </Spin>
+        {activeRequestId && groupedCompanies.length > 0 && (
+          <Card style={{ marginTop: 32, background: '#fffbe6', border: '1px solid #ffe066' }}>
+            <Title level={4} style={{ color: '#b7950b' }}>Запросить цены у компаний</Title>
+            <List
+              dataSource={groupedCompanies}
+              renderItem={company => (
+                <List.Item
+                  actions={[
+                    <Tooltip title="Отправить письмо на email">
+                      <Button
+                        type="primary"
+                        icon={<MailOutlined />}
+                        loading={emailStatuses[company.email]?.startsWith('⏳')}
+                        onClick={() => handleSendEmail(company)}
+                        disabled={!!emailStatuses[company.email]?.startsWith('✅')}
+                      >
+                        Запросить цены
+                      </Button>
+                    </Tooltip>,
+                    emailStatuses[company.email] && (
+                      <span style={{ minWidth: 120, display: 'inline-block' }}>{emailStatuses[company.email]}</span>
+                    )
+                  ]}
+                >
+                  <List.Item.Meta
+                    title={<span><b>{company.name}</b> <Tag color="gold">{company.email}</Tag></span>}
+                    description={<span>Артикулы: {company.articles.map(a => <Tag key={a}>{a}</Tag>)}</span>}
+                  />
+                </List.Item>
+              )}
+              locale={{ emptyText: 'Нет компаний с email для отправки запроса.' }}
+            />
+            <Alert type="info" showIcon style={{ marginTop: 16 }} message="Письмо отправляется через внешний сервис. Статус отображается справа от кнопки." />
+          </Card>
+        )}
         {emailDialogSupplier && (
           <EmailDialog supplier={emailDialogSupplier} onClose={() => setEmailDialogSupplier(null)} />
         )}
