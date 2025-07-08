@@ -1,144 +1,81 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
+import AuthContext from "../context/AuthContext";
 import { login } from "../api/api";
-import { useAuth } from "../context/AuthContext";
-import { Form, Input, Button, Card, Typography, message } from "antd";
-import { EyeTwoTone, EyeInvisibleOutlined } from '@ant-design/icons';
-
-const { Title, Text } = Typography;
-
-// Адаптивные стили для формы входа
-const loginStyles = {
-  container: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    minHeight: "100vh",
-    padding: "20px",
-    background: "linear-gradient(135deg, #23272f 0%, #181c22 100%)", // тёмный фон
-  },
-  
-  card: {
-    width: "100%",
-    maxWidth: "400px",
-    boxShadow: "0 4px 24px rgba(0,0,0,0.7)",
-    borderRadius: "12px",
-    background: "#23272f",
-    border: "1px solid #343a40",
-    color: "#fff",
-  },
-  
-  title: {
-    textAlign: "center" as const,
-    marginBottom: "16px",
-    color: "#FCB813",
-    fontWeight: 700,
-    letterSpacing: 1,
-  },
-  
-  submitButton: {
-    height: "40px",
-    fontSize: "16px",
-    background: "linear-gradient(90deg, #d4af37 0%, #FCB813 100%)",
-    border: "none",
-    color: '#FCB813',
-    fontWeight: 600,
-  },
-  logo: {
-    display: "block",
-    margin: "0 auto 24px auto",
-    width: "150px",
-    filter: "drop-shadow(0 2px 8px #0008)",
-  },
-  label: {
-    color: '#f4d03f',
-    fontWeight: 500,
-  },
-  input: {
-    background: '#181c22',
-    color: '#fff',
-    borderColor: '#444',
-  },
-};
 
 const LoginForm: React.FC = () => {
-  const { setToken, setForcePasswordChange } = useAuth();
+  const { setToken } = useContext(AuthContext);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const onFinish = async (values: { username: string; password: string }) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setLoading(true);
+    setError("");
     try {
-      const data = await login(values.username, values.password);
+      const data = await login(username, password);
       setToken(data.access_token);
-      
-      // Если требуется смена пароля, устанавливаем флаг
-      if (data.force_password_change) {
-        setForcePasswordChange(true);
-        message.info('Требуется смена пароля при первом входе');
-      }
-      
-      message.success("Успешный вход!");
-    } catch {
-      message.error("Неверный логин или пароль");
+    } catch (err: any) {
+      setError("Неверный логин или пароль");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={loginStyles.container}>
-      <Card style={loginStyles.card} className="login-form-card">
-        <Title level={3} style={loginStyles.title} className="login-form-title">
-          Вход в систему
-        </Title>
-        <img 
-          src="https://almazgeobur.kz/wp-content/uploads/2021/08/agb_logo_h-2.svg"
-          alt="AGB Logo"
-          style={loginStyles.logo}
-        />
-        <Form 
-          layout="vertical" 
-          onFinish={onFinish}
-          size="large"
-          style={{ color: '#fff' }}
-        >
-          <Form.Item 
-            name="username" 
-            label={<span style={loginStyles.label}>Логин</span>} 
-            rules={[{ required: true, message: "Введите логин" }]}
-          > 
-            <Input autoFocus style={{ ...loginStyles.input, color: '#fff' }} />
-          </Form.Item>
-          <Form.Item 
-            name="password" 
-            label={<span style={loginStyles.label}>Пароль</span>} 
-            rules={[{ required: true, message: "Введите пароль" }]}
-          > 
-            <Input.Password 
-              style={{ ...loginStyles.input, color: '#fff' }} 
-              iconRender={visible => visible 
-                ? <EyeTwoTone twoToneColor="#fff" style={{ color: '#fff' }} />
-                : <EyeInvisibleOutlined style={{ color: '#fff' }} />
-              }
-            />
-          </Form.Item>
-          <Form.Item>
-            <Button 
-              type="primary" 
-              htmlType="submit" 
-              block 
-              loading={loading}
-              style={{ ...loginStyles.submitButton, color: '#111' }}
-            >
-              Войти
-            </Button>
-          </Form.Item>
-        </Form>
-        <div style={{ textAlign: "center", marginTop: "16px" }}>
-          <Text type="secondary" style={{ fontSize: "12px", color: '#aaa' }}>
-            Для входа используйте данные, предоставленные администратором
-          </Text>
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f6f7f9" }}>
+      <form
+        onSubmit={handleSubmit}
+        style={{
+          background: "#fff",
+          padding: 48,
+          borderRadius: 18,
+          boxShadow: "0 2px 16px #b0bec540",
+          minWidth: 340,
+          display: "flex",
+          flexDirection: "column",
+          gap: 24,
+          border: "1.5px solid #e3e7ed"
+        }}
+      >
+        <div style={{ textAlign: "center", marginBottom: 8 }}>
+          <span style={{ fontWeight: 700, fontSize: 26, color: "#23272b", letterSpacing: 1 }}>Вход в систему</span>
         </div>
-      </Card>
+        <input
+          type="text"
+          placeholder="Логин"
+          value={username}
+          onChange={e => setUsername(e.target.value)}
+          autoFocus
+          style={{ fontSize: 18, padding: 14, borderRadius: 10, border: "1.5px solid #e3e7ed" }}
+        />
+        <input
+          type="password"
+          placeholder="Пароль"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          style={{ fontSize: 18, padding: 14, borderRadius: 10, border: "1.5px solid #e3e7ed" }}
+        />
+        {error && <div style={{ color: "#c62828", background: "#ffebee", borderRadius: 10, padding: 12, fontSize: 16, border: "1.5px solid #ffcdd2", textAlign: "center" }}>{error}</div>}
+        <button
+          type="submit"
+          disabled={loading}
+          style={{
+            background: "#23272b",
+            color: "#fff",
+            border: "none",
+            borderRadius: 10,
+            padding: "14px 0",
+            fontSize: 19,
+            fontWeight: 700,
+            cursor: loading ? "not-allowed" : "pointer",
+            boxShadow: "0 2px 8px #b0bec540"
+          }}
+        >
+          {loading ? "Вход..." : "Войти"}
+        </button>
+      </form>
     </div>
   );
 };

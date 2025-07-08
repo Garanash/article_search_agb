@@ -10,6 +10,7 @@ import 'dayjs/locale/ru';
 dayjs.locale('ru');
 // @ts-ignore
 import ReactECharts from 'echarts-for-react';
+import { apiClient } from '../api/api';
 
 dayjs.extend(isBetween);
 
@@ -178,11 +179,8 @@ const AdminDashboard: React.FC = () => {
   const fetchNews = async () => {
     setNewsLoading(true);
     try {
-      const res = await fetch('/api/users/news', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Ошибка загрузки новостей');
-      const data = await res.json();
+      const res = await apiClient.get('/api/users/news');
+      const data = res.data;
       setNews(data);
     } catch (e) {
       message.error('Ошибка загрузки новостей');
@@ -193,11 +191,8 @@ const AdminDashboard: React.FC = () => {
 
   const fetchAvailableData = async () => {
     try {
-      const res = await fetch('/api/users/available-data', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Ошибка загрузки доступных данных');
-      const data = await res.json();
+      const res = await apiClient.get('/api/users/available-data');
+      const data = res.data;
       setAvailableRoles(data.roles);
       setAvailableDepartments(data.departments);
     } catch (e) {
@@ -207,11 +202,8 @@ const AdminDashboard: React.FC = () => {
 
   const fetchRolesAndDepartments = async () => {
     try {
-      const res = await fetch('/api/users/roles-and-departments', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Ошибка загрузки ролей и департаментов');
-      const data = await res.json();
+      const res = await apiClient.get('/api/users/roles-and-departments');
+      const data = res.data;
       setRoles(data.roles);
       setDepartments(data.departments);
     } catch (e) {
@@ -246,11 +238,7 @@ const AdminDashboard: React.FC = () => {
         const formData = new FormData();
         formData.append('file', file);
         
-        const res = await fetch('http://localhost:8000/api/users/news/upload-image', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}` },
-          body: formData
-        });
+        const res = await apiClient.post('/api/users/news/upload-image', formData);
         
         if (res.ok) {
           const data = await res.json();
@@ -288,14 +276,7 @@ const AdminDashboard: React.FC = () => {
       
       if (newsEditData) {
         // Обновление
-        const res = await fetch(`http://localhost:8000/api/users/news/${newsEditData.id}`, {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(newsData)
-        });
+        const res = await apiClient.put(`/api/users/news/${newsEditData.id}`, newsData);
         
         if (res.ok) {
           message.success('Новость обновлена!');
@@ -310,14 +291,7 @@ const AdminDashboard: React.FC = () => {
         }
       } else {
         // Добавление
-        const res = await fetch('http://localhost:8000/api/users/news', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(newsData)
-        });
+        const res = await apiClient.post('/api/users/news', newsData);
         
         if (res.ok) {
           message.success('Новость добавлена!');
@@ -339,10 +313,7 @@ const AdminDashboard: React.FC = () => {
 
   const handleNewsDelete = async (newsId: number) => {
     try {
-      await fetch(`http://localhost:8000/api/users/news/${newsId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      await apiClient.delete(`/api/users/news/${newsId}`);
       message.success('Новость удалена');
       fetchNews();
     } catch (e) {
@@ -396,11 +367,7 @@ const AdminDashboard: React.FC = () => {
   const loadTickets = async (isMounted = true) => {
     setTicketsLoading(true);
     try {
-      const response = await fetch('/api/support_tickets/', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await apiClient.get('/api/support_tickets/');
       if (!isMounted) return;
       if (response.ok) {
         const data = await response.json();
@@ -420,11 +387,7 @@ const AdminDashboard: React.FC = () => {
 
   const loadEvents = async (isMounted = true) => {
     try {
-      const response = await fetch('/api/support_tickets/calendar/events', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await apiClient.get('/api/support_tickets/calendar/events');
       if (!isMounted) return;
       if (response.ok) {
         const data = await response.json();
@@ -437,11 +400,7 @@ const AdminDashboard: React.FC = () => {
 
   const loadAnalytics = async (isMounted = true) => {
     try {
-      const response = await fetch('/api/support_tickets/analytics/overview', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await apiClient.get('/api/support_tickets/analytics/overview');
       if (!isMounted) return;
       if (response.ok) {
         const data = await response.json();
@@ -454,11 +413,7 @@ const AdminDashboard: React.FC = () => {
 
   const loadUsers = async (isMounted = true) => {
     try {
-      const response = await fetch('/api/users/users', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await apiClient.get('/api/users/users');
       if (!isMounted) return;
       if (response.ok) {
         const data = await response.json();
@@ -491,14 +446,7 @@ const AdminDashboard: React.FC = () => {
         patronymic: values.patronymic
       };
       
-      const res = await fetch('http://localhost:8000/api/users/', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(userData)
-      });
+      const res = await apiClient.post('/api/users/', userData);
       
       if (res.ok) {
         const data = await res.json();
@@ -578,13 +526,7 @@ const AdminDashboard: React.FC = () => {
   // Функция генерации нового пароля
   const handleGeneratePassword = async (userId: number) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/users/${userId}/generate-password`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const res = await apiClient.post(`/api/users/${userId}/generate-password`);
       
       if (res.ok) {
         const data = await res.json();
@@ -662,13 +604,7 @@ const AdminDashboard: React.FC = () => {
       }
 
       // Получаем информацию о пароле
-      const res = await fetch(`http://localhost:8000/api/users/${userId}/password`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const res = await apiClient.get(`/api/users/${userId}/password`);
       
       let passwordInfo = "Информация о пароле недоступна";
       let hashedPassword = "";
@@ -723,13 +659,7 @@ const AdminDashboard: React.FC = () => {
   // Функция попытки расшифровки пароля
   const handleDecryptPassword = async (userId: number) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/users/${userId}/password/decrypt`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const res = await apiClient.get(`/api/users/${userId}/password/decrypt`);
       
       if (res.ok) {
         const data = await res.json();
@@ -773,14 +703,7 @@ const AdminDashboard: React.FC = () => {
         permissions: values.permissions || []
       };
       
-      const res = await fetch('http://localhost:8000/api/users/roles', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(roleData)
-      });
+      const res = await apiClient.post('/api/users/roles', roleData);
       
       if (res.ok) {
         message.success('Роль создана!');
@@ -809,14 +732,7 @@ const AdminDashboard: React.FC = () => {
         manager_id: values.manager_id
       };
       
-      const res = await fetch('http://localhost:8000/api/users/departments', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(departmentData)
-      });
+      const res = await apiClient.post('/api/users/departments', departmentData);
       
       if (res.ok) {
         message.success('Департамент создан!');
@@ -837,12 +753,7 @@ const AdminDashboard: React.FC = () => {
   // Функции для работы с тикетами
   const closeTicket = async (ticketId: number) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/support_tickets/${ticketId}/close`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await apiClient.post(`/api/support_tickets/${ticketId}/close`);
 
       if (response.ok) {
         message.success('Обращение закрыто');
@@ -859,14 +770,7 @@ const AdminDashboard: React.FC = () => {
 
   const updateTicket = async (ticketId: number, updates: any) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/support_tickets/${ticketId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(updates)
-      });
+      const response = await apiClient.put(`/api/support_tickets/${ticketId}`, updates);
 
       if (response.ok) {
         message.success('Обращение обновлено');
@@ -884,14 +788,7 @@ const AdminDashboard: React.FC = () => {
 
   const createEvent = async (ticketId: number, eventData: any) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/support_tickets/${ticketId}/events`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(eventData)
-      });
+      const response = await apiClient.post(`/api/support_tickets/${ticketId}/events`, eventData);
 
       if (response.ok) {
         message.success('Событие создано');
@@ -909,14 +806,7 @@ const AdminDashboard: React.FC = () => {
 
   const updateEvent = async (eventId: number, updates: any) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/support_tickets/events/${eventId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(updates)
-      });
+      const response = await apiClient.put(`/api/support_tickets/events/${eventId}`, updates);
 
       if (response.ok) {
         message.success('Событие обновлено');
@@ -1050,18 +940,11 @@ const AdminDashboard: React.FC = () => {
   const onFinishCalendarEvent = async (values: any) => {
     const forUserId = canCreateForOthers ? values.for_user : user!.id;
     try {
-      const response = await fetch(`http://localhost:8000/api/support_tickets/0/events`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          ...values,
-          for_user: forUserId,
-          start_date: values.start_date.toISOString(),
-          end_date: values.end_date.toISOString(),
-        })
+      const response = await apiClient.post('/api/support_tickets/0/events', {
+        ...values,
+        for_user: forUserId,
+        start_date: values.start_date.toISOString(),
+        end_date: values.end_date.toISOString(),
       });
       if (response.ok) {
         message.success('Событие запланировано');
@@ -1255,9 +1138,7 @@ const AdminDashboard: React.FC = () => {
   const fetchTableData = async (table: string) => {
     setTableLoading(true);
     try {
-      const response = await fetch(`/api/admin/table/${table}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const response = await apiClient.get(`/api/admin/table/${table}`);
       if (response.ok) {
         const data = await response.json();
         setTableData(data);
@@ -1284,11 +1165,7 @@ const AdminDashboard: React.FC = () => {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      await fetch(`/api/admin/import_csv/${activeTable}`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
-        body: formData
-      });
+      await apiClient.post(`/admin/import_csv/${activeTable}`, formData);
       message.success('Импорт завершён');
       fetchTableData(activeTable);
     } catch (e) {
@@ -1302,11 +1179,7 @@ const AdminDashboard: React.FC = () => {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      await fetch(`http://localhost:8000/api/admin/import_xlsx/${activeTable}`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
-        body: formData
-      });
+      await apiClient.post(`/api/admin/import_xlsx/${activeTable}`, formData);
       message.success('Импорт завершён');
       fetchTableData(activeTable);
     } catch (e) {
@@ -1320,11 +1193,7 @@ const AdminDashboard: React.FC = () => {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      await fetch(`http://localhost:8000/api/admin/import_json/${activeTable}`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
-        body: formData
-      });
+      await apiClient.post(`/api/admin/import_json/${activeTable}`, formData);
       message.success('Импорт завершён');
       fetchTableData(activeTable);
     } catch (e) {
@@ -1338,9 +1207,7 @@ const AdminDashboard: React.FC = () => {
   const handleExportCSV = async () => {
     setCsvLoading(true);
     try {
-      const res = await fetch(`/admin/export_csv/${activeTable}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const res = await apiClient.get(`/admin/export_csv/${activeTable}`);
       if (!res.ok) throw new Error('Ошибка экспорта');
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
@@ -1360,10 +1227,7 @@ const AdminDashboard: React.FC = () => {
   // Удаление строки
   const handleDeleteRow = async (row: any) => {
     try {
-      await fetch(`/api/admin/table/${activeTable}/${row.id || row._id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      await apiClient.delete(`/api/admin/table/${activeTable}/${row.id || row._id}`);
       message.success('Строка удалена');
       fetchTableData(activeTable);
     } catch (e) {
@@ -1374,14 +1238,7 @@ const AdminDashboard: React.FC = () => {
   // Добавление строки
   const handleAddRow = async (values: any) => {
     try {
-      await fetch(`/api/admin/table/${activeTable}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(values)
-      });
+      await apiClient.post(`/api/admin/table/${activeTable}`, values);
       message.success('Строка добавлена');
       setAddModalVisible(false);
       setAddRowData({});
@@ -1395,9 +1252,7 @@ const AdminDashboard: React.FC = () => {
   const handleExportFormat = async (format: 'csv' | 'xlsx' | 'json') => {
     setCsvLoading(true);
     try {
-      const res = await fetch(`/api/admin/export_${format}/${activeTable}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const res = await apiClient.get(`/api/admin/export_${format}/${activeTable}`);
       if (!res.ok) throw new Error('Ошибка экспорта');
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
@@ -1420,11 +1275,7 @@ const AdminDashboard: React.FC = () => {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      await fetch(`/api/admin/import_${importFormat}/${activeTable}`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
-        body: formData
-      });
+      await apiClient.post(`/api/admin/import_${importFormat}/${activeTable}`, formData);
       message.success('Импорт завершён');
       fetchTableData(activeTable);
     } catch (e) {
@@ -1628,7 +1479,7 @@ const AdminDashboard: React.FC = () => {
                     {n.image_url && (
                       <div style={{ marginBottom: 12 }}>
                         <img 
-                          src={`${n.image_url}`} 
+                          src={`http://localhost:8000${n.image_url}`} 
                           alt="news" 
                           style={{ maxWidth: 200, maxHeight: 150, objectFit: 'cover', borderRadius: 4 }}
                           onError={(e) => {
@@ -1681,7 +1532,7 @@ const AdminDashboard: React.FC = () => {
             {newsImage && (
               <div style={{ marginTop: 8 }}>
                 <img 
-                  src={`${newsImage}`} 
+                  src={`http://localhost:8000${newsImage}`} 
                   alt="preview" 
                   style={{ maxWidth: 120, maxHeight: 90, objectFit: 'cover', borderRadius: 4 }}
                   onError={(e) => {

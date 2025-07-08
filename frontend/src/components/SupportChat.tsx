@@ -73,7 +73,7 @@ const SupportChat: React.FC = () => {
   const loadMessages = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:8000/api/support/messages', {
+      const response = await fetch('/api/support/messages', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -95,7 +95,7 @@ const SupportChat: React.FC = () => {
 
   const loadDepartments = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/support/departments', {
+      const response = await fetch('/api/support/departments', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -118,7 +118,7 @@ const SupportChat: React.FC = () => {
 
     setSending(true);
     try {
-      const response = await fetch('http://localhost:8000/api/support/send', {
+      const response = await fetch('/api/support/send', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -149,7 +149,7 @@ const SupportChat: React.FC = () => {
 
   const markAsRead = async (messageId: number) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/support/mark-read/${messageId}`, {
+      const response = await fetch(`/api/support/mark-read/${messageId}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`

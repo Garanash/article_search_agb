@@ -670,764 +670,187 @@ const ChatBot: React.FC<ChatBotProps> = ({ onBack }) => {
       : firstMessage.content;
   };
 
+  // Новый layout: слева — настройки и диалоги, справа — чат
   return (
-    <div style={{ 
-      maxWidth: '1400px', 
-      margin: '0 auto', 
-      padding: '24px',
-      minHeight: '120vh',
-      display: 'flex',
-      flexDirection: 'column'
-    }}>
-      {/* Заголовок */}
-      <Card 
-        style={{ 
-          marginBottom: '16px',
-          borderRadius: '12px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <Avatar 
-              size={48} 
-              icon={<RobotOutlined />} 
-              style={{ backgroundColor: '#1890ff' }}
-            />
-            <div>
-              <Title level={4} style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 12, background: 'transparent' }}>
-                IRON FELIX AI
-              </Title>
-              <Text type="secondary">Умный помощник для работы</Text>
-              {balance && balance.data && (
-                <div style={{ marginTop: '4px' }}>
-                  <Tag color={balance.data.user_status === 0 ? 'green' : balance.data.user_status === 1 ? '#FCB813' : 'red'}>
-                    Баланс: {parseFloat(balance.data.credits).toFixed(2)} кредитов
-                  </Tag>
-                  {balance.data.user_status !== 0 && (
-                    <Text type="secondary" style={{ fontSize: '11px', marginLeft: '8px' }}>
-                      {balance.data.user_status_text}
-                    </Text>
-                  )}
-                </div>
-              )}
-            </div>
+    <div style={{ display: 'flex', height: 'calc(100vh - 64px)', minHeight: 600, background: '#f6f7f9' }}>
+      {/* Левая панель: настройки и диалоги */}
+      <div style={{ width: 340, background: '#fff', borderRight: '1.5px solid #e3e7ed', display: 'flex', flexDirection: 'column', height: '100vh', minHeight: 600, maxHeight: '100vh', position: 'relative' }}>
+        {/* Настройки чата и кнопки пресетов в один flexbox */}
+        <div style={{ padding: '24px 20px 12px 20px', borderBottom: '1.5px solid #e3e7ed' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+            <div style={{ fontWeight: 700, fontSize: 18, letterSpacing: 0.5 }}>Настройки</div>
+            <Button type="primary" icon={<PlusOutlined />} size="small" onClick={() => createNewDialog()} />
+            <Button type="default" icon={<BookOutlined />} size="small" onClick={() => setShowPresets(true)} />
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <Space>
-              <Button 
-                icon={<PlusOutlined />} 
-                onClick={() => createNewDialog()}
-                type="primary"
+          <div style={{ marginBottom: 10 }}>
+            <Select
+              value={selectedModel}
+              onChange={setSelectedModel}
+              style={{ width: '100%' }}
+              size="large"
+              options={availableModels.map(m => ({ value: m.value, label: m.label }))}
+            />
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+            <Input
+              type="number"
+              min={0}
+              max={2}
+              step={0.1}
+              value={temperature}
+              onChange={e => setTemperature(Number(e.target.value))}
+              size="small"
+              style={{ width: 80 }}
+              addonBefore="Креативность"
+            />
+            <Input
+              type="number"
+              min={256}
+              max={8000}
+              step={100}
+              value={maxTokens}
+              onChange={e => setMaxTokens(Number(e.target.value))}
+              size="small"
+              style={{ width: 100 }}
+              addonBefore="Токены"
+            />
+          </div>
+          <Input.TextArea
+            value={systemPrompt}
+            onChange={e => setSystemPrompt(e.target.value)}
+            placeholder="Системный prompt (опционально)"
+            autoSize={{ minRows: 1, maxRows: 3 }}
+            style={{ marginBottom: 0 }}
+          />
+        </div>
+        {/* Список диалогов */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '12px 0 0 0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px 8px 20px' }}>
+            <div style={{ fontWeight: 700, fontSize: 16 }}>Диалоги</div>
+          </div>
+          <div style={{ padding: '0 10px' }}>
+            {dialogs.length === 0 && (
+              <div style={{ color: '#aaa', textAlign: 'center', margin: '32px 0' }}>Нет диалогов</div>
+            )}
+            {dialogs.map(dialog => (
+              <div
+                key={dialog.id}
+                style={{
+                  background: currentDialog?.id === dialog.id ? '#e3e7ed' : '#f9fafb',
+                  border: currentDialog?.id === dialog.id ? '2px solid #1976d2' : '1.5px solid #e3e7ed',
+                  borderRadius: 10,
+                  marginBottom: 10,
+                  padding: '12px 14px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  boxShadow: currentDialog?.id === dialog.id ? '0 2px 8px #1976d220' : 'none',
+                  transition: 'all 0.15s'
+                }}
+                onClick={() => setCurrentDialog(dialog)}
               >
-                Новый диалог
-              </Button>
-              <Button 
-                icon={<MessageOutlined />} 
-                onClick={() => setShowDialogs(true)}
-              >
-                Диалоги
-              </Button>
-              <Button 
-                icon={<BookOutlined />} 
-                onClick={() => setShowPresets(true)}
-              >
-                Пресеты {presets.length > 0 && `(${presets.length})`}
-              </Button>
-              <Tooltip title="Сбросить пресеты">
-                <Button 
-                  icon={<ClearOutlined />} 
-                  onClick={resetPresets}
-                  size="small"
-                  type="text"
-                />
-              </Tooltip>
-              <Tooltip title="Настройки">
-                <Button 
-                  icon={<SettingOutlined />} 
-                  onClick={() => setShowSettings(!showSettings)}
-                  type={showSettings ? 'primary' : 'default'}
-                />
-              </Tooltip>
-              {currentDialog && (
-                <Tooltip title="Очистить чат">
-                  <Button 
-                    icon={<ClearOutlined />} 
-                    onClick={clearChat}
-                    danger
-                  />
-                </Tooltip>
-              )}
-            </Space>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <Avatar icon={<MessageOutlined />} size={32} />
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: 15 }}>{getDialogName(dialog)}</div>
+                    <div style={{ color: '#888', fontSize: 12 }}>{formatDate(dialog.updatedAt)}</div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <Badge count={dialog.messages.length} showZero size="small" style={{ background: '#1976d2' }} />
+                  <Popconfirm
+                    title="Удалить диалог?"
+                    onConfirm={e => { e?.stopPropagation(); deleteDialog(dialog.id); }}
+                    okText="Да"
+                    cancelText="Нет"
+                  >
+                    <Button type="text" danger icon={<DeleteOutlined />} size="small" onClick={e => e.stopPropagation()} />
+                  </Popconfirm>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-      </Card>
-
-      {/* Настройки */}
-      {showSettings && (
-        <Card 
-          style={{ 
-            marginBottom: '16px',
-            borderRadius: '12px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-          }}
-        >
-          <Title level={5}>Настройки модели</Title>
-          <Row gutter={[16, 16]}>
-            <Col xs={24} md={8}>
-              <Text strong>Модель:</Text>
-              <Select
-                value={selectedModel}
-                onChange={setSelectedModel}
-                style={{ width: '100%', marginTop: '8px' }}
-                placeholder="Выберите модель"
-                dropdownStyle={{ maxHeight: 300 }}
-                size="large"
-                optionLabelProp="label"
-              >
-                {availableModels.map(model => (
-                  <Option 
-                    key={model.value} 
-                    value={model.value}
-                    label={model.shortLabel}
-                  >
-                    <div style={{ padding: '8px 0' }}>
-                      <div style={{ fontWeight: 'bold' }}>{model.label}</div>
-                      <Text type="secondary" style={{ fontSize: '12px' }}>
-                        {model.description}
-                      </Text>
-                    </div>
-                  </Option>
-                ))}
-              </Select>
-              {selectedModel.startsWith('vis-') && (
-                <Text type="secondary" style={{ fontSize: '12px', marginTop: '4px', display: 'block' }}>
-                  💡 Для Vision-моделей загружайте изображения через кнопку "Прикрепить файл"
-                </Text>
-              )}
-            </Col>
-            <Col xs={12} md={4}>
-              <Text strong>Креативность:</Text>
-              <div style={{ marginTop: '8px' }}>
-                <input
-                  type="range"
-                  min="0"
-                  max="2"
-                  step="0.1"
-                  value={temperature}
-                  onChange={(e) => setTemperature(parseFloat(e.target.value))}
-                  style={{ width: '100%' }}
-                />
-                <Text style={{ marginLeft: '8px' }}>{temperature}</Text>
-              </div>
-            </Col>
-            <Col xs={12} md={4}>
-              <Text strong>Макс. токенов:</Text>
-              <Input
-                type="number"
-                value={maxTokens}
-                onChange={(e) => setMaxTokens(parseInt(e.target.value))}
-                style={{ marginTop: '8px' }}
-                min={100}
-                max={8000}
-              />
-            </Col>
-            <Col xs={24}>
-              <Text strong>Системный промпт:</Text>
-              <TextArea
-                value={systemPrompt}
-                onChange={(e) => setSystemPrompt(e.target.value)}
-                placeholder="Введите системный промпт для настройки поведения модели..."
-                style={{ marginTop: '8px' }}
-                rows={3}
-              />
-            </Col>
-          </Row>
-        </Card>
-      )}
-
-      {/* Основная область чата */}
-      {currentDialog ? (
-        <Card 
-          style={{ 
-            flex: 1,
-            borderRadius: '16px',
-            boxShadow: '0 4px 24px rgba(0,0,0,0.10)',
-            display: 'flex',
-            alignItems: 'stretch',
-            justifyContent: 'center',
-            minHeight: '80vh',
-            maxWidth: '100%',
-            width: '100%',
-            padding: '32px',
-            margin: '0 auto',
-            background: '#fff'
-          }}
-          bodyStyle={{ 
-            padding: '16px',
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column'
-          }}
-        >
-          {/* Заголовок диалога */}
-          <div style={{ 
-            padding: '8px 0', 
-            borderBottom: '1px solid #f0f0f0',
-            marginBottom: '16px',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center'
-          }}>
-            <div>
-              <Text strong>{currentDialog.name}</Text>
-              <Text type="secondary" style={{ marginLeft: '8px', fontSize: '12px' }}>
-                {formatDate(currentDialog.updatedAt)}
-              </Text>
-            </div>
-            <Badge count={currentDialog.messages.length} showZero style={{ backgroundColor: '#52c41a' }} />
-          </div>
-
-          {/* Область сообщений */}
-          <div style={{ 
-            flex: 1, 
-            padding: '8px',
-            minHeight: '80vh',
-            marginBottom: 0
-          }}>
-            {currentDialog.messages.length === 0 ? (
-              <div style={{ 
-                textAlign: 'center', 
-                padding: '40px 20px',
-                color: '#8c8c8c'
-              }}>
-                <RobotOutlined style={{ fontSize: '48px', marginBottom: '16px' }} />
-                <Title level={4} style={{ color: '#8c8c8c' }}>
-                  Начните новый диалог!
-                </Title>
-                <Text>
-                  Задайте любой вопрос, и IRON FELIX AI постарается помочь вам.
-                </Text>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {currentDialog.messages.map((message) => {
-                  // Тотальная защита от невалидных данных
-                  let safeContent = '';
-                  if (typeof message.content === 'string') {
-                    safeContent = message.content;
-                  } else if (Array.isArray(message.content)) {
-                    safeContent = (message.content as any[]).map(String).join(' ');
-                  } else if (message.content) {
-                    safeContent = String(message.content);
-                  } else {
-                    safeContent = '';
-                  }
-                  if (
-                    typeof safeContent !== 'string' ||
-                    Array.isArray(safeContent) ||
-                    (typeof safeContent === 'string' && safeContent.includes('$$typeof'))
-                  ) {
-                    safeContent = '[Ошибка данных]';
-                  }
-                  if (typeof safeContent === 'string') {
-                    safeContent = safeContent.replace(/\\u[0-9a-fA-F]{4}/g, '').replace(/\[object Object\]/g, '');
-                  }
-                  let imageUrl = '';
-                  if (typeof safeContent === 'string') {
-                    // Пробуем вытащить ссылку на изображение из markdown
-                    const match = safeContent.match(/!\[[^\]]*\]\(([^)]+)\)/);
-                    if (match && match[1]) {
-                      imageUrl = match[1];
-                    }
-                  }
-                  let safeReasoning = typeof message.reasoning === 'string' ? message.reasoning : (message.reasoning ? String(message.reasoning) : '');
-                  if (
-                    typeof safeReasoning !== 'string' ||
-                    Array.isArray(safeReasoning) ||
-                    (typeof safeReasoning === 'string' && safeReasoning.includes('$$typeof'))
-                  ) {
-                    safeReasoning = '';
-                  }
-                  let safeFiles = Array.isArray(message.files)
-                    ? message.files.map(f => {
-                        if (!f || typeof f !== 'object' || !('name' in f)) {
-                          return { name: typeof f === 'string' ? f : '[Некорректный файл]' };
-                        }
-                        return { ...f, name: typeof f.name === 'string' ? f.name : '[Некорректное имя файла]' };
-                      })
-                    : [];
-                  return (
-                    <div
-                      key={message.id}
-                      style={{
-                        display: 'flex',
-                        justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start',
-                        gap: '12px'
-                      }}
-                    >
-                      {message.role === 'assistant' && (
-                        <Avatar 
-                          icon={<RobotOutlined />} 
-                          style={{ backgroundColor: '#1890ff' }}
-                        />
-                      )}
-                      <div style={{ maxWidth: '70%', minWidth: '200px' }}>
-                        <Card
-                          size="small"
-                          style={{
-                            backgroundColor: message.role === 'user' ? '#1890ff' : '#f5f5f5',
-                            color: message.role === 'user' ? 'white' : 'inherit',
-                            borderRadius: '12px',
-                            border: 'none'
-                          }}
-                          bodyStyle={{ padding: '12px 16px' }}
-                        >
-                          <div style={{ 
-                            display: 'flex', 
-                            justifyContent: 'space-between', 
-                            alignItems: 'flex-start',
-                            marginBottom: '8px'
-                          }}>
-                            <Text 
-                              strong 
-                              style={{ 
-                                color: message.role === 'user' ? 'black' : 'inherit',
-                                fontSize: '12px'
-                              }}
-                            >
-                              {message.role === 'user' ? user?.username || 'Вы' : 'IRON FELIX AI'}
-                            </Text>
-                            <Space size="small">
-                              <Text 
-                                style={{ 
-                                  color: message.role === 'user' ? 'black' : '#8c8c8c',
-                                  fontSize: '11px'
-                                }}
-                              >
-                                {formatTimestamp(message.timestamp)}
-                              </Text>
-                              <Tooltip title="Копировать">
-                                <Button
-                                  type="text"
-                                  size="small"
-                                  icon={<CopyOutlined />}
-                                  onClick={() => copyMessage(safeContent)}
-                                  style={{ 
-                                    color: message.role === 'user' ? 'black' : '#8c8c8c',
-                                    padding: '0 4px'
-                                  }}
-                                />
-                              </Tooltip>
-                            </Space>
-                          </div>
-                          <div style={{ 
-                            whiteSpace: 'pre-wrap',
-                            lineHeight: '1.5',
-                            color: message.role === 'user' ? 'black' : 'inherit'
-                          }}>
-                            {message.role === 'assistant' && imageUrl ? (
-                              <img
-                                src={imageUrl}
-                                alt="Сгенерированное изображение"
-                                style={{
-                                  maxWidth: '100%',
-                                  borderRadius: 12,
-                                  margin: '12px 0',
-                                  boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
-                                }}
-                              />
-                            ) : message.role === 'assistant' ? (
-                              // Если markdown безопасен, рендерим его, иначе просто текст
-                              (typeof safeContent === 'string' && !safeContent.includes('$$typeof') && !Array.isArray(safeContent)) ? (
-                                <ReactMarkdown
-                                  components={{
-                                    img: (props: any) => (
-                                      <img
-                                        {...props}
-                                        style={{
-                                          maxWidth: '100%',
-                                          borderRadius: 12,
-                                          margin: '12px 0',
-                                          boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
-                                        }}
-                                        alt={props.alt || 'image'}
-                                      />
-                                    )
-                                  }}
-                                >
-                                  {safeContent}
-                                </ReactMarkdown>
-                              ) : (
-                                safeContent
-                              )
-                            ) : (
-                              safeContent
-                            )}
-                          </div>
-                          {safeFiles.length > 0 && (
-                            <div style={{ marginTop: '12px' }}>
-                              <Divider style={{ margin: '8px 0' }} />
-                              <Text style={{ 
-                                color: message.role === 'user' ? 'rgba(255,255,255,0.8)' : '#8c8c8c',
-                                fontSize: '12px'
-                              }}>
-                                Прикрепленные файлы:
-                              </Text>
-                              <div style={{ marginTop: '8px' }}>
-                                {safeFiles.map((file, index) => {
-                                  if (typeof file.name !== 'string') {
-                                    console.error('file.name is not a string:', file.name, file);
-                                  }
-                                  return (
-                                    <Tag 
-                                      key={index}
-                                      icon={<FileOutlined />}
-                                      style={{ 
-                                        margin: '4px',
-                                        backgroundColor: message.role === 'user' ? 'rgba(255,255,255,0.2)' : '#f0f0f0'
-                                      }}
-                                    >
-                                      {typeof file.name === 'string' ? file.name : 'Файл'}
-                                    </Tag>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          )}
-                          {safeReasoning && (
-                            <div style={{ marginTop: '12px' }}>
-                              <Divider style={{ margin: '8px 0' }} />
-                              <details>
-                                <summary style={{ 
-                                  cursor: 'pointer',
-                                  color: message.role === 'user' ? 'rgba(255,255,255,0.8)' : '#8c8c8c',
-                                  fontSize: '12px'
-                                }}>
-                                  Показать размышления модели
-                                </summary>
-                                <div style={{ 
-                                  marginTop: '8px',
-                                  padding: '8px',
-                                  backgroundColor: message.role === 'user' ? 'rgba(255,255,255,0.1)' : '#f0f0f0',
-                                  borderRadius: '6px',
-                                  fontSize: '12px',
-                                  fontStyle: 'italic'
-                                }}>
-                                  {typeof safeReasoning === 'string' ? safeReasoning : JSON.stringify(safeReasoning)}
-                                </div>
-                              </details>
-                            </div>
-                          )}
-                        </Card>
-                      </div>
-                      {message.role === 'user' && (
-                        <Avatar 
-                          icon={<UserOutlined />} 
-                          style={{ backgroundColor: '#52c41a' }}
-                        />
-                      )}
-                    </div>
-                  );
-                })}
-                
-                {isLoading && (
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'flex-start',
-                    gap: '12px'
-                  }}>
-                    <Avatar 
-                      icon={<RobotOutlined />} 
-                      style={{ backgroundColor: '#1890ff' }}
-                    />
-                    <Card
-                      size="small"
-                      style={{
-                        backgroundColor: '#f5f5f5',
-                        borderRadius: '12px',
-                        border: 'none',
-                        minWidth: '200px'
-                      }}
-                      bodyStyle={{ padding: '12px 16px' }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Spin indicator={<LoadingOutlined style={{ fontSize: 16 }} spin />} />
-                        <Text>AI думает...</Text>
-                      </div>
-                    </Card>
-                  </div>
-                )}
-                
-                <div ref={messagesEndRef} />
-              </div>
-            )}
-          </div>
-
-          {/* Поле ввода */}
-          <div style={{ 
-            borderTop: '1px solid #f0f0f0',
-            paddingTop: '16px'
-          }}>
-            {/* Прикрепленные файлы */}
-            {uploadedFiles.length > 0 && (
-              <div style={{ marginBottom: '12px' }}>
-                <Text type="secondary" style={{ fontSize: '12px', marginBottom: '8px', display: 'block' }}>
-                  Прикрепленные файлы:
-                </Text>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                  {uploadedFiles.map((file, index) => (
-                    <Tag
-                      key={index}
-                      closable
-                      onClose={() => removeFile(index)}
-                      icon={<FileOutlined />}
-                    >
-                      {file.name}
-                    </Tag>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end' }}>
-              <TextArea
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder={selectedModel.startsWith('vis-') 
-                  ? "Опишите, что нужно распознать на изображении..." 
-                  : "Введите ваше сообщение..."
-                }
-                autoSize={{ minRows: 1, maxRows: 4 }}
-                style={{ 
-                  borderRadius: '8px',
-                  resize: 'none'
-                }}
-                disabled={isLoading}
-              />
-              <Space direction="vertical" size="small">
-                <Tooltip title="Прикрепить файл">
-                  <Button
-                    icon={<FileOutlined />}
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isLoading}
-                    style={{ 
-                      borderRadius: '8px',
-                      height: '40px',
-                      width: '40px'
-                    }}
-                  />
-                </Tooltip>
-                <Button
-                  type="primary"
-                  icon={<SendOutlined />}
-                  onClick={sendMessage}
-                  loading={isLoading}
-                  disabled={!inputValue.trim()}
-                  style={{ 
-                    borderRadius: '8px',
-                    height: '40px',
-                    width: '40px'
-                  }}
-                />
-              </Space>
-            </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              style={{ display: 'none' }}
-              onChange={(e) => handleFileUpload(e.target.files)}
-            />
-            <div style={{ 
-              marginTop: '8px',
+      </div>
+      {/* Правая часть: чат с ботом */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, height: '100vh', position: 'relative' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '24px 32px 0 32px', background: '#f6f7f9' }}>
+          {currentDialog && currentDialog.messages.length === 0 && (
+            <div style={{ color: '#aaa', textAlign: 'center', marginTop: 80 }}>Нет сообщений</div>
+          )}
+          {currentDialog && currentDialog.messages.map((msg, idx) => (
+            <div key={msg.id} style={{
               display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center'
+              flexDirection: msg.role === 'user' ? 'row-reverse' : 'row',
+              alignItems: 'flex-end',
+              marginBottom: 18,
+              gap: 14
             }}>
-              <Text type="secondary" style={{ fontSize: '12px' }}>
-                Нажмите Enter для отправки, Shift+Enter для новой строки
-              </Text>
-              <Badge 
-                count={currentDialog.messages.length} 
-                showZero 
-                style={{ backgroundColor: '#52c41a' }}
-              />
+              <Avatar icon={msg.role === 'user' ? <UserOutlined /> : <RobotOutlined />} style={{ background: msg.role === 'user' ? '#1976d2' : '#FCB813' }} />
+              <div style={{
+                background: msg.role === 'user' ? '#e3e7ed' : '#fffbe6',
+                color: '#23272b',
+                borderRadius: 12,
+                padding: '14px 18px',
+                maxWidth: '70%',
+                boxShadow: '0 2px 8px #b0bec520',
+                fontSize: 16,
+                wordBreak: 'break-word',
+                border: msg.role === 'user' ? '1.5px solid #b0bec5' : '1.5px solid #FCB813',
+              }}>
+                <ReactMarkdown>{msg.content}</ReactMarkdown>
+              </div>
             </div>
-          </div>
-        </Card>
-      ) : (
-        <Card 
-          style={{ 
-            flex: 1,
-            borderRadius: '12px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-        >
-          <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-            <RobotOutlined style={{ fontSize: '64px', marginBottom: '16px', color: '#1890ff' }} />
-            <Title level={3} style={{ color: '#8c8c8c' }}>
-              Выберите диалог или создайте новый
-            </Title>
-            <Text type="secondary">
-              Начните общение с IRON FELIX AI
-            </Text>
-            <div style={{ marginTop: '24px' }}>
-              <Button 
-                type="primary" 
-                size="large"
-                icon={<PlusOutlined />}
-                onClick={() => createNewDialog()}
-              >
-                Создать новый диалог
-              </Button>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* Drawer для диалогов */}
-      <Drawer
-        title="Мои диалоги"
-        placement="right"
-        width={400}
-        onClose={() => setShowDialogs(false)}
-        open={showDialogs}
-        extra={
-          <Button 
-            type="primary" 
-            icon={<PlusOutlined />}
-            onClick={() => createNewDialog()}
-          >
-            Новый
-          </Button>
-        }
-      >
-        <List
-          dataSource={dialogs}
-          renderItem={(dialog) => (
-            <List.Item
-              actions={[
-                <Popconfirm
-                  title="Удалить диалог?"
-                  onConfirm={() => deleteDialog(dialog.id)}
-                  okText="Да"
-                  cancelText="Нет"
-                >
-                  <Button 
-                    type="text" 
-                    danger 
-                    icon={<DeleteOutlined />}
-                    size="small"
-                    onClick={e => e.stopPropagation()}
-                  />
-                </Popconfirm>
-              ]}
-              style={{
-                cursor: 'pointer',
-                backgroundColor: currentDialog?.id === dialog.id ? '#f0f8ff' : 'transparent',
-                borderRadius: '8px',
-                padding: '8px'
-              }}
-              onClick={() => {
-                setCurrentDialog(dialog);
-                setShowDialogs(false);
-              }}
-            >
-              <List.Item.Meta
-                avatar={<Avatar icon={<MessageOutlined />} />}
-                title={typeof getDialogName(dialog) === 'string' ? getDialogName(dialog) : '[Некорректное имя]'}
-                description={
-                  <div>
-                    <Text type="secondary" style={{ fontSize: '12px' }}>
-                      {formatDate(dialog.updatedAt)}
-                    </Text>
-                    <Badge 
-                      count={dialog.messages.length} 
-                      showZero 
-                      size="small"
-                      style={{ marginLeft: '8px' }}
-                    />
-                  </div>
-                }
+          ))}
+          <div ref={messagesEndRef} />
+        </div>
+        {/* Ввод сообщения — всегда внизу (sticky) */}
+        <div style={{ position: 'sticky', bottom: 0, left: 0, right: 0, background: '#fff', borderTop: '1.5px solid #e3e7ed', zIndex: 10, padding: '18px 32px', display: 'flex', alignItems: 'flex-end', gap: 10 }}>
+          <TextArea
+            value={inputValue}
+            onChange={e => setInputValue(e.target.value)}
+            onKeyDown={handleKeyPress}
+            placeholder={
+              isLoading
+                ? "Ожидание ответа..."
+                : "Введите ваше сообщение..."
+            }
+            autoSize={{ minRows: 1, maxRows: 4 }}
+            style={{ borderRadius: '8px', resize: 'none' }}
+            disabled={isLoading}
+          />
+          <Space direction="vertical" size="small">
+            <Tooltip title="Прикрепить файл">
+              <Button
+                icon={<FileOutlined />}
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isLoading}
+                style={{ borderRadius: '8px', height: '40px', width: '40px' }}
               />
-            </List.Item>
-          )}
-        />
-      </Drawer>
-
-      {/* Drawer для пресетов */}
-      <Drawer
-        title="Пресеты"
-        placement="right"
-        width={400}
-        onClose={() => setShowPresets(false)}
-        open={showPresets}
-        extra={
-          <Button 
-            type="primary" 
-            icon={<PlusOutlined />}
-            onClick={createPreset}
-          >
-            Создать
-          </Button>
-        }
-      >
-        <List
-          dataSource={presets}
-          renderItem={(preset) => (
-            <List.Item
-              actions={[
-                <Button 
-                  type="text" 
-                  icon={<EditOutlined />}
-                  size="small"
-                />,
-                <Popconfirm
-                  title="Удалить пресет?"
-                  onConfirm={() => setPresets(prev => prev.filter(p => p.id !== preset.id))}
-                  okText="Да"
-                  cancelText="Нет"
-                >
-                  <Button 
-                    type="text" 
-                    danger 
-                    icon={<DeleteOutlined />}
-                    size="small"
-                  />
-                </Popconfirm>
-              ]}
-            >
-              <List.Item.Meta
-                avatar={<Avatar icon={<BookOutlined />} />}
-                title={preset.name}
-                description={
-                  <div>
-                    <Text type="secondary" style={{ fontSize: '12px' }}>
-                      {availableModels.find(m => m.value === preset.model)?.shortLabel || preset.model}
-                    </Text>
-                    <br />
-                    <Text type="secondary" style={{ fontSize: '12px' }}>
-                      Креативность: {preset.temperature} | Токены: {preset.maxTokens}
-                    </Text>
-                  </div>
-                }
-              />
-              <Button 
-                type="primary" 
-                size="small"
-                onClick={() => applyPreset(preset)}
-              >
-                Применить
-              </Button>
-            </List.Item>
-          )}
-        />
-      </Drawer>
+            </Tooltip>
+            <Button
+              type="primary"
+              icon={<SendOutlined />}
+              onClick={sendMessage}
+              loading={isLoading}
+              disabled={!inputValue.trim()}
+              style={{ borderRadius: '8px', height: '40px', width: '40px' }}
+            />
+          </Space>
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            style={{ display: 'none' }}
+            onChange={(e) => handleFileUpload(e.target.files)}
+          />
+        </div>
+        <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 32px 8px 32px' }}>
+          <span style={{ fontSize: 12, color: '#888' }}>Нажмите Enter для отправки, Shift+Enter для новой строки</span>
+          <Badge count={currentDialog?.messages.length || 0} showZero style={{ backgroundColor: '#52c41a' }} />
+        </div>
+      </div>
     </div>
   );
 };

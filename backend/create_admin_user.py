@@ -1,43 +1,28 @@
-import sys
 import os
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
-from app.database import engine, Base, SessionLocal
-from app.models import User
-from app import auth
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.exc import OperationalError
-
+from app.database import engine, Base
 Base.metadata.create_all(bind=engine)
-db = SessionLocal()
 
-username = "admin"
-password = "admin"
-role = "admin"
+from app.database import SessionLocal
+from app.models import User
+from app.auth import get_password_hash
 
-try:
-    user = db.query(User).filter(User.username == username).first()
-    hashed_password = auth.get_password_hash(password)
-    if user:
-        user.hashed_password = hashed_password
-        user.role = role
-        user.force_password_change = False
-        db.commit()
-        print(f"Пароль пользователя {username} сброшен на {password}, роль: {role}")
-    else:
-        new_user = User(
-            username=username,
-            hashed_password=hashed_password,
-            email=f"{username}@company.ru",
-            role=role,
-            department="Админ",
-            position="Администратор",
-            phone="",
-            company='ООО "Алмазгеобур"',
-            force_password_change=False
+def create_admin():
+    db = SessionLocal()
+    admin = db.query(User).filter(User.username == 'admin').first()
+    if not admin:
+        user = User(
+            username='admin',
+            email='admin@admin.com',
+            hashed_password=get_password_hash('admin')
         )
-        db.add(new_user)
+        db.add(user)
         db.commit()
-        print(f"Создан пользователь {username} с паролем {password} и ролью {role}")
-finally:
-    db.close() 
+        print('Admin user created: admin/admin')
+    else:
+        admin.hashed_password = get_password_hash('admin')
+        db.commit()
+        print('Admin user password reset to: admin')
+    db.close()
+
+if __name__ == "__main__":
+    create_admin() 

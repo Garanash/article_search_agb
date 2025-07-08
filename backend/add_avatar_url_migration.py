@@ -1,17 +1,11 @@
-import sqlite3
+import sys
 import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-# Путь к базе данных (проверьте, что путь совпадает с вашим)
-db_path = os.path.join(os.path.dirname(__file__), 'app', 'test1234.db')
+from app.database import engine, Base
+from app.models import User
 
-conn = sqlite3.connect(db_path)
-cursor = conn.cursor()
+# Создаём таблицы с новым полем avatar_url (Postgres)
+Base.metadata.create_all(bind=engine)
 
-try:
-    cursor.execute("ALTER TABLE users ADD COLUMN avatar_url TEXT")
-    print("Поле avatar_url успешно добавлено!")
-except Exception as e:
-    print("Ошибка или поле уже существует:", e)
-
-conn.commit()
-conn.close() 
+print("Поле avatar_url добавлено (или уже существует) в Postgres!") 

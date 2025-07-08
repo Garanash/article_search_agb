@@ -1,16 +1,19 @@
-#!/bin/bash
+﻿#!/bin/bash
 set -e
 
-# Ожидание готовности Postgres
-until PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "\q" 2>/dev/null; do
-  echo "Жду готовности Postgres..."
-  sleep 2
-done
-
-echo "Postgres готов!"
+# Проверяем, заданы ли переменные окружения для Postgres
+if [[ -n "$POSTGRES_HOST" && -n "$POSTGRES_USER" && -n "$POSTGRES_PASSWORD" && -n "$POSTGRES_DB" ]]; then
+  # Ожидание готовности Postgres
+  until PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "\q" 2>/dev/null; do
+    echo "Жду готовности Postgres..."
+    sleep 2
+  done
+  echo "Postgres готов!"
+else
+  echo "Переменные окружения для Postgres не заданы, пропускаю ожидание базы данных."
+fi
 
 # Запуск бэкенда (FastAPI) с uvicorn, оптимально для 2 CPU на 100+ пользователей
-# Можно увеличить число воркеров (workers) при необходимости
 export PYTHONUNBUFFERED=1
 cd /app/backend
 

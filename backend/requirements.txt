@@ -2,8 +2,8 @@ fastapi
 uvicorn
 sqlalchemy
 pydantic
-passlib[bcrypt]>=1.7.4
-bcrypt>=4.0.1
+passlib==1.7.4
+bcrypt==3.2.2
 python-jose
 aiohttp
 aiosmtplib
@@ -13,3 +13,5 @@ python-whois
 python-multipart
 python-dotenv
 requests
+psycopg2-binary
+pandas

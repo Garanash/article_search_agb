@@ -1,73 +1,258 @@
-/* Адаптивные стили для экранов от 13 до 27 дюймов */
-
-/* Базовые стили для всех экранов */
-* {
-  box-sizing: border-box;
+/* Корпоративный стиль для горнодобывающей компании */
+:root {
+  --primary: #1976d2;
+  --primary-dark: #145ea8;
+  --accent: #FCB813;
+  --background: #f2f4f7;
+  --card-bg: #f7f9fa;
+  --text: #23272b;
+  --border: #b0b8c1;
+  --table-header: #e3e7ed;
+  --steel: #b0bec5;
+  --graphite: #43484d;
+  --metal-shadow: 0 2px 12px 0 #b0bec540;
+  --success: #e8f5e9;
+  --success-text: #2e7d32;
+  --error: #ffebee;
+  --error-text: #c62828;
 }
 
 body {
+  background: var(--background);
+  color: var(--text);
+  font-family: 'Segoe UI', 'Roboto', 'Arial', sans-serif;
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  padding: 0;
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.container, .main-content, .panel, .card, .MuiPaper-root, .ant-card, .ant-modal {
+  max-width: 950px;
+  margin: 28px auto;
+  background: var(--card-bg) !important;
+  color: var(--text) !important;
+  border-radius: 12px !important;
+  box-shadow: var(--metal-shadow) !important;
+  padding: 36px !important;
+  border: 1.5px solid var(--steel) !important;
+}
+
+input, textarea, select, button {
+  background: #fff;
+  color: var(--text);
+  border: 1.5px solid var(--steel);
+  border-radius: 7px;
+  padding: 13px;
+  margin-bottom: 14px;
+  font-size: 1rem;
+  transition: border 0.2s, box-shadow 0.2s;
+  box-shadow: none;
+}
+
+input:focus, textarea:focus, select:focus, button:focus {
+  border: 1.5px solid var(--primary);
+  outline: none;
+  box-shadow: 0 0 0 2px #1976d220;
+}
+
+button, .MuiButton-root, .ant-btn {
+  background: linear-gradient(90deg, var(--steel) 0%, var(--primary) 80%, var(--accent) 100%);
+  color: #fff !important;
+  border: none;
+  border-radius: 7px;
+  padding: 13px 30px;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  box-shadow: 0 2px 8px 0 #b0bec540;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+  margin-top: 8px;
+  letter-spacing: 0.03em;
+  text-shadow: 0 1px 2px #23272b22;
+}
+
+button:hover, .MuiButton-root:hover, .ant-btn:hover {
+  background: linear-gradient(90deg, var(--primary-dark) 0%, var(--steel) 80%, var(--accent) 100%);
+  box-shadow: 0 4px 16px 0 #1976d230;
+  transform: translateY(-2px) scale(1.03);
+}
+
+a, .link {
+  color: var(--primary);
+  text-decoration: underline;
+  transition: color 0.2s;
+  font-weight: 500;
+}
+
+a:hover, .link:hover {
+  color: var(--primary-dark);
+}
+
+::-webkit-input-placeholder { color: #888; }
+::-moz-placeholder { color: #888; }
+:-ms-input-placeholder { color: #888; }
+::placeholder { color: #888; }
+
+hr {
+  border: none;
+  border-top: 1.5px solid var(--steel);
+  margin: 28px 0;
+}
+
+/* Таблицы */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--card-bg);
+  color: var(--text);
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 20px 0;
+  font-size: 1rem;
+  border: 1.5px solid var(--steel);
+  box-shadow: var(--metal-shadow);
+}
+th, td {
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--steel);
+}
+th {
+  background: var(--table-header);
+  color: var(--primary);
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-bottom: 2px solid var(--primary);
+}
+tr:last-child td {
+  border-bottom: none;
+}
+
+/* Механический декор для карточек */
+.card, .ant-card, .MuiPaper-root {
+  position: relative;
+  border-radius: 12px !important;
+  box-shadow: var(--metal-shadow) !important;
+  border: 1.5px solid var(--steel) !important;
+  background: linear-gradient(120deg, #f7f9fa 80%, #e3e7ed 100%);
+}
+.card::before, .ant-card::before, .MuiPaper-root::before {
+  content: '';
+  position: absolute;
+  top: 10px; left: 10px;
+  width: 24px; height: 24px;
+  background: url('data:image/svg+xml;utf8,<svg width="24" height="24" fill="%23b0bec5" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" stroke="%2343484d" stroke-width="2" fill="none"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke="%2343484d" stroke-width="2"/></svg>') no-repeat center center;
+  opacity: 0.18;
+}
+
+/* Сообщения */
+.error, .ant-message-error, .MuiAlert-standardError {
+  background: var(--error) !important;
+  color: var(--error-text) !important;
+  border-radius: 8px;
+  padding: 12px 18px;
+  font-weight: 700;
+  margin: 12px 0;
+  border: 1.5px solid #ffcdd2;
+}
+.success, .ant-message-success, .MuiAlert-standardSuccess {
+  background: var(--success) !important;
+  color: var(--success-text) !important;
+  border-radius: 8px;
+  padding: 12px 18px;
+  font-weight: 700;
+  margin: 12px 0;
+  border: 1.5px solid #a5d6a7;
+}
+
+/* Хедер и футер */
+.ant-layout-header {
+  background: linear-gradient(90deg, #23272b 80%, #1976d2 100%) !important;
+  color: #fff !important;
+  font-weight: 900;
+  font-size: 1.3rem;
+  letter-spacing: 0.08em;
+  box-shadow: 0 2px 8px 0 #23272b30;
+  border-bottom: 2.5px solid var(--steel);
+  min-height: 64px !important;
+  display: flex;
+  align-items: center;
+}
+.ant-layout-header .anticon {
+  color: var(--accent) !important;
+  margin-right: 12px;
+  font-size: 1.5em;
+}
+
+.ant-layout-footer {
+  background: #e3e7ed !important;
+  color: var(--graphite) !important;
+  font-weight: 600;
+  font-size: 1rem;
+  border-top: 1.5px solid var(--steel);
+  letter-spacing: 0.04em;
+}
+
+/* Карточки и модалки */
+.ant-card, .ant-modal-content {
+  background: var(--card-bg) !important;
+  border-radius: 12px !important;
+  box-shadow: var(--metal-shadow) !important;
+  border: 1.5px solid var(--steel) !important;
+}
+
+.ant-card-head {
+  background: var(--table-header) !important;
+  color: var(--primary) !important;
+  font-weight: 800;
+  border-bottom: 1.5px solid var(--steel) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Механические иконки */
+.mechanical-icon {
+  display: inline-block;
+  width: 1.2em;
+  height: 1.2em;
+  background: url('data:image/svg+xml;utf8,<svg width="24" height="24" fill="%23b0bec5" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" stroke="%2343484d" stroke-width="2" fill="none"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke="%2343484d" stroke-width="2"/></svg>') no-repeat center center;
+  background-size: contain;
+  vertical-align: middle;
+  margin-right: 6px;
+  opacity: 0.7;
+}
+
+/* Адаптивность и минимализм */
+@media (max-width: 600px) {
+  .container, .main-content, .panel, .card, .MuiPaper-root, .ant-card, .ant-modal {
+    padding: 8px !important;
+    margin: 4px !important;
+    border-radius: 6px !important;
+  }
+  input, textarea, select, button {
+    font-size: 0.95rem;
+    padding: 8px;
+  }
+  th, td {
+    padding: 6px 4px;
+  }
 }
 
 /* Адаптивные стили для маленьких экранов (13-15 дюймов) */
-@media (max-width: 1366px) {
-  .ant-layout-header {
-    padding: 0 16px !important;
-    height: 56px !important;
+@media (max-width: 600px) {
+  .container, .main-content, .panel, .card, .MuiPaper-root, .ant-card, .ant-modal {
+    padding: 8px !important;
+    margin: 4px !important;
+    border-radius: 6px !important;
   }
-  
-  .ant-layout-content {
-    padding: 16px !important;
+  input, textarea, select, button {
+    font-size: 0.95rem;
+    padding: 8px;
   }
-  
-  .ant-layout-footer {
-    padding: 12px 16px !important;
-  }
-  
-  /* Уменьшаем размеры шрифтов */
-  .ant-typography h1 {
-    font-size: 20px !important;
-  }
-  
-  .ant-typography h2 {
-    font-size: 18px !important;
-  }
-  
-  .ant-typography h3 {
-    font-size: 16px !important;
-  }
-  
-  /* Уменьшаем отступы в формах */
-  .ant-form-item {
-    margin-bottom: 12px !important;
-  }
-  
-  /* Уменьшаем размеры кнопок */
-  .ant-btn {
-    height: 32px !important;
-    font-size: 14px !important;
-  }
-  
-  .ant-btn-lg {
-    height: 36px !important;
-  }
-  
-  /* Уменьшаем размеры таблиц */
-  .ant-table {
-    font-size: 13px !important;
-  }
-  
-  .ant-table-thead > tr > th {
-    padding: 8px 12px !important;
-  }
-  
-  .ant-table-tbody > tr > td {
-    padding: 6px 12px !important;
+  th, td {
+    padding: 6px 4px;
   }
 }
 

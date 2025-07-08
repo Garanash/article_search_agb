@@ -1,25 +1,4 @@
-import axios from 'axios';
-
-const API_BASE_URL = "";
-
-// Получаем токен из localStorage
-const getToken = (): string | null => {
-  return localStorage.getItem('token');
-};
-
-// Создаем axios instance с перехватчиком для добавления токена
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-});
-
-// Добавляем перехватчик запросов для автоматического добавления токена
-apiClient.interceptors.request.use((config) => {
-  const token = getToken();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+import { apiClient } from './api';
 
 export const getAdminMetrics = async () => {
   const response = await apiClient.get(`/admin/metrics/`);

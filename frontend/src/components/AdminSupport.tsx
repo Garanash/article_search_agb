@@ -86,7 +86,7 @@ const AdminSupport: React.FC = () => {
   const loadMessages = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:8000/api/support/admin/messages', {
+      const response = await fetch('/api/support/admin/messages', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -108,7 +108,7 @@ const AdminSupport: React.FC = () => {
 
   const loadUsers = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/users', {
+      const response = await fetch('/api/users', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -125,7 +125,7 @@ const AdminSupport: React.FC = () => {
 
   const loadDepartments = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/support/departments', {
+      const response = await fetch('/api/support/departments', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -148,7 +148,7 @@ const AdminSupport: React.FC = () => {
 
     setSending(true);
     try {
-      const response = await fetch(`http://localhost:8000/api/support/admin/reply/${selectedUser}`, {
+      const response = await fetch(`/api/support/admin/reply/${selectedUser}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -189,7 +189,7 @@ const AdminSupport: React.FC = () => {
     if (!selectedMessageForTicket) return;
 
     try {
-      const response = await fetch('http://localhost:8000/api/support/tickets/', {
+      const response = await fetch('/api/support/tickets/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

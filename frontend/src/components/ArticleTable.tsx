@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { getArticles, addArticle, getSuppliers, searchSuppliers, deleteArticle, updateSupplierEmail, whoisCheck, searchEmailPerplexity, deleteSupplier, updateSupplierEmailValidated, createRequest, addArticleToRequest, removeArticleFromRequest, getRequests, getArticlesByRequest } from "../api/api";
+import { apiClient } from '../api/api';
 import { useAuth } from "../context/AuthContext";
 import SupplierRow from "./SupplierRow";
 import { Table, Button, Input, Space, message, Spin, Typography, Form, Card, Tooltip, Modal, Select, List, Tag, Alert } from "antd";
@@ -753,16 +754,12 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId, requests, 
     setEmailStatuses(prev => ({ ...prev, [company.email]: "⏳ Отправляется..." }));
     const messageText = `Напиши письмо ${company.name} и запроси комерческое предложение на артикулы: ${company.articles.join(", ")}`;
     try {
-      const res = await fetch('https://api.ai.almazgeobur.ru/api/v1.0/ask/BCcVaD0QZ6i43Y4jMqYInCZISQsxp7qz', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          bot_id: 19837,
-          chat_id: "chat_" + Date.now(),
-          message: messageText
-        })
+      const res = await apiClient.post('/api/ask/', {
+        bot_id: 19837,
+        chat_id: "chat_" + Date.now(),
+        message: messageText
       });
-      const data = await res.json();
+      const data = res.data;
       if (data.done) {
         setEmailStatuses(prev => ({ ...prev, [company.email]: "✅ Отправлено" }));
       } else {
