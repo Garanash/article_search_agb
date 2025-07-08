@@ -3,7 +3,7 @@ import { Button, Input, Card, List, Avatar, Typography, Divider, Select, Space, 
 import { PlusOutlined, SendOutlined, RobotOutlined, UserOutlined, DeleteOutlined, SettingOutlined, EditOutlined } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
 import {
-  getChats, createChat, getChatHistory, sendMessage, deleteChat, updateChat
+  getChats, createChat, getChatHistory, sendMessage, deleteChat, updateChat, getAvailableModels, getBalance
 } from './VseGptApi';
 
 const { TextArea } = Input;
@@ -35,13 +35,91 @@ function isValidMessage(msg: any): msg is { id: string; role: string; content: s
 // Удаляю SafeMarkdown и заменяю рендер на безопасный <pre>
 
 // TODO: получить список моделей и параметров с API VseGPT (пока хардкод)
+// Модели VseGPT по категориям (группам) из https://vsegpt.ru/Docs/Models
 const vseGptModels = [
-  { id: 'openai/gpt-4o', name: 'OpenAI: GPT-4o' },
-  { id: 'anthropic/claude-3-opus', name: 'Anthropic: Claude 3 Opus' },
-  { id: 'deepseek/deepseek-coder', name: 'DeepSeek Coder' },
-  { id: 'google/gemini-2.5-pro', name: 'Google Gemini 2.5 Pro' },
-  { id: 'openai/gpt-3.5-turbo', name: 'OpenAI: GPT-3.5 Turbo' },
+  {
+    label: 'OpenAI',
+    options: [
+      { id: 'openai/gpt-4o', name: 'GPT-4o', type: 'text' },
+      { id: 'openai/gpt-4-turbo', name: 'GPT-4 Turbo', type: 'text' },
+      { id: 'openai/gpt-4', name: 'GPT-4', type: 'text' },
+      { id: 'openai/gpt-3.5-turbo', name: 'GPT-3.5 Turbo', type: 'text' },
+      { id: 'openai/dall-e-3', name: 'DALL-E 3', type: 'image' },
+    ]
+  },
+  {
+    label: 'Anthropic',
+    options: [
+      { id: 'anthropic/claude-3-opus', name: 'Claude 3 Opus', type: 'text' },
+      { id: 'anthropic/claude-3-sonnet', name: 'Claude 3 Sonnet', type: 'text' },
+      { id: 'anthropic/claude-3-haiku', name: 'Claude 3 Haiku', type: 'text' },
+      { id: 'anthropic/claude-2.1', name: 'Claude 2.1', type: 'text' },
+    ]
+  },
+  {
+    label: 'Google',
+    options: [
+      { id: 'google/gemini-2.5-pro', name: 'Gemini 2.5 Pro', type: 'text' },
+      { id: 'google/gemini-1.5-flash', name: 'Gemini 1.5 Flash', type: 'text' },
+      { id: 'google/gemini-1.5-pro', name: 'Gemini 1.5 Pro', type: 'text' },
+      { id: 'google/gemini-pro', name: 'Gemini Pro', type: 'text' },
+    ]
+  },
+  {
+    label: 'Кодовые',
+    options: [
+      { id: 'deepseek/deepseek-coder', name: 'DeepSeek Coder', type: 'code' },
+      { id: 'openai/gpt-4o-coder', name: 'GPT-4o Coder', type: 'code' },
+      { id: 'openai/gpt-4-coder', name: 'GPT-4 Coder', type: 'code' },
+      { id: 'openai/gpt-3.5-coder', name: 'GPT-3.5 Coder', type: 'code' },
+    ]
+  },
+  {
+    label: 'Изображения',
+    options: [
+      { id: 'openai/dall-e-3', name: 'DALL-E 3', type: 'image' },
+      { id: 'stability/stable-diffusion-xl', name: 'Stable Diffusion XL', type: 'image' },
+      { id: 'stability/stable-diffusion', name: 'Stable Diffusion', type: 'image' },
+    ]
+  },
+  {
+    label: 'Другие',
+    options: [
+      { id: 'mistral/mistral-large', name: 'Mistral Large', type: 'text' },
+      { id: 'mistral/mistral-medium', name: 'Mistral Medium', type: 'text' },
+      { id: 'mistral/mistral-small', name: 'Mistral Small', type: 'text' },
+      { id: 'yandex/yandex-gpt', name: 'YandexGPT', type: 'text' },
+      { id: 'phind/phind-codellama', name: 'Phind CodeLlama', type: 'code' },
+    ]
+  },
 ];
+
+// Системные промты для разных типов моделей
+const systemPrompts = {
+  text: `Ты - полезный ассистент. Отвечай на вопросы пользователя четко, информативно и дружелюбно. Используй эмодзи где уместно для лучшего восприятия.`,
+  
+  code: `Ты - опытный программист и технический консультант. Помогай с написанием кода, отладкой, архитектурой и техническими вопросами. Всегда давай полные, рабочие примеры кода с комментариями. Используй современные best practices и следуй принципам clean code.`,
+  
+  image: `Ты - эксперт по созданию изображений. Когда пользователь просит создать изображение, генерируй его с помощью доступных инструментов. Описывай процесс создания и давай рекомендации по улучшению промптов для лучших результатов.`,
+};
+
+// Получить системный промт для модели
+function getSystemPrompt(modelId: string): string {
+  const model = vseGptModels.flatMap(group => group.options).find(m => m.id === modelId);
+  const type = model?.type || 'text';
+  return systemPrompts[type as keyof typeof systemPrompts] || systemPrompts.text;
+}
+
+// Получить тип модели
+function getModelType(modelId: string): string {
+  const model = vseGptModels.flatMap(group => group.options).find(m => m.id === modelId);
+  return model?.type || 'text';
+}
+
+// Проверить, является ли модель изображением
+function isImageModel(modelId: string): boolean {
+  return getModelType(modelId) === 'image';
+}
 
 const defaultParams = {
   model: 'openai/gpt-4o',
@@ -50,6 +128,122 @@ const defaultParams = {
   max_tokens: 2048,
   system: '',
 };
+
+// Функция для рендера контента сообщения (текст или изображение)
+function renderMessageContent(content: string, token?: string) {
+  console.log('renderMessageContent input:', content);
+  
+  // Ищем ПОЛНЫЙ URL (включая параметры)
+  const imageUrlMatch = content.match(/https?:\/\/[^\s]+/i);
+  
+  console.log('imageUrlMatch:', imageUrlMatch);
+  
+  if (imageUrlMatch) {
+    const originalImageUrl = imageUrlMatch[0];
+    console.log('Found image URL:', originalImageUrl);
+    
+    // Используем прокси-endpoint для получения изображения
+    const proxyImageUrl = `/api/chat/image-proxy?image_url=${encodeURIComponent(originalImageUrl)}`;
+    console.log('Proxy image URL:', proxyImageUrl);
+    
+    // Убираем URL из текста и оставляем только описание
+    const textContent = content.replace(originalImageUrl, '').replace(/🖼️ Изображение создано!\n\n?/g, '').trim();
+    console.log('Text content after removing URL:', textContent);
+    
+    // Компонент для загрузки изображения с авторизацией
+    const ImageWithAuth = () => {
+      const [imageSrc, setImageSrc] = React.useState<string>('');
+      const [loading, setLoading] = React.useState(true);
+      const [error, setError] = React.useState(false);
+      
+      React.useEffect(() => {
+        if (!token) {
+          setError(true);
+          setLoading(false);
+          return;
+        }
+        
+        // Загружаем изображение через fetch с авторизацией
+        fetch(proxyImageUrl, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+          return response.blob();
+        })
+        .then(blob => {
+          const url = URL.createObjectURL(blob);
+          setImageSrc(url);
+          setLoading(false);
+        })
+        .catch(error => {
+          console.error('Ошибка загрузки изображения:', error);
+          setError(true);
+          setLoading(false);
+        });
+      }, [proxyImageUrl, token]);
+      
+      if (loading) {
+        return (
+          <div style={{ textAlign: 'center', padding: '20px' }}>
+            <Spin size="large" />
+            <div style={{ marginTop: 8, color: '#666' }}>Загрузка изображения...</div>
+          </div>
+        );
+      }
+      
+      if (error) {
+        return (
+          <div style={{ textAlign: 'center', padding: '20px', color: '#ff4d4f' }}>
+            <div>Ошибка загрузки изображения</div>
+            <div style={{ fontSize: '12px', marginTop: 4 }}>Проверьте авторизацию</div>
+          </div>
+        );
+      }
+      
+      return (
+        <img 
+          src={imageSrc} 
+          alt="Сгенерированное изображение" 
+          style={{ 
+            maxWidth: '100%', 
+            maxHeight: '400px', 
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            border: '1px solid #e0e0e0'
+          }} 
+          onError={() => {
+            console.error('Ошибка отображения изображения');
+            setError(true);
+          }}
+        />
+      );
+    };
+    
+    return (
+      <div style={{ width: '100%' }}>
+        {textContent && (
+          <div style={{ marginBottom: 8 }}>
+            <pre style={{ margin: 0, fontFamily: 'inherit', whiteSpace: 'pre-wrap', wordBreak: 'break-word', background: 'none', border: 'none', padding: 0 }}>{textContent}</pre>
+          </div>
+        )}
+        <div style={{ textAlign: 'center', marginTop: 8 }}>
+          <ImageWithAuth />
+        </div>
+      </div>
+    );
+  }
+  
+  console.log('No image URL found, treating as text');
+  // Обычный текстовый контент
+  return (
+    <pre style={{ margin: 0, fontFamily: 'inherit', whiteSpace: 'pre-wrap', wordBreak: 'break-word', background: 'none', border: 'none', padding: 0 }}>{content}</pre>
+  );
+}
 
 const VseGptChat: React.FC<{ token: string }> = ({ token }) => {
   const [chats, setChats] = useState<any[]>([]);
@@ -60,6 +254,8 @@ const VseGptChat: React.FC<{ token: string }> = ({ token }) => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [newChatModal, setNewChatModal] = useState(false);
   const [newChatParams, setNewChatParams] = useState<any>(defaultParams);
+  const [balance, setBalance] = useState<any>(null);
+  const [availableModels, setAvailableModels] = useState<any[]>([]);
   const [form] = Form.useForm();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -71,6 +267,22 @@ const VseGptChat: React.FC<{ token: string }> = ({ token }) => {
         setChats(Array.isArray(data) ? data : []);
       } catch (e) {
         antdMessage.error('Ошибка загрузки чатов');
+      }
+    })();
+  }, [token]);
+
+  // Получение баланса и доступных моделей
+  useEffect(() => {
+    (async () => {
+      try {
+        const [balanceData, modelsData] = await Promise.all([
+          getBalance(token).catch(() => null),
+          getAvailableModels(token).catch(() => [])
+        ]);
+        setBalance(balanceData);
+        setAvailableModels(Array.isArray(modelsData) ? modelsData : []);
+      } catch (e) {
+        console.error('Ошибка загрузки баланса или моделей:', e);
       }
     })();
   }, [token]);
@@ -116,25 +328,62 @@ const VseGptChat: React.FC<{ token: string }> = ({ token }) => {
     const userMsg = { id: Date.now().toString(), role: 'user', content: safeContent(input) };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
+    
     try {
-      const params = {
-        model: selectedChat.model || defaultParams.model,
-        messages: [
-          ...messages.filter((m: any) => m.role === 'user' || m.role === 'assistant'),
-          { role: 'user', content: input }
-        ],
-        temperature: selectedChat.temperature || defaultParams.temperature,
-        top_p: selectedChat.top_p || defaultParams.top_p,
-        max_tokens: selectedChat.max_tokens || defaultParams.max_tokens,
-        system: selectedChat.system || '',
-        session_id: selectedChat.id || selectedChat.session_id,
-      };
+      const modelId = selectedChat.model || defaultParams.model;
+      const isImage = isImageModel(modelId);
+      
+      let params: any;
+      
+      if (isImage) {
+        // Специальный формат для изображений
+        params = {
+          model: modelId,
+          messages: [
+            { role: 'user', content: input }
+          ],
+          temperature: selectedChat.temperature || defaultParams.temperature,
+          top_p: selectedChat.top_p || defaultParams.top_p,
+          max_tokens: selectedChat.max_tokens || defaultParams.max_tokens,
+          system: selectedChat.system || getSystemPrompt(modelId),
+          session_id: selectedChat.id || selectedChat.session_id,
+        };
+      } else {
+        // Обычный формат для текстовых моделей
+        params = {
+          model: modelId,
+          messages: [
+            ...messages.filter((m: any) => m.role === 'user' || m.role === 'assistant'),
+            { role: 'user', content: input }
+          ],
+          temperature: selectedChat.temperature || defaultParams.temperature,
+          top_p: selectedChat.top_p || defaultParams.top_p,
+          max_tokens: selectedChat.max_tokens || defaultParams.max_tokens,
+          system: selectedChat.system || getSystemPrompt(modelId),
+          session_id: selectedChat.id || selectedChat.session_id,
+        };
+      }
+      
       const data = await sendMessage(token, params);
       console.log('sendMessage response:', data);
+      
       let content = '[invalid content]';
-      if (typeof data.choices?.[0]?.message?.content === 'string') {
-        content = data.choices[0].message.content;
+      if (isImage) {
+        // Для изображений ищем URL в ответе
+        if (data.choices?.[0]?.message?.content) {
+          content = data.choices[0].message.content;
+          // Если в ответе есть URL изображения, добавляем его
+          if (typeof content === 'string' && content.includes('http')) {
+            content = `🖼️ Изображение создано!\n\n${content}`;
+          }
+        }
+      } else {
+        // Для текстовых моделей обычная обработка
+        if (typeof data.choices?.[0]?.message?.content === 'string') {
+          content = data.choices[0].message.content;
+        }
       }
+      
       const botMsg = { id: (Date.now() + 1).toString(), role: 'assistant', content: safeContent(content) };
       setMessages(prev => [...prev, botMsg]);
     } catch (e: any) {
@@ -246,6 +495,14 @@ const VseGptChat: React.FC<{ token: string }> = ({ token }) => {
         {/* Заголовок чата и настройки */}
         <div style={{ padding: '32px 32px 0 32px', display: 'flex', alignItems: 'center', gap: 16 }}>
           <Title level={4} style={{ color: '#23272f', marginBottom: 24, flex: 1 }}>{safeContent(selectedChat?.title || selectedChat?.name || 'Без названия')}</Title>
+          {balance && (
+            <div style={{ fontSize: 12, color: '#666', textAlign: 'right' }}>
+              <div>Баланс VseGPT:</div>
+              <div style={{ fontWeight: 600, color: '#1890ff' }}>
+                {balance.credits || balance.balance || 'N/A'}
+              </div>
+            </div>
+          )}
           <Button icon={<SettingOutlined />} onClick={() => setSettingsOpen(true)} />
         </div>
         {/* Сообщения и поле ввода */}
@@ -259,7 +516,7 @@ const VseGptChat: React.FC<{ token: string }> = ({ token }) => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%' }}>
                     {msg.role === 'user' ? <Avatar icon={<UserOutlined />} style={{ background: '#FCB813', color: '#23272f' }} /> : <Avatar icon={<RobotOutlined />} style={{ background: '#e6e8ea', color: '#23272f' }} />}
                     <div style={{ width: '100%' }}>
-                      <pre style={{ margin: 0, fontFamily: 'inherit', whiteSpace: 'pre-wrap', wordBreak: 'break-word', background: 'none', border: 'none', padding: 0 }}>{safe}</pre>
+                      {renderMessageContent(safe, token)}
                     </div>
                   </div>
                 </Card>
@@ -308,10 +565,25 @@ const VseGptChat: React.FC<{ token: string }> = ({ token }) => {
             <Input placeholder="Без названия" />
           </Form.Item>
           <Form.Item label="Модель" name="model" rules={[{ required: true, message: 'Выберите модель' }]}> 
-            <Select options={vseGptModels.map(m => ({ label: m.name, value: m.id }))} />
+            <Select
+              options={vseGptModels.map(group => ({
+                label: group.label,
+                options: group.options.map(m => ({ label: m.name, value: m.id }))
+              }))}
+              showSearch
+              optionFilterProp="label"
+              onChange={(value) => {
+                const systemPrompt = getSystemPrompt(value);
+                form.setFieldsValue({ system: systemPrompt });
+                setNewChatParams((prev: any) => ({ ...prev, model: value, system: systemPrompt }));
+              }}
+            />
           </Form.Item>
           <Form.Item label="System prompt" name="system">
-            <Input placeholder="Инструкции для бота (необязательно)" />
+            <Input.TextArea 
+              placeholder="Инструкции для бота (автоматически подбирается по типу модели)" 
+              rows={4}
+            />
           </Form.Item>
           <Form.Item label="Температура" name="temperature">
             <Slider min={0} max={2} step={0.01} tooltip={{ open: true }} />
@@ -338,10 +610,24 @@ const VseGptChat: React.FC<{ token: string }> = ({ token }) => {
             <Input placeholder="Без названия" />
           </Form.Item>
           <Form.Item label="Модель" name="model" rules={[{ required: true, message: 'Выберите модель' }]}> 
-            <Select options={vseGptModels.map(m => ({ label: m.name, value: m.id }))} />
+            <Select
+              options={vseGptModels.map(group => ({
+                label: group.label,
+                options: group.options.map(m => ({ label: m.name, value: m.id }))
+              }))}
+              showSearch
+              optionFilterProp="label"
+              onChange={(value) => {
+                const systemPrompt = getSystemPrompt(value);
+                form.setFieldsValue({ system: systemPrompt });
+              }}
+            />
           </Form.Item>
           <Form.Item label="System prompt" name="system">
-            <Input placeholder="Инструкции для бота (необязательно)" />
+            <Input.TextArea 
+              placeholder="Инструкции для бота (автоматически подбирается по типу модели)" 
+              rows={4}
+            />
           </Form.Item>
           <Form.Item label="Температура" name="temperature">
             <Slider min={0} max={2} step={0.01} tooltip={{ open: true }} />

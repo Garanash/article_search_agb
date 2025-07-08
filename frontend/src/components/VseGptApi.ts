@@ -32,7 +32,11 @@ export async function getChatHistory(token: string, session_id: string) {
 export async function sendMessage(token: string, params: any) {
   const res = await fetch(`${API_URL}/completions`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    headers: { 
+      'Content-Type': 'application/json', 
+      Authorization: `Bearer ${token}`,
+      'session_id': params.session_id || ''
+    },
     body: JSON.stringify(params),
   });
   if (!res.ok) throw new Error('Ошибка отправки сообщения');
@@ -55,5 +59,21 @@ export async function updateChat(token: string, session_id: string, params: any)
     body: JSON.stringify(params),
   });
   if (!res.ok) throw new Error('Ошибка обновления чата');
+  return await res.json();
+}
+
+export async function getAvailableModels(token: string) {
+  const res = await fetch(`${API_URL}/models`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Ошибка получения списка моделей');
+  return await res.json();
+}
+
+export async function getBalance(token: string) {
+  const res = await fetch(`${API_URL}/balance`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Ошибка получения баланса');
   return await res.json();
 } 

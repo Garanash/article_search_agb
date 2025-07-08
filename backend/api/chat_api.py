@@ -13,11 +13,14 @@ from app.models import User, ChatSession, ChatMessage
 from app.schemas import ChatSessionCreate, ChatSessionResponse, ChatSessionUpdate, ChatMessageCreate, ChatMessageResponse
 from app.database import Base, engine
 from app.auth import get_current_user
+from fastapi.responses import StreamingResponse
+import io
 
 # Автоматическое создание таблиц (если нет Alembic)
 Base.metadata.create_all(bind=engine)
 
 from fastapi import Query
+from fastapi import Request
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -25,7 +28,16 @@ router = APIRouter(prefix="/chat", tags=["chat"])
 VSEGPT_API_KEY = "sk-or-vv-0222bdfad78b2ee03399f91527fbd52b36793f8db856f1a7634f423ff6ec6b16"
 VSEGPT_BASE_URL = "https://api.vsegpt.ru/v1"
 
-IMAGE_MODELS = ["dall-e-3"]
+# Определение типов моделей
+IMAGE_MODELS = [
+    'openai/dall-e-3',
+    'stability/stable-diffusion-xl',
+    'stability/stable-diffusion'
+]
+
+def is_image_model(model_id: str) -> bool:
+    """Проверяет, является ли модель изображением"""
+    return model_id in IMAGE_MODELS
 
 # --- Pydantic-схема для сообщений (чтобы не конфликтовать с ORM) ---
 class ChatMessageSchema(BaseModel):
@@ -137,56 +149,95 @@ async def chat_completions(
     request: ChatRequest,
     background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    http_request: Request = None
 ):
-    """Отправить сообщение в VseGPT API и сохранить историю"""
+    """Отправить сообщение в чат"""
+    
     try:
         headers = {
             "Authorization": f"Bearer {VSEGPT_API_KEY}",
             "Content-Type": "application/json"
         }
-        if request.extra_headers:
-            headers.update(request.extra_headers)
-
-        # --- Ветка для генерации изображений ---
-        if request.model in IMAGE_MODELS:
-            prompt = ""
-            for msg in reversed(request.messages):
-                if msg.role == "user":
-                    prompt = msg.content
-                    break
+        
+        # Получаем session_id из заголовков
+        session_id = None
+        if http_request:
+            session_id = http_request.headers.get("session_id")
+        
+        # Проверяем, является ли модель изображением
+        if is_image_model(request.model):
+            # Специальная обработка для изображений
+            print(f"Processing image generation with model {request.model}")
+            
+            # Для изображений используем другой endpoint и формат
             payload = {
                 "model": request.model,
-                "prompt": prompt,
+                "prompt": request.messages[-1].content if request.messages else "",
                 "n": 1,
-                "size": "1024x1024"
+                "size": "1024x1024",  # Стандартный размер для DALL-E 3
+                "quality": "standard",
+                "style": "vivid"
             }
+            
             response = requests.post(
                 f"{VSEGPT_BASE_URL}/images/generations",
                 headers=headers,
                 json=payload,
-                timeout=60
+                timeout=120  # Увеличиваем timeout для генерации изображений
             )
+            
             if response.status_code != 200:
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail=f"VseGPT Image API error: {response.status_code} - {response.text}"
                 )
-            data = response.json()
-            image_url = data["data"][0]["url"]
-            content = f"![Сгенерированное изображение]({image_url})"
-            return {
+            
+            vsegpt_response = response.json()
+            
+            # Отладочная информация
+            print(f"VseGPT Image API response: {vsegpt_response}")
+            
+            # Преобразуем ответ изображения в формат чата
+            image_url = ""
+            if vsegpt_response.get("data") and len(vsegpt_response["data"]) > 0:
+                image_url = vsegpt_response["data"][0].get("url", "")
+            elif vsegpt_response.get("url"):
+                image_url = vsegpt_response["url"]
+            
+            print(f"Extracted image URL: {image_url}")
+            
+            chat_response = {
                 "choices": [
                     {
                         "message": {
                             "role": "assistant",
-                            "content": content
+                            "content": f"🖼️ Изображение создано!\n\n{image_url}"
                         }
                     }
                 ],
                 "usage": {}
             }
-
+            
+            print(f"User {current_user.username} generated image with model {request.model}")
+            
+            # Сохраняем сообщения в БД (асинхронно)
+            def save_image_history():
+                if session_id:
+                    session = db.query(ChatSession).filter(ChatSession.id == int(session_id), ChatSession.user_id == current_user.id).first()
+                    if session:
+                        # Сохраняем пользовательское сообщение
+                        if request.messages:
+                            last_user_msg = request.messages[-1]
+                            db.add(ChatMessage(session_id=session.id, role=last_user_msg.role, content=last_user_msg.content))
+                        # Сохраняем ответ ассистента
+                        db.add(ChatMessage(session_id=session.id, role="assistant", content=chat_response["choices"][0]["message"]["content"]))
+                        session.updated_at = datetime.now()
+                        db.commit()
+            background_tasks.add_task(save_image_history)
+            
+            return chat_response
+        
         # --- Обычный чат ---
         temperature = fix_param(request.temperature, 0.7)
         top_p = fix_param(getattr(request, 'top_p', 1.0), 1.0)
@@ -204,15 +255,34 @@ async def chat_completions(
             timeout=60
         )
         if response.status_code != 200:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"VseGPT API error: {response.status_code} - {response.text}"
-            )
+            error_detail = response.text
+            try:
+                error_json = response.json()
+                if 'error' in error_json:
+                    error_detail = error_json['error'].get('message', error_detail)
+            except:
+                pass
+            
+            # Специальная обработка для ошибок моделей
+            if "not found" in error_detail.lower():
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Модель '{request.model}' недоступна. Выберите другую модель."
+                )
+            elif "quota" in error_detail.lower() or "balance" in error_detail.lower():
+                raise HTTPException(
+                    status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                    detail="Недостаточно средств на балансе VseGPT. Пополните баланс."
+                )
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Ошибка VseGPT API: {error_detail}"
+                )
         vsegpt_response = response.json()
         print(f"User {current_user.username} used VseGPT API with model {request.model}")
         # Сохраняем сообщения в БД (асинхронно)
         def save_history():
-            session_id = request.extra_headers.get("session_id")
             if session_id:
                 session = db.query(ChatSession).filter(ChatSession.id == int(session_id), ChatSession.user_id == current_user.id).first()
                 if session:
@@ -309,4 +379,174 @@ async def get_balance(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error getting balance: {str(e)}"
+        ) 
+
+@router.get("/test-image-proxy")
+async def test_image_proxy(image_url: str):
+    """Тестовый endpoint для проверки прокси изображений без авторизации"""
+    
+    try:
+        print(f"=== TEST IMAGE PROXY START ===")
+        print(f"Test image URL: {image_url}")
+        
+        # Базовые заголовки
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        }
+        
+        # Для Azure Blob URLs НЕ добавляем Authorization заголовок
+        if "blob.core.windows.net" not in image_url:
+            print("Non-Azure URL, adding Authorization header")
+            headers["Authorization"] = f"Bearer {VSEGPT_API_KEY}"
+        else:
+            print("Azure Blob URL detected, skipping Authorization header")
+        
+        print(f"Making test request with headers: {headers}")
+        
+        response = requests.get(
+            image_url,
+            headers=headers,
+            timeout=30,
+            stream=True
+        )
+        
+        print(f"Test response status: {response.status_code}")
+        print(f"Test response headers: {dict(response.headers)}")
+        
+        if response.status_code != 200:
+            print(f"Test error: {response.status_code} - {response.text}")
+            return {"error": f"HTTP {response.status_code}", "details": response.text}
+        
+        image_content = response.content
+        print(f"Test image content length: {len(image_content)} bytes")
+        
+        return {
+            "success": True,
+            "content_length": len(image_content),
+            "content_type": response.headers.get('content-type', 'unknown'),
+            "status_code": response.status_code
+        }
+        
+    except Exception as e:
+        print(f"=== TEST IMAGE PROXY ERROR ===")
+        print(f"Test error: {str(e)}")
+        import traceback
+        print(f"Test traceback: {traceback.format_exc()}")
+        return {"error": str(e), "traceback": traceback.format_exc()}
+
+@router.options("/image-proxy")
+async def image_proxy_options():
+    """CORS preflight для image-proxy"""
+    return {
+        "headers": {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Authorization, Content-Type",
+            "Access-Control-Max-Age": "86400"
+        }
+    }
+
+@router.get("/image-proxy")
+async def get_image_proxy(
+    image_url: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Прокси для получения изображений с авторизацией"""
+    
+    try:
+        print(f"=== IMAGE PROXY START ===")
+        print(f"Requested image URL: {image_url}")
+        print(f"User: {current_user.username}")
+        print(f"User ID: {current_user.id}")
+        
+        # Базовые заголовки
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        }
+        
+        # Для Azure Blob URLs НЕ добавляем Authorization заголовок
+        # так как они уже содержат SAS токены в URL
+        if "blob.core.windows.net" not in image_url:
+            print("Non-Azure URL, adding Authorization header")
+            headers["Authorization"] = f"Bearer {VSEGPT_API_KEY}"
+        else:
+            print("Azure Blob URL detected, skipping Authorization header")
+        
+        print(f"Making request to image URL with headers: {headers}")
+        
+        # Проверяем, что URL валидный
+        if not image_url or not image_url.startswith('http'):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid image URL"
+            )
+        
+        response = requests.get(
+            image_url,
+            headers=headers,
+            timeout=30,
+            stream=True
+        )
+        
+        print(f"Image proxy response status: {response.status_code}")
+        print(f"Image proxy response headers: {dict(response.headers)}")
+        
+        if response.status_code != 200:
+            print(f"Image proxy error: {response.status_code} - {response.text}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Image not found: {response.status_code} - {response.text}"
+            )
+        
+        # Читаем содержимое изображения
+        image_content = response.content
+        print(f"Image content length: {len(image_content)} bytes")
+        
+        if len(image_content) == 0:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Empty image content"
+            )
+        
+        # Определяем content-type из заголовков
+        content_type = response.headers.get('content-type', 'image/png')
+        print(f"Content type: {content_type}")
+        
+        # Возвращаем изображение как поток с CORS заголовками
+        print(f"=== IMAGE PROXY SUCCESS ===")
+        return StreamingResponse(
+            io.BytesIO(image_content),
+            media_type=content_type,
+            headers={
+                "Cache-Control": "public, max-age=3600",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+                "Access-Control-Allow-Headers": "Authorization, Content-Type",
+                "Access-Control-Expose-Headers": "Content-Length, Content-Type"
+            }
+        )
+        
+    except HTTPException:
+        # Перебрасываем HTTP исключения как есть
+        raise
+    except requests.exceptions.Timeout:
+        print(f"Timeout error proxying image {image_url}")
+        raise HTTPException(
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            detail="Image proxy timeout"
+        )
+    except requests.exceptions.RequestException as e:
+        print(f"Request error proxying image {image_url}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Image proxy request failed: {str(e)}"
+        )
+    except Exception as e:
+        print(f"=== IMAGE PROXY ERROR ===")
+        print(f"Unexpected error proxying image {image_url}: {str(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error getting image: {str(e)}"
         ) 
