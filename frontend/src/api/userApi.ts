@@ -1,6 +1,6 @@
 import { User } from '../context/AuthContext';
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = "";
 
 // Получаем токен из localStorage
 const getToken = (): string | null => {

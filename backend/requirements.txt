@@ -12,3 +12,4 @@ openai
 python-whois 
 python-multipart
 python-dotenv
+requests

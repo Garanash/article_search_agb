@@ -178,7 +178,7 @@ const AdminDashboard: React.FC = () => {
   const fetchNews = async () => {
     setNewsLoading(true);
     try {
-      const res = await fetch('http://localhost:8000/api/users/news', {
+      const res = await fetch('/api/users/news', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!res.ok) throw new Error('Ошибка загрузки новостей');
@@ -193,7 +193,7 @@ const AdminDashboard: React.FC = () => {
 
   const fetchAvailableData = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/users/available-data', {
+      const res = await fetch('/api/users/available-data', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!res.ok) throw new Error('Ошибка загрузки доступных данных');
@@ -207,7 +207,7 @@ const AdminDashboard: React.FC = () => {
 
   const fetchRolesAndDepartments = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/users/roles-and-departments', {
+      const res = await fetch('/api/users/roles-and-departments', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!res.ok) throw new Error('Ошибка загрузки ролей и департаментов');
@@ -396,7 +396,7 @@ const AdminDashboard: React.FC = () => {
   const loadTickets = async (isMounted = true) => {
     setTicketsLoading(true);
     try {
-      const response = await fetch('http://localhost:8000/api/support_tickets/', {
+      const response = await fetch('/api/support_tickets/', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -420,7 +420,7 @@ const AdminDashboard: React.FC = () => {
 
   const loadEvents = async (isMounted = true) => {
     try {
-      const response = await fetch('http://localhost:8000/api/support_tickets/calendar/events', {
+      const response = await fetch('/api/support_tickets/calendar/events', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -437,7 +437,7 @@ const AdminDashboard: React.FC = () => {
 
   const loadAnalytics = async (isMounted = true) => {
     try {
-      const response = await fetch('http://localhost:8000/api/support_tickets/analytics/overview', {
+      const response = await fetch('/api/support_tickets/analytics/overview', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -454,7 +454,7 @@ const AdminDashboard: React.FC = () => {
 
   const loadUsers = async (isMounted = true) => {
     try {
-      const response = await fetch('http://localhost:8000/api/users/users', {
+      const response = await fetch('/api/users/users', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -1255,7 +1255,7 @@ const AdminDashboard: React.FC = () => {
   const fetchTableData = async (table: string) => {
     setTableLoading(true);
     try {
-      const response = await fetch(`http://localhost:8000/api/admin/table/${table}`, {
+      const response = await fetch(`/api/admin/table/${table}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -1284,7 +1284,7 @@ const AdminDashboard: React.FC = () => {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      await fetch(`http://localhost:8000/admin/import_csv/${activeTable}`, {
+      await fetch(`/api/admin/import_csv/${activeTable}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
         body: formData
@@ -1338,7 +1338,7 @@ const AdminDashboard: React.FC = () => {
   const handleExportCSV = async () => {
     setCsvLoading(true);
     try {
-      const res = await fetch(`http://localhost:8000/admin/export_csv/${activeTable}`, {
+      const res = await fetch(`/admin/export_csv/${activeTable}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!res.ok) throw new Error('Ошибка экспорта');
@@ -1360,7 +1360,7 @@ const AdminDashboard: React.FC = () => {
   // Удаление строки
   const handleDeleteRow = async (row: any) => {
     try {
-      await fetch(`http://localhost:8000/api/admin/table/${activeTable}/${row.id || row._id}`, {
+      await fetch(`/api/admin/table/${activeTable}/${row.id || row._id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -1374,7 +1374,7 @@ const AdminDashboard: React.FC = () => {
   // Добавление строки
   const handleAddRow = async (values: any) => {
     try {
-      await fetch(`http://localhost:8000/api/admin/table/${activeTable}`, {
+      await fetch(`/api/admin/table/${activeTable}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -1395,7 +1395,7 @@ const AdminDashboard: React.FC = () => {
   const handleExportFormat = async (format: 'csv' | 'xlsx' | 'json') => {
     setCsvLoading(true);
     try {
-      const res = await fetch(`http://localhost:8000/api/admin/export_${format}/${activeTable}`, {
+      const res = await fetch(`/api/admin/export_${format}/${activeTable}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!res.ok) throw new Error('Ошибка экспорта');
@@ -1420,7 +1420,7 @@ const AdminDashboard: React.FC = () => {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      await fetch(`http://localhost:8000/api/admin/import_${importFormat}/${activeTable}`, {
+      await fetch(`/api/admin/import_${importFormat}/${activeTable}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
         body: formData
@@ -1628,7 +1628,7 @@ const AdminDashboard: React.FC = () => {
                     {n.image_url && (
                       <div style={{ marginBottom: 12 }}>
                         <img 
-                          src={`http://localhost:8000${n.image_url}`} 
+                          src={`${n.image_url}`} 
                           alt="news" 
                           style={{ maxWidth: 200, maxHeight: 150, objectFit: 'cover', borderRadius: 4 }}
                           onError={(e) => {
@@ -1681,7 +1681,7 @@ const AdminDashboard: React.FC = () => {
             {newsImage && (
               <div style={{ marginTop: 8 }}>
                 <img 
-                  src={`http://localhost:8000${newsImage}`} 
+                  src={`${newsImage}`} 
                   alt="preview" 
                   style={{ maxWidth: 120, maxHeight: 90, objectFit: 'cover', borderRadius: 4 }}
                   onError={(e) => {

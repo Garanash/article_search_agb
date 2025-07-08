@@ -31,7 +31,7 @@ export interface ChatSession {
 
 // Получить список доступных ботов для пользователя
 export const getAvailableBots = async (token: string, userRole: string): Promise<Bot[]> => {
-  const response = await fetch(`http://localhost:8000/chat/bots?role=${userRole}`, {
+  const response = await fetch(`/api/chat/bots?role=${userRole}`, {
     headers: { Authorization: `Bearer ${token}` }
   });
   if (!response.ok) {
@@ -80,7 +80,7 @@ export const getChatSessions = async (token: string): Promise<ChatSession[]> => 
 
 // Создать новую чат-сессию с ботом
 export const createChatSession = async (token: string, botId: string): Promise<ChatSession> => {
-  const response = await fetch('http://localhost:8000/chat/sessions', {
+  const response = await fetch('/api/chat/sessions', {
     method: 'POST',
     headers: { 
       'Content-Type': 'application/json',
@@ -138,7 +138,7 @@ export const subscribeToChat = (token: string, botId: string, onMessage: (messag
 
 // Получить непрочитанные сообщения
 export const getUnreadMessages = async (token: string): Promise<{ [botId: string]: number }> => {
-  const response = await fetch('http://localhost:8000/chat/unread', {
+  const response = await fetch('/api/chat/unread', {
     headers: { Authorization: `Bearer ${token}` }
   });
   if (!response.ok) {

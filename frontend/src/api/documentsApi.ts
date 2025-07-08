@@ -2,7 +2,7 @@
 const apiClient = {
   get: async (url: string) => {
     const token = localStorage.getItem('token');
-    const response = await fetch(`http://localhost:8000/api${url}`, {
+    const response = await fetch(`/api${url}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
     if (!response.ok) {
@@ -13,7 +13,7 @@ const apiClient = {
   
   post: async (url: string, data: any) => {
     const token = localStorage.getItem('token');
-    const response = await fetch(`http://localhost:8000/api${url}`, {
+    const response = await fetch(`/api${url}`, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
@@ -29,7 +29,7 @@ const apiClient = {
   
   put: async (url: string, data: any) => {
     const token = localStorage.getItem('token');
-    const response = await fetch(`http://localhost:8000/api${url}`, {
+    const response = await fetch(`/api${url}`, {
       method: 'PUT',
       headers: { 
         'Content-Type': 'application/json',
@@ -45,7 +45,7 @@ const apiClient = {
   
   delete: async (url: string) => {
     const token = localStorage.getItem('token');
-    const response = await fetch(`http://localhost:8000/api${url}`, {
+    const response = await fetch(`/api${url}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` }
     });

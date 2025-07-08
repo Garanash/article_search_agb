@@ -2,6 +2,8 @@
 FROM node:20 AS frontend-build
 WORKDIR /app/frontend
 COPY frontend/package.json frontend/package-lock.json ./
+# Отключаем проверку SSL для npm
+RUN npm config set strict-ssl false
 RUN npm ci
 COPY frontend ./
 RUN npm run build
@@ -10,8 +12,11 @@ RUN npm run build
 FROM python:3.11-slim AS backend-build
 WORKDIR /app/backend
 COPY backend/requirements.txt ./
+# Используем китайское зеркало PyPI
+RUN mkdir -p /root/.pip && echo "[global]\nindex-url = https://pypi.tuna.tsinghua.edu.cn/simple" > /root/.pip/pip.conf
 RUN pip install --no-cache-dir -r requirements.txt
 COPY backend ./
+RUN pip check
 
 # --- Финальный образ ---
 FROM python:3.11-slim
@@ -20,6 +25,7 @@ WORKDIR /app
 # Копируем бэкенд
 COPY --from=backend-build /app/backend ./backend
 RUN pip install --no-cache-dir -r backend/requirements.txt
+RUN pip check
 
 # Копируем фронтенд-статику
 COPY --from=frontend-build /app/frontend/build ./frontend_build

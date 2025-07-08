@@ -275,7 +275,70 @@ body {
   }
 } 
 
+/* --- Исправление контрастности для input и форм --- */
 input, input:focus, input:hover, input:-webkit-autofill, input:-webkit-autofill:focus, input:-webkit-autofill:hover, input:-webkit-autofill:active, input:-internal-autofill-selected {
+  color: #222 !important;
+  -webkit-text-fill-color: #222 !important;
+  background: #fff !important;
+}
+
+.ant-input, .ant-input-password, .ant-input-affix-wrapper, .ant-select-selector, .ant-select-dropdown, .ant-input-group-addon, .ant-input-group-wrapper, .ant-picker, .ant-picker-input > input {
+  background: #fff !important;
+  color: #222 !important;
+  border-color: #dee2e6 !important;
+}
+
+.ant-input[disabled], .ant-select-disabled .ant-select-selector, .ant-btn[disabled], .ant-radio-disabled .ant-radio-inner, .ant-checkbox-disabled .ant-checkbox-inner {
+  background: #f8f9fa !important;
+  color: #6c757d !important;
+  border-color: #dee2e6 !important;
+  opacity: 0.6 !important;
+}
+
+/* Для login формы — если фон тёмный, текст белый */
+.login-form-card, .login-form-title {
+  background: #23272f !important;
   color: #fff !important;
-  -webkit-text-fill-color: #fff !important;
+}
+.login-form-card input, .login-form-card .ant-input, .login-form-card .ant-input-password, .login-form-card .ant-input-affix-wrapper {
+  background: #181c22 !important;
+  color: #fff !important;
+  border-color: #444 !important;
+}
+.login-form-card .ant-input::placeholder {
+  color: #bbb !important;
+}
+
+/* Кнопки */
+.ant-btn, .ant-btn span {
+  color: #222 !important;
+  background: transparent !important;
+  border-color: #FCB813 !important;
+}
+.ant-btn-primary {
+  background: linear-gradient(135deg, #d4af37 0%, #FCB813 100%) !important;
+  color: #222 !important;
+  border-color: #FCB813 !important;
+}
+.ant-btn-primary:hover {
+  background: linear-gradient(135deg, #FCB813 0%, #d4af37 100%) !important;
+  color: #222 !important;
+}
+
+/* Для модалей и карточек — всегда тёмный текст на светлом фоне */
+.ant-card, .ant-modal-content, .ant-dropdown-menu, .ant-popover-inner {
+  background: #fff !important;
+  color: #222 !important;
+  border-color: #e1e5e9 !important;
+}
+
+/* Для тёмных карточек (login) — белый текст */
+.login-form-card, .login-form-card .ant-card-body {
+  background: #23272f !important;
+  color: #fff !important;
+}
+
+/* Для label */
+.ant-form-item-label > label {
+  color: #2c3e50 !important;
 } 
