@@ -265,3 +265,27 @@ class EmailAttachment(Base):
 
 # Добавляем обратные связи в модель User
 User.email_campaigns = relationship("EmailCampaign", back_populates="user") 
+
+class ChatSession(Base):
+    __tablename__ = "chat_sessions"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    title = Column(String, nullable=True)
+    model = Column(String, nullable=False)
+    system = Column(Text, nullable=True)
+    temperature = Column(Integer, default=70)  # хранится как int*100 (0.7 -> 70)
+    top_p = Column(Integer, default=100)      # хранится как int*100 (1.0 -> 100)
+    max_tokens = Column(Integer, default=2048)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    messages = relationship("ChatMessage", back_populates="session", cascade="all, delete-orphan")
+    user = relationship("User")
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(Integer, ForeignKey("chat_sessions.id"), nullable=False)
+    role = Column(String, nullable=False)  # 'user' или 'assistant'
+    content = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    session = relationship("ChatSession", back_populates="messages") 

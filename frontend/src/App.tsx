@@ -9,6 +9,7 @@ import ChangePasswordModal from "./components/ChangePasswordModal";
 import ProfileManager from './components/ProfileManager';
 import ChatBot from './components/ChatBot';
 import EmailCampaigns from './components/EmailCampaigns';
+import VseGptChat from './components/VseGptChat';
 import { Layout, Menu, Button, Tabs, Dropdown, Space, Card, Form, Input, Select, Typography, message } from "antd";
 import { LogoutOutlined, UserOutlined, SettingOutlined, RobotOutlined, CustomerServiceOutlined, DashboardOutlined, SaveOutlined, FileTextOutlined, MailOutlined } from "@ant-design/icons";
 import "antd/dist/reset.css";
@@ -700,14 +701,14 @@ const Main: React.FC = () => {
         label: 'Профиль',
         children: <ProfileManager onBack={undefined} />
       },
+      // Новый чат с ботом на базе VseGptChat
       {
         key: 'chat',
         label: 'Чат с ботом',
-        children: <ChatBot />
-      }
+        children: <VseGptChat token={token} />
+      },
       // Вкладка 'Настройки' удалена
     ];
-    
     return baseTabs;
   };
   
@@ -761,7 +762,7 @@ const Main: React.FC = () => {
             type="card"
             centered={false}
             tabPosition="top"
-            destroyInactiveTabPane={false}
+            destroyOnHidden={false}
           />
         </div>
       </Content>

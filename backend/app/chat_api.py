@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from .database import get_db
 from .auth import get_current_user
 from .models import User
+from fastapi.responses import JSONResponse
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 security = HTTPBearer()
@@ -180,9 +181,29 @@ async def get_chat_history(
     """
     Получить историю сообщений с ботом
     """
+    print(f"[DEBUG] get_chat_history: bot_id={bot_id}, user_id={current_user.id}")
     # TODO: Реализовать получение истории из базы данных
     # Пока возвращаем пустой список
-    return []
+    history = []
+    # --- здесь должна быть загрузка истории из БД ---
+    # Жёсткая валидация:
+    if not isinstance(history, list):
+        print(f"[ERROR] История не является списком: {history}")
+        return JSONResponse(status_code=422, content={"detail": "История не является списком", "history": str(history)})
+    valid_msgs = []
+    for idx, msg in enumerate(history):
+        if not isinstance(msg, dict):
+            print(f"[ERROR] Элемент истории не dict: idx={idx}, msg={msg}")
+            continue
+        if msg.get('role') not in ('user', 'assistant'):
+            print(f"[ERROR] Некорректная роль: idx={idx}, msg={msg}")
+            continue
+        if not isinstance(msg.get('content'), str):
+            print(f"[ERROR] content не строка: idx={idx}, msg={msg}")
+            continue
+        valid_msgs.append(msg)
+    print(f"[DEBUG] Возвращаем {len(valid_msgs)} сообщений из истории")
+    return valid_msgs
 
 @router.post("/send", response_model=MessageResponse)
 async def send_message(

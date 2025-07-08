@@ -428,3 +428,42 @@ class SupplierGroupingResponse(BaseModel):
     articles: List[SupplierGroupingArticle]
     requests: List[int]
     total_articles: int 
+
+class ChatMessageBase(BaseModel):
+    role: str
+    content: str
+
+class ChatMessageCreate(ChatMessageBase):
+    pass
+
+class ChatMessageResponse(ChatMessageBase):
+    id: int
+    created_at: datetime
+    class Config:
+        from_attributes = True
+
+class ChatSessionBase(BaseModel):
+    title: Optional[str] = None
+    model: str
+    system: Optional[str] = None
+    temperature: Optional[float] = 0.7
+    top_p: Optional[float] = 1.0
+    max_tokens: Optional[int] = 2048
+
+class ChatSessionCreate(ChatSessionBase):
+    pass
+
+class ChatSessionUpdate(BaseModel):
+    title: Optional[str] = None
+    model: Optional[str] = None
+    system: Optional[str] = None
+    temperature: Optional[float] = None
+    top_p: Optional[float] = None
+    max_tokens: Optional[int] = None
+
+class ChatSessionResponse(ChatSessionBase):
+    id: int
+    created_at: datetime
+    updated_at: datetime
+    class Config:
+        from_attributes = True 
