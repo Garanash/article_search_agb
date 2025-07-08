@@ -173,7 +173,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ onBack }) => {
         return;
       }
       
-      const response = await fetch('http://localhost:8000/api/chat/balance', {
+      const response = await fetch('/api/chat/balance', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -516,7 +516,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ onBack }) => {
         });
       }
 
-      const response = await fetch('http://localhost:8000/api/chat/completions', {
+      const response = await fetch('/api/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1042,9 +1042,9 @@ const ChatBot: React.FC<ChatBotProps> = ({ onBack }) => {
                               (typeof safeContent === 'string' && !safeContent.includes('$$typeof') && !Array.isArray(safeContent)) ? (
                                 <ReactMarkdown
                                   components={{
-                                    img: ({node, ...props}) => (
+                                    img: (props: any) => (
                                       <img
-                                        {...(props as any)}
+                                        {...props}
                                         style={{
                                           maxWidth: '100%',
                                           borderRadius: 12,
