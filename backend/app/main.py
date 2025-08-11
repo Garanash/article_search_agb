@@ -14,7 +14,7 @@ from sqlalchemy.exc import IntegrityError
 from fastapi import status
 import sys
 sys.path.append('..')
-from api import documents_api, users_api, support_api, auth_api, suppliers_api, requests_api, analytics_api, articles_api, chat_api as new_chat_api
+from api import documents_api, users_api, support_api, auth_api, suppliers_api, requests_api, analytics_api, articles_api, chat_api as new_chat_api, admin_api
 import csv
 from fastapi.responses import StreamingResponse, JSONResponse, Response
 from io import StringIO
@@ -514,5 +514,6 @@ app.include_router(analytics_api.router, prefix="/api")
 app.include_router(support_api.router, prefix="/api")
 app.include_router(support_tickets.router, prefix="/api")
 app.include_router(admin_dashboard.router, prefix="/api")
+app.include_router(admin_api.router, prefix="/api")
 app.include_router(articles_api.router, prefix="/api")
 app.include_router(new_chat_api.router, prefix="/api") 

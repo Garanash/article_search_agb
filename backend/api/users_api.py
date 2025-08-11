@@ -10,7 +10,7 @@ from sqlalchemy import func
 
 from app.database import get_db
 from app.models import User, PhoneBook, Article, Supplier, Request
-from app.models import News
+from app.models import News, Role, Department
 from app.schemas import UserProfileUpdate, UserProfileResponse
 from app.schemas import PhoneBookCreate, PhoneBookUpdate, PhoneBookResponse
 from app.schemas import NewsCreate, NewsUpdate, NewsResponse
@@ -364,6 +364,149 @@ async def create_user(
         generated_password=generated_password
     ) 
 
+# Обновление пользователя
+class UpdateUserRequest(BaseModel):
+    username: str = None
+    email: str = None
+    first_name: str = None
+    last_name: str = None
+    patronymic: str = None
+    role: str = None
+    department: str = None
+    position: str = None
+    phone: str = None
+
+@router.put("/{user_id}", response_model=UserProfileResponse)
+async def update_user(
+    user_id: int,
+    user_data: UpdateUserRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Обновить пользователя (только для админов)"""
+    if current_user.role != 'admin':
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Недостаточно прав доступа"
+        )
+    
+    # Получаем пользователя
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Пользователь не найден"
+        )
+    
+    # Обновляем поля
+    update_data = user_data.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        if value is not None:
+            setattr(user, field, value)
+    
+    try:
+        db.commit()
+        db.refresh(user)
+        return user
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Ошибка обновления пользователя: {str(e)}"
+        )
+
+# Удаление пользователя
+@router.delete("/{user_id}")
+async def delete_user(
+    user_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Удалить пользователя (только для админов)"""
+    if current_user.role != 'admin':
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Недостаточно прав доступа"
+        )
+    
+    # Нельзя удалить самого себя
+    if user_id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Нельзя удалить самого себя"
+        )
+    
+    # Получаем пользователя
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Пользователь не найден"
+        )
+    
+    try:
+        db.delete(user)
+        db.commit()
+        return {"message": "Пользователь успешно удален"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Ошибка удаления пользователя: {str(e)}"
+        )
+
+# Сброс пароля пользователя
+@router.post("/{user_id}/reset-password")
+async def reset_user_password(
+    user_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Сбросить пароль пользователя (только для админов)"""
+    if current_user.role != 'admin':
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Недостаточно прав доступа"
+        )
+    
+    # Получаем пользователя
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Пользователь не найден"
+        )
+    
+    # Генерируем новый пароль
+    import string
+    import random
+    
+    def generate_password(length=12):
+        charset = string.ascii_letters + string.digits + "!@#$%^&*"
+        password = ''.join(random.choice(charset) for _ in range(length))
+        return password
+    
+    new_password = generate_password()
+    
+    # Хешируем пароль
+    from passlib.context import CryptContext
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    hashed_password = pwd_context.hash(new_password)
+    
+    # Обновляем пароль и устанавливаем флаг принудительной смены
+    user.hashed_password = hashed_password
+    user.force_password_change = True
+    
+    try:
+        db.commit()
+        return {"password": new_password, "message": "Пароль успешно сброшен"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Ошибка сброса пароля: {str(e)}"
+        )
+
 @router.post("/avatar")
 async def upload_avatar(
     file: UploadFile = File(...),
@@ -602,34 +745,84 @@ async def get_roles(
             detail="Недостаточно прав для просмотра ролей"
         )
     
-    # Возвращаем базовые роли (можно расширить моделью Role в будущем)
-    roles = [
-        {
-            "id": 1,
-            "name": "user",
-            "description": "Обычный пользователь",
-            "permissions": ["read_own_data", "create_requests"],
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow()
-        },
-        {
-            "id": 2,
-            "name": "admin",
-            "description": "Администратор системы",
-            "permissions": ["all"],
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow()
-        },
-        {
-            "id": 3,
-            "name": "manager",
-            "description": "Менеджер",
-            "permissions": ["read_department_data", "approve_documents", "manage_users"],
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow()
-        }
-    ]
-    return roles
+    # Получаем роли из БД
+    roles = db.query(Role).all()
+    
+    # Если ролей нет в БД, создаем базовые
+    if not roles:
+        base_roles = [
+            Role(
+                name="user",
+                description="Обычный пользователь",
+                permissions='["read_own_data", "create_requests"]'
+            ),
+            Role(
+                name="admin",
+                description="Администратор системы",
+                permissions='["all"]'
+            ),
+            Role(
+                name="manager",
+                description="Менеджер",
+                permissions='["read_department_data", "approve_documents", "manage_users"]'
+            )
+        ]
+        
+        for role in base_roles:
+            db.add(role)
+        
+        try:
+            db.commit()
+            roles = db.query(Role).all()
+        except Exception as e:
+            db.rollback()
+            # Возвращаем базовые роли если не удалось создать в БД
+            return [
+                {
+                    "id": 1,
+                    "name": "user",
+                    "description": "Обычный пользователь",
+                    "permissions": ["read_own_data", "create_requests"],
+                    "created_at": datetime.utcnow(),
+                    "updated_at": datetime.utcnow()
+                },
+                {
+                    "id": 2,
+                    "name": "admin",
+                    "description": "Администратор системы",
+                    "permissions": ["all"],
+                    "created_at": datetime.utcnow(),
+                    "updated_at": datetime.utcnow()
+                },
+                {
+                    "id": 3,
+                    "name": "manager",
+                    "description": "Менеджер",
+                    "permissions": ["read_department_data", "approve_documents", "manage_users"],
+                    "created_at": datetime.utcnow(),
+                    "updated_at": datetime.utcnow()
+                }
+            ]
+    
+    # Преобразуем роли в формат ответа
+    result = []
+    for role in roles:
+        import json
+        try:
+            permissions = json.loads(role.permissions) if role.permissions else []
+        except:
+            permissions = [role.permissions] if role.permissions else []
+        
+        result.append({
+            "id": role.id,
+            "name": role.name,
+            "description": role.description,
+            "permissions": permissions,
+            "created_at": role.created_at,
+            "updated_at": role.updated_at
+        })
+    
+    return result
 
 @router.post("/roles", response_model=RoleResponse)
 async def create_role(
@@ -644,17 +837,41 @@ async def create_role(
             detail="Недостаточно прав для создания ролей"
         )
     
-    # В будущем можно добавить модель Role в БД
-    # Пока возвращаем заглушку
-    new_role = {
-        "id": 999,
-        "name": role.name,
-        "description": role.description,
-        "permissions": role.permissions,
-        "created_at": datetime.utcnow(),
-        "updated_at": datetime.utcnow()
-    }
-    return new_role
+    # Проверяем, что роль с таким именем не существует
+    existing_role = db.query(Role).filter(Role.name == role.name).first()
+    if existing_role:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Роль с таким именем уже существует"
+        )
+    
+    # Создаем новую роль
+    import json
+    new_role = Role(
+        name=role.name,
+        description=role.description,
+        permissions=json.dumps(role.permissions)
+    )
+    
+    try:
+        db.add(new_role)
+        db.commit()
+        db.refresh(new_role)
+        
+        return {
+            "id": new_role.id,
+            "name": new_role.name,
+            "description": new_role.description,
+            "permissions": role.permissions,
+            "created_at": new_role.created_at,
+            "updated_at": new_role.updated_at
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Ошибка создания роли: {str(e)}"
+        )
 
 @router.get("/departments", response_model=List[DepartmentResponse])
 async def get_departments(
@@ -668,42 +885,87 @@ async def get_departments(
             detail="Недостаточно прав для просмотра департаментов"
         )
     
-    # Возвращаем базовые департаменты (можно расширить моделью Department в будущем)
-    departments = [
-        {
-            "id": 1,
-            "name": "Разработка ПО",
-            "description": "Отдел разработки программного обеспечения",
-            "manager_id": None,
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow()
-        },
-        {
-            "id": 2,
-            "name": "Системный администратор",
-            "description": "Отдел технической поддержки и системных вопросов",
-            "manager_id": None,
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow()
-        },
-        {
-            "id": 3,
-            "name": "Логистика",
-            "description": "Отдел логистики и поставок",
-            "manager_id": None,
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow()
-        },
-        {
-            "id": 4,
-            "name": "Общие вопросы",
-            "description": "Общие вопросы и административные задачи",
-            "manager_id": None,
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow()
-        }
-    ]
-    return departments
+    # Получаем департаменты из БД
+    departments = db.query(Department).all()
+    
+    # Если департаментов нет в БД, создаем базовые
+    if not departments:
+        base_departments = [
+            Department(
+                name="Разработка ПО",
+                description="Отдел разработки программного обеспечения"
+            ),
+            Department(
+                name="Системный администратор",
+                description="Отдел технической поддержки и системных вопросов"
+            ),
+            Department(
+                name="Логистика",
+                description="Отдел логистики и поставок"
+            ),
+            Department(
+                name="Общие вопросы",
+                description="Общие вопросы и административные задачи"
+            )
+        ]
+        
+        for dept in base_departments:
+            db.add(dept)
+        
+        try:
+            db.commit()
+            departments = db.query(Department).all()
+        except Exception as e:
+            db.rollback()
+            # Возвращаем базовые департаменты если не удалось создать в БД
+            return [
+                {
+                    "id": 1,
+                    "name": "Разработка ПО",
+                    "description": "Отдел разработки программного обеспечения",
+                    "manager_id": None,
+                    "created_at": datetime.utcnow(),
+                    "updated_at": datetime.utcnow()
+                },
+                {
+                    "id": 2,
+                    "name": "Системный администратор",
+                    "description": "Отдел технической поддержки и системных вопросов",
+                    "manager_id": None,
+                    "created_at": datetime.utcnow(),
+                    "updated_at": datetime.utcnow()
+                },
+                {
+                    "id": 3,
+                    "name": "Логистика",
+                    "description": "Отдел логистики и поставок",
+                    "manager_id": None,
+                    "created_at": datetime.utcnow(),
+                    "updated_at": datetime.utcnow()
+                },
+                {
+                    "id": 4,
+                    "name": "Общие вопросы",
+                    "description": "Общие вопросы и административные задачи",
+                    "manager_id": None,
+                    "created_at": datetime.utcnow(),
+                    "updated_at": datetime.utcnow()
+                }
+            ]
+    
+    # Преобразуем департаменты в формат ответа
+    result = []
+    for dept in departments:
+        result.append({
+            "id": dept.id,
+            "name": dept.name,
+            "description": dept.description,
+            "manager_id": dept.manager_id,
+            "created_at": dept.created_at,
+            "updated_at": dept.updated_at
+        })
+    
+    return result
 
 @router.post("/departments", response_model=DepartmentResponse)
 async def create_department(
@@ -718,17 +980,40 @@ async def create_department(
             detail="Недостаточно прав для создания департаментов"
         )
     
-    # В будущем можно добавить модель Department в БД
-    # Пока возвращаем заглушку
-    new_department = {
-        "id": 999,
-        "name": department.name,
-        "description": department.description,
-        "manager_id": department.manager_id,
-        "created_at": datetime.utcnow(),
-        "updated_at": datetime.utcnow()
-    }
-    return new_department
+    # Проверяем, что департамент с таким именем не существует
+    existing_dept = db.query(Department).filter(Department.name == department.name).first()
+    if existing_dept:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Департамент с таким именем уже существует"
+        )
+    
+    # Создаем новый департамент
+    new_department = Department(
+        name=department.name,
+        description=department.description,
+        manager_id=department.manager_id
+    )
+    
+    try:
+        db.add(new_department)
+        db.commit()
+        db.refresh(new_department)
+        
+        return {
+            "id": new_department.id,
+            "name": new_department.name,
+            "description": new_department.description,
+            "manager_id": new_department.manager_id,
+            "created_at": new_department.created_at,
+            "updated_at": new_department.updated_at
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Ошибка создания департамента: {str(e)}"
+        )
 
 @router.get("/available-roles")
 async def get_available_roles():

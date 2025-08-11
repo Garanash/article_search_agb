@@ -244,8 +244,8 @@ def update_event(
 
 @router.get("/calendar/events", response_model=List[CalendarEvent])
 def get_calendar_events(
-    start_date: Optional[datetime] = None,
-    end_date: Optional[datetime] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -255,10 +255,18 @@ def get_calendar_events(
     
     query = db.query(SupportEvent)
     
-    if start_date:
-        query = query.filter((SupportEvent.start_date >= start_date) | (SupportEvent.event_date >= start_date))
-    if end_date:
-        query = query.filter((SupportEvent.end_date <= end_date) | (SupportEvent.event_date <= end_date))
+    try:
+        if start_date:
+            # Парсим дату, если передана
+            start_dt = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
+            query = query.filter((SupportEvent.start_date >= start_dt) | (SupportEvent.event_date >= start_dt))
+        if end_date:
+            # Парсим дату, если передана
+            end_dt = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+            query = query.filter((SupportEvent.end_date <= end_dt) | (SupportEvent.event_date <= end_dt))
+    except (ValueError, TypeError):
+        # Если даты невалидные, просто игнорируем их и возвращаем все события
+        pass
     
     events = query.order_by(SupportEvent.start_date, SupportEvent.event_date).all()
     

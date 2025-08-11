@@ -264,4 +264,51 @@ class EmailAttachment(Base):
     message = relationship("EmailMessage", back_populates="attachments")
 
 # Добавляем обратные связи в модель User
-User.email_campaigns = relationship("EmailCampaign", back_populates="user") 
+User.email_campaigns = relationship("EmailCampaign", back_populates="user")
+
+# Модель для ролей системы
+class Role(Base):
+    __tablename__ = "roles"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, index=True, nullable=False)
+    description = Column(String, nullable=True)
+    permissions = Column(Text, nullable=True)  # JSON строка с правами доступа
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+# Модель для департаментов
+class Department(Base):
+    __tablename__ = "departments"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, index=True, nullable=False)
+    description = Column(String, nullable=True)
+    manager_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    
+    # Связи
+    manager = relationship("User", foreign_keys=[manager_id])
+
+# Таблица связи многие-ко-многим для ролей и разрешений (если потребуется в будущем)
+class UserRole(Base):
+    __tablename__ = "user_roles"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    role_id = Column(Integer, ForeignKey("roles.id"), nullable=False)
+    assigned_at = Column(DateTime, default=datetime.datetime.utcnow)
+    assigned_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    
+    # Связи
+    user = relationship("User", foreign_keys=[user_id])
+    role = relationship("Role")
+    assigner = relationship("User", foreign_keys=[assigned_by])
+
+# Модель для системы разрешений
+class Permission(Base):
+    __tablename__ = "permissions"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, index=True, nullable=False)
+    description = Column(String, nullable=True)
+    resource = Column(String, nullable=True)  # Ресурс (users, articles, etc.)
+    action = Column(String, nullable=True)    # Действие (create, read, update, delete)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow) 
