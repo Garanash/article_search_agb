@@ -1,5 +1,43 @@
 /* Дополнительные адаптивные стили для лучшей поддержки экранов от 13 до 27 дюймов */
 
+/* Мобильные устройства (до 768px) */
+@media (max-width: 768px) {
+  .ant-layout-header {
+    flex-direction: column !important;
+    height: auto !important;
+    padding: 8px 16px !important;
+  }
+  
+  .app-title {
+    font-size: 18px !important;
+    margin-bottom: 8px !important;
+  }
+  
+  .header-user-section {
+    position: static !important;
+    align-self: flex-end !important;
+    margin-top: 8px !important;
+  }
+  
+  .ant-tabs-nav {
+    flex-wrap: wrap !important;
+  }
+  
+  .ant-tabs-tab {
+    min-width: calc(50% - 4px) !important;
+    margin: 2px !important;
+  }
+  
+  .request-sidebar {
+    width: 100% !important;
+    margin-bottom: 16px !important;
+  }
+  
+  .content-container {
+    flex-direction: column !important;
+  }
+}
+
 /* Адаптивные стили для очень маленьких экранов (13-14 дюймов) */
 @media (max-width: 1280px) {
   .request-sidebar {

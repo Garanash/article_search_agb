@@ -14,7 +14,7 @@ WORKDIR /app/backend
 COPY backend/requirements.txt ./
 # Используем китайское зеркало PyPI
 RUN mkdir -p /root/.pip && echo "[global]\nindex-url = https://pypi.tuna.tsinghua.edu.cn/simple" > /root/.pip/pip.conf
-RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host=files.pythonhosted.org -r requirements.txt
+RUN pip install --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host=files.pythonhosted.org -r requirements.txt
 COPY backend ./
 RUN pip check
 
@@ -24,7 +24,7 @@ WORKDIR /app
 
 # Копируем бэкенд
 COPY --from=backend-build /app/backend ./backend
-RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host=files.pythonhosted.org -r backend/requirements.txt
+RUN pip install --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host=files.pythonhosted.org -r backend/requirements.txt
 RUN pip check
 
 # Копируем фронтенд-статику

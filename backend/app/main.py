@@ -42,7 +42,7 @@ app.mount("/static/news", StaticFiles(directory=NEWS_DIR), name="news")
 # Настройка CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # React dev server
+    allow_origins=["http://localhost:3000", "http://localhost", "http://localhost:80"],  # React dev server and Docker frontend
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

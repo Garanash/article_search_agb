@@ -240,13 +240,11 @@ const AdminDashboard: React.FC = () => {
         
         const res = await apiClient.post('/api/users/news/upload-image', formData);
         
-        if (res.ok) {
-          const data = await res.json();
-          setNewsImage(data.image_url);
+        if (res.status >= 200 && res.status < 300) {
+          setNewsImage(res.data.image_url);
           message.success('Изображение загружено');
         } else {
-          const errorData = await res.json();
-          message.error(errorData.error || 'Ошибка загрузки изображения');
+          message.error(res.data?.error || 'Ошибка загрузки изображения');
         }
       } catch (e) {
         console.error('Ошибка загрузки изображения:', e);
@@ -278,7 +276,7 @@ const AdminDashboard: React.FC = () => {
         // Обновление
         const res = await apiClient.put(`/api/users/news/${newsEditData.id}`, newsData);
         
-        if (res.ok) {
+        if (res.status >= 200 && res.status < 300) {
           message.success('Новость обновлена!');
           setNewsModalVisible(false);
           newsForm.resetFields();
@@ -286,14 +284,14 @@ const AdminDashboard: React.FC = () => {
           setNewsEditData(null);
           fetchNews();
         } else {
-          const errorData = await res.json();
+          const errorData = res.data;
           message.error(errorData.detail || 'Ошибка обновления новости');
         }
       } else {
         // Добавление
         const res = await apiClient.post('/api/users/news', newsData);
         
-        if (res.ok) {
+        if (res.status >= 200 && res.status < 300) {
           message.success('Новость добавлена!');
           setNewsModalVisible(false);
           newsForm.resetFields();
@@ -301,7 +299,7 @@ const AdminDashboard: React.FC = () => {
           setNewsEditData(null);
           fetchNews();
         } else {
-          const errorData = await res.json();
+          const errorData = res.data;
           message.error(errorData.detail || 'Ошибка добавления новости');
         }
       }
@@ -369,9 +367,8 @@ const AdminDashboard: React.FC = () => {
     try {
       const response = await apiClient.get('/api/support_tickets/');
       if (!isMounted) return;
-      if (response.ok) {
-        const data = await response.json();
-        if (isMounted) setTickets(data);
+      if (response.status >= 200 && response.status < 300) {
+        if (isMounted) setTickets(response.data);
       } else {
         if (isMounted) message.error('Ошибка загрузки обращений');
       }
@@ -389,9 +386,8 @@ const AdminDashboard: React.FC = () => {
     try {
       const response = await apiClient.get('/api/support_tickets/calendar/events');
       if (!isMounted) return;
-      if (response.ok) {
-        const data = await response.json();
-        if (isMounted) setEvents(data);
+      if (response.status >= 200 && response.status < 300) {
+        if (isMounted) setEvents(response.data);
       }
     } catch (error) {
       if (isMounted) console.error('Ошибка загрузки событий:', error);
@@ -402,9 +398,8 @@ const AdminDashboard: React.FC = () => {
     try {
       const response = await apiClient.get('/api/support_tickets/analytics/overview');
       if (!isMounted) return;
-      if (response.ok) {
-        const data = await response.json();
-        if (isMounted) setAnalytics(data);
+      if (response.status >= 200 && response.status < 300) {
+        if (isMounted) setAnalytics(response.data);
       }
     } catch (error) {
       if (isMounted) console.error('Ошибка загрузки аналитики:', error);
@@ -415,9 +410,8 @@ const AdminDashboard: React.FC = () => {
     try {
       const response = await apiClient.get('/api/users/users');
       if (!isMounted) return;
-      if (response.ok) {
-        const data = await response.json();
-        if (isMounted) setUsers(data);
+      if (response.status >= 200 && response.status < 300) {
+        if (isMounted) setUsers(response.data);
       } else {
         if (isMounted) message.error('Ошибка загрузки пользователей');
       }
@@ -448,8 +442,8 @@ const AdminDashboard: React.FC = () => {
       
       const res = await apiClient.post('/api/users/', userData);
       
-      if (res.ok) {
-        const data = await res.json();
+      if (res.status >= 200 && res.status < 300) {
+        const data = res.data;
         
         // Показываем подробное сообщение с паролем и инструкциями
         Modal.success({
@@ -505,7 +499,7 @@ const AdminDashboard: React.FC = () => {
         // Обновляем список пользователей
         loadUsers();
       } else {
-        const errorData = await res.json();
+        const errorData = res.data;
         message.error(errorData.detail || 'Ошибка создания пользователя');
       }
     } catch (e) {
@@ -528,8 +522,8 @@ const AdminDashboard: React.FC = () => {
     try {
       const res = await apiClient.post(`/api/users/${userId}/generate-password`);
       
-      if (res.ok) {
-        const data = await res.json();
+      if (res.status >= 200 && res.status < 300) {
+        const data = res.data;
         // Сохраняем пароль в состоянии
         setUserPasswords(prev => ({
           ...prev,
@@ -584,7 +578,7 @@ const AdminDashboard: React.FC = () => {
         // Обновляем список пользователей
         loadUsers();
       } else {
-        const errorData = await res.json();
+        const errorData = res.data;
         message.error(errorData.detail || 'Ошибка генерации пароля');
       }
     } catch (e) {
@@ -610,8 +604,8 @@ const AdminDashboard: React.FC = () => {
       let hashedPassword = "";
       let forcePasswordChange = false;
       
-      if (res.ok) {
-        const data = await res.json();
+      if (res.status >= 200 && res.status < 300) {
+        const data = res.data;
         passwordInfo = data.message;
         hashedPassword = data.hashed_password;
         forcePasswordChange = data.force_password_change;
@@ -661,8 +655,8 @@ const AdminDashboard: React.FC = () => {
     try {
       const res = await apiClient.get(`/api/users/${userId}/password/decrypt`);
       
-      if (res.ok) {
-        const data = await res.json();
+      if (res.status >= 200 && res.status < 300) {
+        const data = res.data;
         Modal.info({
           title: 'Информация о пароле',
           content: (
@@ -683,7 +677,7 @@ const AdminDashboard: React.FC = () => {
           width: 600,
         });
       } else {
-        const errorData = await res.json();
+        const errorData = res.data;
         message.error(errorData.detail || 'Ошибка расшифровки пароля');
       }
     } catch (e) {
@@ -705,14 +699,14 @@ const AdminDashboard: React.FC = () => {
       
       const res = await apiClient.post('/api/users/roles', roleData);
       
-      if (res.ok) {
+      if (res.status >= 200 && res.status < 300) {
         message.success('Роль создана!');
         setRoleModalVisible(false);
         roleForm.resetFields();
         setRoleEditData(null);
         fetchRolesAndDepartments();
       } else {
-        const errorData = await res.json();
+        const errorData = res.data;
         message.error(errorData.detail || 'Ошибка создания роли');
       }
     } catch (e) {
@@ -734,14 +728,14 @@ const AdminDashboard: React.FC = () => {
       
       const res = await apiClient.post('/api/users/departments', departmentData);
       
-      if (res.ok) {
+      if (res.status >= 200 && res.status < 300) {
         message.success('Департамент создан!');
         setDepartmentModalVisible(false);
         departmentForm.resetFields();
         setDepartmentEditData(null);
         fetchRolesAndDepartments();
       } else {
-        const errorData = await res.json();
+        const errorData = res.data;
         message.error(errorData.detail || 'Ошибка создания департамента');
       }
     } catch (e) {
@@ -755,7 +749,7 @@ const AdminDashboard: React.FC = () => {
     try {
       const response = await apiClient.post(`/api/support_tickets/${ticketId}/close`);
 
-      if (response.ok) {
+      if (response.status >= 200 && response.status < 300) {
         message.success('Обращение закрыто');
         loadTickets();
         loadAnalytics();
@@ -772,7 +766,7 @@ const AdminDashboard: React.FC = () => {
     try {
       const response = await apiClient.put(`/api/support_tickets/${ticketId}`, updates);
 
-      if (response.ok) {
+      if (response.status >= 200 && response.status < 300) {
         message.success('Обращение обновлено');
         loadTickets();
         loadAnalytics();
@@ -790,7 +784,7 @@ const AdminDashboard: React.FC = () => {
     try {
       const response = await apiClient.post(`/api/support_tickets/${ticketId}/events`, eventData);
 
-      if (response.ok) {
+      if (response.status >= 200 && response.status < 300) {
         message.success('Событие создано');
         loadEvents();
         setEventModalVisible(false);
@@ -808,7 +802,7 @@ const AdminDashboard: React.FC = () => {
     try {
       const response = await apiClient.put(`/api/support_tickets/events/${eventId}`, updates);
 
-      if (response.ok) {
+      if (response.status >= 200 && response.status < 300) {
         message.success('Событие обновлено');
         loadEvents();
         setEventModalVisible(false);
@@ -946,7 +940,7 @@ const AdminDashboard: React.FC = () => {
         start_date: values.start_date.toISOString(),
         end_date: values.end_date.toISOString(),
       });
-      if (response.ok) {
+      if (response.status >= 200 && response.status < 300) {
         message.success('Событие запланировано');
         setCalendarModalVisible(false);
         loadEvents();
@@ -1139,9 +1133,8 @@ const AdminDashboard: React.FC = () => {
     setTableLoading(true);
     try {
       const response = await apiClient.get(`/api/admin/table/${table}`);
-      if (response.ok) {
-        const data = await response.json();
-        setTableData(data);
+      if (response.status >= 200 && response.status < 300) {
+        setTableData(response.data);
       } else {
         setTableData([]);
         message.error('Ошибка загрузки данных таблицы');
@@ -1208,8 +1201,8 @@ const AdminDashboard: React.FC = () => {
     setCsvLoading(true);
     try {
       const res = await apiClient.get(`/admin/export_csv/${activeTable}`);
-      if (!res.ok) throw new Error('Ошибка экспорта');
-      const blob = await res.blob();
+      if (res.status < 200 || res.status >= 300) throw new Error('Ошибка экспорта');
+      const blob = new Blob([res.data]);
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -1253,8 +1246,8 @@ const AdminDashboard: React.FC = () => {
     setCsvLoading(true);
     try {
       const res = await apiClient.get(`/api/admin/export_${format}/${activeTable}`);
-      if (!res.ok) throw new Error('Ошибка экспорта');
-      const blob = await res.blob();
+      if (res.status < 200 || res.status >= 300) throw new Error('Ошибка экспорта');
+      const blob = new Blob([res.data]);
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;

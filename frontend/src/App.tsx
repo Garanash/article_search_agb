@@ -9,6 +9,7 @@ import ChangePasswordModal from "./components/ChangePasswordModal";
 import ProfileManager from './components/ProfileManager';
 import ChatBot from './components/ChatBot';
 import EmailCampaigns from './components/EmailCampaigns';
+import UserAvatar from './components/UserAvatar';
 import { Layout, Menu, Button, Tabs, Dropdown, Space, Card, Form, Input, Select, Typography, message } from "antd";
 import { LogoutOutlined, UserOutlined, SettingOutlined, RobotOutlined, CustomerServiceOutlined, DashboardOutlined, SaveOutlined, FileTextOutlined, MailOutlined } from "@ant-design/icons";
 import "antd/dist/reset.css";
@@ -267,6 +268,11 @@ const tabStyles = `
   
   /* Адаптивность */
   @media (max-width: 768px) {
+    .ant-layout-header {
+      padding: 0 16px !important;
+      height: 56px !important;
+    }
+    
     .ant-layout-content {
       margin: 8px !important;
       border-radius: 4px !important;
@@ -275,36 +281,22 @@ const tabStyles = `
     }
     
     .ant-tabs-nav-list {
-      flex-direction: column !important;
+      flex-wrap: wrap !important;
       gap: 4px !important;
     }
     
     .ant-tabs-tab {
       margin-bottom: 0 !important;
       border-radius: 4px !important;
-      padding: 10px 8px !important;
-      font-size: 13px !important;
+      padding: 8px 6px !important;
+      font-size: 12px !important;
+      min-width: calc(50% - 2px) !important;
       white-space: normal !important;
     }
     
     .app-title {
-      font-size: 24px !important;
+      font-size: 20px !important;
       letter-spacing: 1px !important;
-    }
-    
-    .ant-tabs-content-holder {
-      padding: 0 12px 12px 12px !important;
-    }
-    
-    .ant-tabs-tabpane {
-      padding: 12px !important;
-    }
-  }
-  
-  @media (max-width: 480px) {
-    .ant-tabs-tab {
-      font-size: 12px !important;
-      padding: 8px 6px !important;
     }
     
     .ant-tabs-content-holder {
@@ -313,6 +305,32 @@ const tabStyles = `
     
     .ant-tabs-tabpane {
       padding: 8px !important;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .ant-layout-header {
+      padding: 0 12px !important;
+      height: 48px !important;
+    }
+    
+    .ant-tabs-tab {
+      font-size: 11px !important;
+      padding: 6px 4px !important;
+      min-width: 100% !important;
+    }
+    
+    .app-title {
+      font-size: 16px !important;
+      letter-spacing: 0.5px !important;
+    }
+    
+    .ant-tabs-content-holder {
+      padding: 0 4px 4px 4px !important;
+    }
+    
+    .ant-tabs-tabpane {
+      padding: 4px !important;
     }
     
     .ant-layout-content {
@@ -330,9 +348,36 @@ const tabStyles = `
   }
   
   @media (min-width: 1025px) {
+    .ant-layout-header {
+      padding: 0 32px !important;
+      height: 64px !important;
+    }
+    
     .ant-tabs-tab {
       font-size: 14px !important;
       padding: 12px 16px !important;
+    }
+    
+    .app-title {
+      font-size: 28px !important;
+      letter-spacing: 2px !important;
+    }
+  }
+
+  @media (min-width: 1920px) {
+    .ant-layout-header {
+      padding: 0 48px !important;
+      height: 72px !important;
+    }
+    
+    .app-title {
+      font-size: 32px !important;
+      letter-spacing: 2.5px !important;
+    }
+    
+    .ant-tabs-tab {
+      font-size: 16px !important;
+      padding: 14px 20px !important;
     }
   }
   
@@ -526,6 +571,102 @@ const tabStyles = `
     color: #222 !important;
     border: 1px solid #FCB813 !important;
     font-weight: 600 !important;
+  }
+
+  /* Улучшенная кнопка пользователя */
+  .enhanced-user-button {
+    background: linear-gradient(135deg, #FCB813 0%, #f0a500 100%) !important;
+    border: 2px solid #FCB813 !important;
+    border-radius: 24px !important;
+    padding: 8px 20px !important;
+    height: 48px !important;
+    font-size: 14px !important;
+    box-shadow: 0 4px 12px rgba(252, 184, 19, 0.3) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    min-width: 160px !important;
+    justify-content: flex-start !important;
+  }
+
+  .enhanced-user-button:hover {
+    background: linear-gradient(135deg, #f0a500 0%, #FCB813 100%) !important;
+    border-color: #d4af37 !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(252, 184, 19, 0.4) !important;
+  }
+
+  .enhanced-user-button:active {
+    transform: translateY(0) !important;
+    box-shadow: 0 2px 8px rgba(252, 184, 19, 0.3) !important;
+  }
+
+  /* Адаптивные стили для кнопки пользователя */
+  @media (max-width: 768px) {
+    .header-user-section {
+      right: 16px !important;
+    }
+    
+    .enhanced-user-button {
+      min-width: 120px !important;
+      padding: 6px 12px !important;
+      height: 40px !important;
+      font-size: 12px !important;
+      gap: 8px !important;
+      border-radius: 20px !important;
+    }
+
+    .enhanced-user-button .user-avatar {
+      width: 28px !important;
+      height: 28px !important;
+      font-size: 12px !important;
+    }
+
+    .enhanced-user-button .user-info {
+      display: none !important;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .header-user-section {
+      right: 12px !important;
+    }
+    
+    .enhanced-user-button {
+      min-width: 80px !important;
+      padding: 4px 8px !important;
+      height: 36px !important;
+      gap: 6px !important;
+      border-radius: 18px !important;
+    }
+
+    .enhanced-user-button .user-avatar {
+      width: 24px !important;
+      height: 24px !important;
+      font-size: 10px !important;
+    }
+  }
+
+  @media (min-width: 1920px) {
+    .header-user-section {
+      right: 48px !important;
+    }
+    
+    .enhanced-user-button {
+      min-width: 200px !important;
+      padding: 10px 24px !important;
+      height: 56px !important;
+      font-size: 16px !important;
+      gap: 16px !important;
+      border-radius: 28px !important;
+    }
+
+    .enhanced-user-button .user-avatar {
+      width: 40px !important;
+      height: 40px !important;
+      font-size: 16px !important;
+    }
   }
 `;
 
@@ -723,7 +864,7 @@ const Main: React.FC = () => {
             </span>
           </div>
         </div>
-        <div style={{ position: 'absolute', right: 32, top: 0, height: '100%', display: 'flex', alignItems: 'center' }}>
+        <div style={{ position: 'absolute', right: '32px', top: 0, height: '100%', display: 'flex', alignItems: 'center' }} className="header-user-section">
           <Space>
             <Dropdown
               menu={{
@@ -732,11 +873,44 @@ const Main: React.FC = () => {
               }}
               placement="bottomRight"
             >
-              <Button type="text" className="user-button" style={{ background: '#FCB813', color: '#222', border: '1px solid #FCB813', fontWeight: 600 }}>
-                <Space>
-                  <UserOutlined />
-                  {user?.username || 'Пользователь'}
-                </Space>
+              <Button 
+                type="text" 
+                className="user-button enhanced-user-button" 
+                style={{ 
+                  background: 'linear-gradient(135deg, #FCB813 0%, #f0a500 100%)', 
+                  color: '#222', 
+                  border: '2px solid #FCB813', 
+                  fontWeight: 600,
+                  borderRadius: '24px',
+                  padding: '8px 20px',
+                  height: '48px',
+                  fontSize: '14px',
+                  boxShadow: '0 4px 12px rgba(252, 184, 19, 0.3)',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px'
+                }}
+              >
+                <UserAvatar 
+                  user={user} 
+                  size="medium" 
+                  className="user-avatar"
+                />
+                <div className="user-info" style={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  alignItems: 'flex-start', 
+                  lineHeight: 1.2,
+                  minWidth: 0 
+                }}>
+                  <span style={{ fontSize: '14px', fontWeight: 700, color: '#222' }}>
+                    {user?.username || 'Пользователь'}
+                  </span>
+                  <span style={{ fontSize: '11px', fontWeight: 500, color: 'rgba(34, 34, 34, 0.7)', textTransform: 'capitalize' }}>
+                    {isAdmin ? 'Администратор' : 'Пользователь'}
+                  </span>
+                </div>
               </Button>
             </Dropdown>
           </Space>
