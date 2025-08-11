@@ -20,8 +20,9 @@ def create_ticket(
     db: Session = Depends(get_db)
 ):
     """Создать новое обращение"""
-    if not current_user.is_admin:
-        raise HTTPException(status_code=403, detail="Только администраторы могут создавать обращения")
+    # Пользователи могут создавать обращения только для себя
+    if not current_user.is_admin and ticket.user_id and ticket.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Вы можете создавать обращения только для себя")
     
     db_ticket = SupportTicket(
         user_id=ticket.user_id or current_user.id,
@@ -29,7 +30,7 @@ def create_ticket(
         description=ticket.description,
         department=ticket.department,
         priority=ticket.priority,
-        assigned_to=current_user.id
+        assigned_to=None if not current_user.is_admin else current_user.id
     )
     
     db.add(db_ticket)
@@ -43,6 +44,23 @@ def create_ticket(
         db_ticket.assigned_admin_username = assigned_admin.username if assigned_admin else None
     
     return db_ticket
+
+@router.get("/my", response_model=List[SupportTicketResponse])
+def get_my_tickets(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Получить обращения текущего пользователя"""
+    tickets = db.query(SupportTicket).filter(SupportTicket.user_id == current_user.id).all()
+    
+    # Добавляем информацию о пользователях
+    for ticket in tickets:
+        ticket.user_username = current_user.username
+        if ticket.assigned_to:
+            assigned_admin = db.query(User).filter(User.id == ticket.assigned_to).first()
+            ticket.assigned_admin_username = assigned_admin.username if assigned_admin else None
+    
+    return tickets
 
 @router.get("/", response_model=List[SupportTicketResponse])
 def get_tickets(
@@ -75,6 +93,39 @@ def get_tickets(
             ticket.assigned_admin_username = assigned_admin.username if assigned_admin else None
     
     return tickets
+
+@router.patch("/{ticket_id}", response_model=SupportTicketResponse)
+def update_ticket(
+    ticket_id: int,
+    ticket_update: dict,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Обновить тикет (только для админов)"""
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Только администраторы могут обновлять тикеты")
+    
+    db_ticket = db.query(SupportTicket).filter(SupportTicket.id == ticket_id).first()
+    if not db_ticket:
+        raise HTTPException(status_code=404, detail="Тикет не найден")
+    
+    # Обновляем поля
+    for field, value in ticket_update.items():
+        if hasattr(db_ticket, field):
+            setattr(db_ticket, field, value)
+    
+    db_ticket.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(db_ticket)
+    
+    # Добавляем информацию о пользователях
+    user = db.query(User).filter(User.id == db_ticket.user_id).first()
+    db_ticket.user_username = user.username if user else "Unknown"
+    if db_ticket.assigned_to:
+        assigned_admin = db.query(User).filter(User.id == db_ticket.assigned_to).first()
+        db_ticket.assigned_admin_username = assigned_admin.username if assigned_admin else None
+    
+    return db_ticket
 
 @router.get("/{ticket_id}", response_model=SupportTicketResponse)
 def get_ticket(

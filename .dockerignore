@@ -1,0 +1,60 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+README.md
+CHANGELOG.md
+LICENSE
+*.md
+
+# IDE и редакторы
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Логи
+*.log
+logs/
+
+# Временные файлы
+.DS_Store
+Thumbs.db
+
+# Зависимости (будут скопированы отдельно)
+node_modules/
+*/node_modules/
+
+# Сборки
+build/
+dist/
+*/build/
+*/dist/
+
+# Кеш
+.npm/
+.cache/
+*.tsbuildinfo
+.eslintcache
+
+# Тестирование
+coverage/
+.nyc_output/
+
+# Environment файлы (некоторые могут быть нужны для продакшена)
+.env.local
+.env.development
+.env.test
+
+# Docker файлы
+Dockerfile*
+.dockerignore
+docker-compose*.yml
+
+# Специфичные для проекта
+backend/__pycache__/
+backend/*.pyc
+backend/.pytest_cache/

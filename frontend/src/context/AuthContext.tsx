@@ -25,6 +25,7 @@ type AuthContextType = {
   user: User | null;
   setUser: (user: User | null) => void;
   updateUser: (updatedUser: User) => void;
+  logout: () => void;
   isAdmin: boolean;
   isManager: boolean;
   loading: boolean;
@@ -38,6 +39,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null, 
   setUser: () => {},
   updateUser: () => {},
+  logout: () => {},
   isAdmin: false,
   isManager: false,
   loading: false,
@@ -57,9 +59,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     let firstLoad = true;
     const loadUserProfile = async () => {
+      console.log('AuthContext: loadUserProfile called with token:', token ? 'present' : 'missing');
       if (token) {
         try {
-          const userData = await getUserProfile();
+          console.log('AuthContext: Loading user profile...');
+          const userData = await getUserProfile(token); // Передаем токен напрямую
+          console.log('AuthContext: User profile loaded:', userData);
           setUser(userData);
           // Показываем модалку только при первом входе, если force_password_change
           if (firstLoad && userData.force_password_change) {
@@ -67,11 +72,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
           firstLoad = false;
         } catch (error) {
-          console.error('Error loading user profile:', error);
+          console.error('AuthContext: Error loading user profile:', error);
           // Если не удалось загрузить профиль, очищаем токен
-          setToken(null);
-          localStorage.removeItem("token");
+          setTokenAndStore(null);
+          setUser(null);
         }
+      } else {
+        console.log('AuthContext: No token, clearing user');
+        setUser(null);
       }
       setLoading(false);
     };
@@ -81,9 +89,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [token]);
 
   const setTokenAndStore = (t: string | null) => {
+    console.log('AuthContext: setTokenAndStore called with token:', t ? 'present' : 'null');
     setToken(t);
-    if (t) localStorage.setItem("token", t);
-    else localStorage.removeItem("token");
+    if (t) {
+      localStorage.setItem("token", t);
+      console.log('AuthContext: Token saved to localStorage');
+    } else {
+      localStorage.removeItem("token");
+      console.log('AuthContext: Token removed from localStorage');
+    }
   };
 
   const setUserAndStore = (u: User | null) => {
@@ -97,6 +111,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setForcePasswordChange(updatedUser.force_password_change || false);
   };
 
+  const logout = () => {
+    setTokenAndStore(null);
+    setUserAndStore(null);
+    setForcePasswordChange(false);
+  };
+
   const isAdmin = user?.role === 'admin';
   const isManager = user?.role === 'manager' || user?.role === 'admin';
 
@@ -107,6 +127,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       user, 
       setUser: setUserAndStore,
       updateUser,
+      logout,
       isAdmin,
       isManager,
       loading,

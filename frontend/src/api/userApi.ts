@@ -29,23 +29,31 @@ export const updateUserProfile = async (userData: Partial<User>): Promise<User> 
   return response.json();
 };
 
-export const getUserProfile = async (): Promise<User> => {
-  const token = getToken();
+export const getUserProfile = async (authToken?: string): Promise<User> => {
+  const token = authToken || getToken();
   if (!token) {
     throw new Error('No authentication token');
   }
 
+  console.log('getUserProfile called with token:', token ? 'present' : 'missing');
+  
   const response = await fetch(`${API_BASE_URL}/api/users/profile`, {
     headers: {
       'Authorization': `Bearer ${token}`
     }
   });
 
+  console.log('getUserProfile response status:', response.status);
+
   if (!response.ok) {
-    throw new Error('Failed to get user profile');
+    const errorText = await response.text();
+    console.error('getUserProfile error response:', errorText);
+    throw new Error(`Failed to get user profile: ${response.status}`);
   }
 
-  return response.json();
+  const userData = await response.json();
+  console.log('getUserProfile success:', userData);
+  return userData;
 };
 
 // Загрузка аватара пользователя (заглушка, если нет backend endpoint)

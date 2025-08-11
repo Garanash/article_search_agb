@@ -1,1 +1,327 @@
-node_modules
+# === СЕКРЕТНЫЕ ДАННЫЕ И ТОКЕНЫ ===
+# Environment файлы с токенами и паролями
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env.staging
+backend/.env
+frontend/.env
+
+# API ключи и токены
+**/api_keys.json
+**/tokens.json
+**/secrets.json
+**/config/secrets.*
+**/private_keys.*
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+
+# === NODE.JS ===
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Dependency directories
+frontend/node_modules/
+backend/node_modules/
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variable files
+.env.build
+
+# === PYTHON/BACKEND ===
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# === REACT/FRONTEND ===
+# Production builds
+frontend/build/
+frontend/dist/
+frontend/.next/
+frontend/out/
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# nyc test coverage
+.nyc_output
+
+# Grunt intermediate storage
+.grunt
+
+# Bower dependency directory
+bower_components
+
+# Create React App
+.eslintrc.js
+
+# Next.js build output
+.next
+out
+
+# Nuxt.js build / generate output
+.nuxt
+dist
+
+# Gatsby files
+.cache/
+public
+
+# Storybook build outputs
+.out
+.storybook-out
+
+# === БАЗЫ ДАННЫХ ===
+# SQLite databases
+*.sqlite
+*.sqlite3
+*.db
+
+# PostgreSQL backup files
+*.sql
+*.dump
+
+# Database dumps
+database_backup.*
+backup_*.sql
+
+# === DOCKER ===
+# Docker override files
+docker-compose.override.yml
+docker-compose.*.yml
+
+# Docker volumes data
+volumes/
+data/
+
+# === ЛОГИ И ВРЕМЕННЫЕ ФАЙЛЫ ===
+# Log files
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Temporary folders
+tmp/
+temp/
+
+# === IDE И РЕДАКТОРЫ ===
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# JetBrains IDEs
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# === ОПЕРАЦИОННЫЕ СИСТЕМЫ ===
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# === ФАЙЛЫ ЗАГРУЗОК И МЕДИА ===
+# Uploaded files
+uploads/
+media/
+static/media/
+backend/uploads/
+frontend/public/uploads/
+
+# Large files
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# === ПРОЧИЕ КОНФИДЕНЦИАЛЬНЫЕ ФАЙЛЫ ===
+# Backup files
+*.bak
+*.backup
+*.old
+*.orig
+
+# Test files with sensitive data
+test_data.json
+mock_users.json
+sample_tokens.*
+
+# Documentation with secrets
+SECRETS.md
+passwords.txt
+tokens.txt
+
+# === ПРОЕКТНЫЕ ФАЙЛЫ ===
+# Package lock files (оставляем только один)
+# package-lock.json  # раскомментировать если используете yarn
+# yarn.lock          # раскомментировать если используете npm
+
+# Build artifacts
+*.tgz
+*.tar.gz

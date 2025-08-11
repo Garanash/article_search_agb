@@ -27,6 +27,10 @@ export const login = async (username: string, password: string) => {
   const params = new URLSearchParams();
   params.append("username", username);
   params.append("password", password);
+  
+  console.log('Making login request to:', `${API_BASE_URL}/api/auth/login`);
+  console.log('With credentials:', { username, password: '***' });
+  
   const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
     method: "POST",
     headers: {
@@ -34,10 +38,25 @@ export const login = async (username: string, password: string) => {
     },
     body: params.toString()
   });
+  
+  console.log('Login response status:', response.status);
+  console.log('Login response ok:', response.ok);
+  
   if (!response.ok) {
-    throw new Error(await response.text());
+    const errorText = await response.text();
+    console.error('Login error response:', errorText);
+    
+    try {
+      const errorData = JSON.parse(errorText);
+      throw new Error(errorData.detail || errorText);
+    } catch (parseError) {
+      throw new Error(errorText || `HTTP ${response.status}`);
+    }
   }
-  return response.json();
+  
+  const data = await response.json();
+  console.log('Login success response:', data);
+  return data;
 };
 
 export const getArticles = async () => {

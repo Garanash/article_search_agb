@@ -4,6 +4,7 @@ import { UploadOutlined, DownloadOutlined, DatabaseOutlined, CalendarOutlined, T
 import { getAdminMetrics, exportTableCsv, importTableCsv } from '../api/adminApi';
 import { useAuth } from '../context/AuthContext';
 import UserManagement from './UserManagement';
+import AdminTicketManagement from './AdminTicketManagement';
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 import ru_RU from 'antd/lib/locale/ru_RU';
@@ -1601,9 +1602,12 @@ const AdminDashboard: React.FC = () => {
               />
             )}
           </TabPane>
-          <TabPane tab="Управление пользователями" key="management">
-            <UserManagement />
-          </TabPane>
+                        <TabPane tab="Управление пользователями" key="management">
+                <UserManagement />
+              </TabPane>
+              <TabPane tab="Обращения пользователей" key="tickets">
+                <AdminTicketManagement />
+              </TabPane>
           <TabPane tab="Аналитика поддержки" key="support_analytics">
             {analytics && (
               <div>
