@@ -115,6 +115,21 @@ async def get_users(
     users = db.query(User).all()
     return users
 
+@router.get("/admin/users", response_model=List[UserProfileResponse])
+async def get_all_users_admin(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Получить список всех пользователей (только для админов)"""
+    if current_user.role != 'admin':
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Недостаточно прав для просмотра всех пользователей"
+        )
+    
+    users = db.query(User).all()
+    return users
+
 @router.get("/users", response_model=List[UserProfileResponse])
 async def get_all_users(
     current_user: User = Depends(get_current_user),
@@ -329,6 +344,14 @@ async def create_user(
     generated_password = auth.generate_random_password()
     hashed_password = auth.get_password_hash(generated_password)
     
+    print(f"🔐 Создание пользователя {username}")
+    print(f"🔑 Сгенерированный пароль: {generated_password}")
+    print(f"🔑 Хеш пароля: {hashed_password}")
+    
+    # Проверяем, что пароль работает
+    is_valid = auth.verify_password(generated_password, hashed_password)
+    print(f"🔑 Проверка пароля: {'✅ OK' if is_valid else '❌ ОШИБКА'}")
+    
     # Создаем нового пользователя
     new_user = User(
         username=username,
@@ -466,7 +489,7 @@ async def reset_user_password(
     if current_user.role != 'admin':
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Недостаточно прав доступа"
+            detail="Недостаточно прав для сброса паролей"
         )
     
     # Получаем пользователя
@@ -477,29 +500,24 @@ async def reset_user_password(
             detail="Пользователь не найден"
         )
     
-    # Генерируем новый пароль
-    import string
-    import random
+    # Генерируем новый случайный пароль
+    new_password = auth.generate_random_password()
+    hashed_password = auth.get_password_hash(new_password)
     
-    def generate_password(length=12):
-        charset = string.ascii_letters + string.digits + "!@#$%^&*"
-        password = ''.join(random.choice(charset) for _ in range(length))
-        return password
-    
-    new_password = generate_password()
-    
-    # Хешируем пароль
-    from passlib.context import CryptContext
-    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-    hashed_password = pwd_context.hash(new_password)
-    
-    # Обновляем пароль и устанавливаем флаг принудительной смены
+    # Обновляем пароль пользователя
     user.hashed_password = hashed_password
-    user.force_password_change = True
+    user.force_password_change = True  # Принудительная смена пароля при следующем входе
     
     try:
         db.commit()
-        return {"password": new_password, "message": "Пароль успешно сброшен"}
+        db.refresh(user)
+        
+        return {
+            "message": f"Пароль для пользователя {user.username} успешно сброшен",
+            "username": user.username,
+            "new_password": new_password,
+            "force_password_change": True
+        }
     except Exception as e:
         db.rollback()
         raise HTTPException(

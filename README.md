@@ -55,29 +55,72 @@
 
 ## 🛠️ Технологии
 - **Frontend:** React, TypeScript, Ant Design
-- **Backend:** FastAPI, SQLite, SQLAlchemy
+- **Backend:** FastAPI, PostgreSQL, SQLAlchemy
 - **AI/ML:** Perplexity API (OpenAI совместимый)
 - **Аутентификация:** JWT токены
 - **Файловые операции:** Base64 кодирование, FormData
+- **База данных:** PostgreSQL (локально) / SQLite (Docker)
 
 ---
 
 ## ⚡ Быстрый старт
 
-### 1. Клонируйте репозиторий
+### 🚀 Автоматический запуск (рекомендуется)
+
+#### Windows
+```bash
+# Двойной клик на файл или запуск из командной строки
+start-local.bat
+```
+
+#### Linux/Mac
+```bash
+# Сделать скрипт исполняемым (только первый раз)
+chmod +x start-local.sh
+
+# Запустить
+./start-local.sh
+```
+
+Скрипт автоматически:
+- Проверит наличие необходимых компонентов
+- Создаст виртуальное окружение Python
+- Установит зависимости
+- Настроит базу данных PostgreSQL
+- Запустит Backend и Frontend
+
+### 📝 Ручная настройка
+
+#### 1. Клонируйте репозиторий
 ```bash
 git clone https://github.com/your-org/article-search-agb.git
 cd article-search-agb
 ```
 
-### 2. Настройка переменных окружения
-Создайте файл `.env` в папке `backend`:
+#### 2. Настройка переменных окружения
+Создайте файл `.env` в корне проекта:
 ```env
+# Локальная конфигурация
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=article_search_agb
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+
+# Backend
+BACKEND_HOST=localhost
+BACKEND_PORT=8000
+
+# Frontend
+REACT_APP_API_URL=http://localhost:8000
+REACT_APP_BACKEND_URL=http://localhost:8000
+
+# AI API
 PERPLEXITY_API_KEY=your_perplexity_api_key_here
 SECRET_KEY=your_secret_key_for_jwt
 ```
 
-### 3. Backend (FastAPI)
+#### 3. Backend (FastAPI)
 ```bash
 cd backend
 python -m venv venv
@@ -85,26 +128,27 @@ venv\Scripts\activate  # Windows
 # source venv/bin/activate  # Linux/Mac
 pip install -r requirements.txt
 
-# Выполните миграцию для перехода на requests/request_id:
-cd ..
-python add_invoice_migration.py
-cd backend
-
 # Запуск сервера
-uvicorn app.main:app --reload
+python main.py
 ```
 
-### 4. Frontend (React)
+#### 4. Frontend (React)
 ```bash
 cd ../frontend
 npm install
 npm start
 ```
 
-### 5. Откройте в браузере
+#### 5. Откройте в браузере
 ```
 http://localhost:3000
 ```
+
+### 🛠️ Дополнительные скрипты
+
+- **`check-status.bat`** / **`check-status.sh`** — проверка статуса приложения
+- **`stop-local.bat`** / **`stop-local.sh`** — остановка приложения
+- **`README_LOCAL_SETUP.md`** — подробные инструкции по локальному запуску
 
 ---
 

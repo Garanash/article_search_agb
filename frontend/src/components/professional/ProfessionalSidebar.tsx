@@ -116,7 +116,6 @@ const ProfessionalSidebar: React.FC<ProfessionalSidebarProps> = ({
           marginBottom: '16px',
           marginTop: '16px'
         }}>
-          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#ffffff', marginBottom: '16px' }}>FELIX</div>
           
           {/* Логотип AGB */}
           <div style={{ marginBottom: '16px' }}>

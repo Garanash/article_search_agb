@@ -122,7 +122,7 @@ const App: React.FC = () => {
       <ConfigProvider theme={professionalTheme}>
         <div style={{ minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
           {renderMainContent()}
-        </div>
+            </div>
       </ConfigProvider>
     );
   }
@@ -156,9 +156,9 @@ const App: React.FC = () => {
             boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
           }}>
             {renderMainContent()}
-          </Content>
+      </Content>
         </Layout>
-      </Layout>
+    </Layout>
     </ConfigProvider>
   );
 };

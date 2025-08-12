@@ -60,6 +60,8 @@ interface User {
   company?: string;
   avatar_url?: string;
   force_password_change: boolean;
+  is_active: boolean;
+  is_marked_for_deletion: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -94,6 +96,7 @@ const UserManagement: React.FC = () => {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [generatedPassword, setGeneratedPassword] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [form] = Form.useForm();
   const [roleForm] = Form.useForm();
   const [departmentForm] = Form.useForm();
@@ -170,10 +173,8 @@ const UserManagement: React.FC = () => {
   // Создание пользователя
   const handleCreateUser = async (values: any) => {
     try {
-      const password = generatePassword();
       const userData = {
-        ...values,
-        password: password
+        ...values
       };
 
       const response = await apiClient.post('/api/users/', userData);
@@ -183,8 +184,9 @@ const UserManagement: React.FC = () => {
         form.resetFields();
         loadUsers();
         
-        // Показываем сгенерированный пароль
-        setGeneratedPassword(password);
+        // Показываем пароль, сгенерированный сервером
+        const serverPassword = response.data.generated_password;
+        setGeneratedPassword(serverPassword);
         setPasswordModalVisible(true);
       }
     } catch (error: any) {
@@ -234,7 +236,7 @@ const UserManagement: React.FC = () => {
     try {
       const response = await apiClient.post(`/api/users/${userId}/reset-password`);
       if (response.status >= 200 && response.status < 300) {
-        const newPassword = response.data.password;
+        const newPassword = response.data.new_password;
         setGeneratedPassword(newPassword);
         setPasswordModalVisible(true);
         message.success('Пароль успешно сброшен!');
@@ -242,6 +244,50 @@ const UserManagement: React.FC = () => {
     } catch (error: any) {
       console.error('Ошибка сброса пароля:', error);
       const errorMessage = error.response?.data?.detail || 'Не удалось сбросить пароль';
+      message.error(errorMessage);
+    }
+  };
+
+  // Деактивация/активация пользователя
+  const handleDeactivateUser = async (userId: number) => {
+    try {
+      const user = users.find(u => u.id === userId);
+      if (!user) return;
+      
+      const isCurrentlyActive = user.is_active;
+      const endpoint = isCurrentlyActive ? 'deactivate' : 'activate';
+      
+      const response = await apiClient.put(`/api/users/${userId}/${endpoint}`);
+      if (response.status >= 200 && response.status < 300) {
+        const action = isCurrentlyActive ? 'деактивирован' : 'активирован';
+        message.success(`Пользователь успешно ${action}!`);
+        loadUsers();
+      }
+    } catch (error: any) {
+      console.error('Ошибка изменения статуса пользователя:', error);
+      const errorMessage = error.response?.data?.detail || 'Не удалось изменить статус пользователя';
+      message.error(errorMessage);
+    }
+  };
+
+  // Пометка/убирание пометки на удаление пользователя
+  const handleMarkForDeletion = async (userId: number) => {
+    try {
+      const user = users.find(u => u.id === userId);
+      if (!user) return;
+      
+      const isCurrentlyMarked = user.is_marked_for_deletion;
+      const endpoint = isCurrentlyMarked ? 'unmark-for-deletion' : 'mark-for-deletion';
+      
+      const response = await apiClient.put(`/api/users/${userId}/${endpoint}`);
+      if (response.status >= 200 && response.status < 300) {
+        const action = isCurrentlyMarked ? 'убрана пометка на удаление' : 'помечен на удаление';
+        message.success(`Пользователь ${action}!`);
+        loadUsers();
+      }
+    } catch (error: any) {
+      console.error('Ошибка изменения пометки на удаление:', error);
+      const errorMessage = error.response?.data?.detail || 'Не удалось изменить пометку на удаление';
       message.error(errorMessage);
     }
   };
@@ -307,17 +353,34 @@ const UserManagement: React.FC = () => {
     }
   };
 
+  // Фильтрация пользователей по статусу
+  const getFilteredUsers = () => {
+    switch (statusFilter) {
+      case 'active':
+        return users.filter(user => user.is_active && !user.is_marked_for_deletion);
+      case 'inactive':
+        return users.filter(user => !user.is_active);
+      case 'marked_for_deletion':
+        return users.filter(user => user.is_marked_for_deletion);
+      case 'force_password_change':
+        return users.filter(user => user.force_password_change);
+      default:
+        return users;
+    }
+  };
+
   // Колонки таблицы пользователей
   const userColumns = [
     {
       title: 'Пользователь',
       key: 'user',
+      width: '22%',
       render: (record: User) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <UserAvatar user={record} size="small" />
-          <div>
-            <div style={{ fontWeight: 600 }}>
-              {record.last_name} {record.first_name} {record.patronymic}
+          <div style={{ lineHeight: '1.2' }}>
+            <div style={{ fontWeight: 500 }}>
+              {[record.last_name, record.first_name, record.patronymic].filter(Boolean).join(' ')}
             </div>
             <div style={{ fontSize: 12, color: '#888' }}>@{record.username}</div>
           </div>
@@ -327,18 +390,19 @@ const UserManagement: React.FC = () => {
     {
       title: 'Контакты',
       key: 'contacts',
+      width: '20%',
       render: (record: User) => (
-        <div>
+        <div style={{ fontSize: 12, lineHeight: '1.2' }}>
           {record.email && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
-              <MailOutlined style={{ fontSize: 12, color: '#888' }} />
-              <span style={{ fontSize: 12 }}>{record.email}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
+              <MailOutlined style={{ fontSize: 11, color: '#888' }} />
+              <span>{record.email}</span>
             </div>
           )}
           {record.phone && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <PhoneOutlined style={{ fontSize: 12, color: '#888' }} />
-              <span style={{ fontSize: 12 }}>{record.phone}</span>
+              <PhoneOutlined style={{ fontSize: 11, color: '#888' }} />
+              <span>{record.phone}</span>
             </div>
           )}
         </div>
@@ -348,6 +412,7 @@ const UserManagement: React.FC = () => {
       title: 'Роль',
       dataIndex: 'role',
       key: 'role',
+      width: '12%',
       render: (role: string) => (
         <Tag color={getRoleColor(role)}>{getRoleName(role)}</Tag>
       ),
@@ -356,33 +421,58 @@ const UserManagement: React.FC = () => {
       title: 'Департамент',
       dataIndex: 'department',
       key: 'department',
+      width: '15%',
       render: (department: string) => department || '-',
     },
     {
       title: 'Должность',
       dataIndex: 'position',
       key: 'position',
+      width: '15%',
       render: (position: string) => position || '-',
     },
     {
       title: 'Статус',
       key: 'status',
-      render: (record: User) => (
-        <Space direction="vertical" size="small">
-          <Badge 
-            status={record.force_password_change ? "warning" : "success"} 
-            text={record.force_password_change ? "Смена пароля" : "Активен"}
-          />
-        </Space>
-      ),
+      width: '15%',
+      render: (record: User) => {
+        const statuses = [];
+        
+        if (!record.is_active) {
+          statuses.push({ status: 'error', text: 'Деактивирован' });
+        } else if (record.force_password_change) {
+          statuses.push({ status: 'warning', text: 'Смена пароля' });
+        } else {
+          statuses.push({ status: 'success', text: 'Активен' });
+        }
+        
+        if (record.is_marked_for_deletion) {
+          statuses.push({ status: 'error', text: 'На удаление' });
+        }
+        
+        return (
+          <Space direction="vertical" size={2} style={{ fontSize: 12 }}>
+            {statuses.map((s, idx) => (
+              <Badge 
+                key={idx}
+                status={s.status as any}
+                text={s.text}
+                style={{ lineHeight: '1.2' }}
+              />
+            ))}
+          </Space>
+        );
+      },
     },
     {
       title: 'Действия',
       key: 'actions',
+      width: '140px',
       render: (record: User) => (
-        <Space>
-          <Tooltip title="Просмотр деталей">
+        <Space size={4}>
+          <Tooltip title="Просмотр">
             <Button
+              type="text"
               size="small"
               icon={<EyeOutlined />}
               onClick={() => {
@@ -391,8 +481,9 @@ const UserManagement: React.FC = () => {
               }}
             />
           </Tooltip>
-          <Tooltip title="Редактировать">
+          <Tooltip title="Изменить">
             <Button
+              type="text"
               size="small"
               icon={<EditOutlined />}
               onClick={() => {
@@ -403,36 +494,63 @@ const UserManagement: React.FC = () => {
             />
           </Tooltip>
           <Tooltip title="Сбросить пароль">
-            <Popconfirm
-              title="Вы уверены, что хотите сбросить пароль?"
-              onConfirm={() => handleResetPassword(record.id)}
-              okText="Да"
-              cancelText="Отмена"
-            >
-              <Button size="small" icon={<KeyOutlined />} />
-            </Popconfirm>
+            <Button
+              type="text"
+              size="small"
+              icon={<KeyOutlined />}
+              onClick={() => handleResetPassword(record.id)}
+            />
           </Tooltip>
-          <Tooltip title="Удалить">
-            <Popconfirm
-              title="Вы уверены, что хотите удалить пользователя?"
-              onConfirm={() => handleDeleteUser(record.id)}
-              okText="Да"
-              cancelText="Отмена"
-            >
-              <Button size="small" danger icon={<DeleteOutlined />} />
-            </Popconfirm>
-          </Tooltip>
+          {record.is_active ? (
+            <Tooltip title="Деактивировать">
+              <Button
+                type="text"
+                size="small"
+                icon={<LockOutlined />}
+                onClick={() => handleDeactivateUser(record.id)}
+              />
+            </Tooltip>
+          ) : (
+            <Tooltip title="Активировать">
+              <Button
+                type="text"
+                size="small"
+                icon={<UnlockOutlined />}
+                onClick={() => handleDeactivateUser(record.id)}
+              />
+            </Tooltip>
+          )}
+          {!record.is_marked_for_deletion ? (
+            <Tooltip title="Пометить на удаление">
+              <Button
+                type="text"
+                size="small"
+                danger
+                icon={<DeleteOutlined />}
+                onClick={() => handleMarkForDeletion(record.id)}
+              />
+            </Tooltip>
+          ) : (
+            <Tooltip title="Убрать пометку">
+              <Button
+                type="text"
+                size="small"
+                icon={<DeleteOutlined />}
+                onClick={() => handleMarkForDeletion(record.id)}
+              />
+            </Tooltip>
+          )}
         </Space>
       ),
     },
   ];
 
   return (
-    <div style={{ padding: 24 }}>
-      <Row gutter={[16, 16]}>
+    <div style={{ padding: 24, width: '100%', maxWidth: '100%' }}>
+      <Row gutter={[16, 16]} style={{ width: '100%', margin: 0 }}>
         {/* Главная карточка с пользователями */}
-        <Col span={24}>
-          <Card
+        <Col span={24} style={{ padding: 0 }}>
+          <Card style={{ width: '100%' }}
             title={
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <TeamOutlined />
@@ -441,6 +559,18 @@ const UserManagement: React.FC = () => {
             }
             extra={
               <Space>
+                <Select
+                  value={statusFilter}
+                  onChange={setStatusFilter}
+                  style={{ width: 200 }}
+                  placeholder="Фильтр по статусу"
+                >
+                  <Option value="all">Все пользователи</Option>
+                  <Option value="active">Активные</Option>
+                  <Option value="inactive">Деактивированные</Option>
+                  <Option value="marked_for_deletion">Помеченные на удаление</Option>
+                  <Option value="force_password_change">Требуют смены пароля</Option>
+                </Select>
                 <Button 
                   icon={<ReloadOutlined />} 
                   onClick={loadUsers}
@@ -462,16 +592,58 @@ const UserManagement: React.FC = () => {
               </Space>
             }
           >
+            {/* Статистика пользователей */}
+            <div style={{ marginBottom: 12, padding: '8px 12px', background: '#fafafa', borderRadius: 4 }}>
+              <Row gutter={[8, 8]} style={{ margin: 0 }}>
+                <Col span={6} style={{ padding: '0 4px' }}>
+                  <div style={{ textAlign: 'center', padding: '4px 0' }}>
+                    <div style={{ fontSize: 16, fontWeight: 600, color: '#52c41a', lineHeight: '1' }}>
+                      {users.filter(u => u.is_active && !u.is_marked_for_deletion).length}
+                    </div>
+                    <div style={{ fontSize: 11, color: '#666', marginTop: 2 }}>Активные</div>
+                  </div>
+                </Col>
+                <Col span={6} style={{ padding: '0 4px' }}>
+                  <div style={{ textAlign: 'center', padding: '4px 0' }}>
+                    <div style={{ fontSize: 16, fontWeight: 600, color: '#faad14', lineHeight: '1' }}>
+                      {users.filter(u => u.force_password_change).length}
+                    </div>
+                    <div style={{ fontSize: 11, color: '#666', marginTop: 2 }}>Смена пароля</div>
+                  </div>
+                </Col>
+                <Col span={6} style={{ padding: '0 4px' }}>
+                  <div style={{ textAlign: 'center', padding: '4px 0' }}>
+                    <div style={{ fontSize: 16, fontWeight: 600, color: '#ff4d4f', lineHeight: '1' }}>
+                      {users.filter(u => !u.is_active).length}
+                    </div>
+                    <div style={{ fontSize: 11, color: '#666', marginTop: 2 }}>Деактивированные</div>
+                  </div>
+                </Col>
+                <Col span={6} style={{ padding: '0 4px' }}>
+                  <div style={{ textAlign: 'center', padding: '4px 0' }}>
+                    <div style={{ fontSize: 16, fontWeight: 600, color: '#ff7875', lineHeight: '1' }}>
+                      {users.filter(u => u.is_marked_for_deletion).length}
+                    </div>
+                    <div style={{ fontSize: 11, color: '#666', marginTop: 2 }}>На удаление</div>
+                  </div>
+                </Col>
+              </Row>
+            </div>
+            
             <Table
               columns={userColumns}
-              dataSource={users}
+              dataSource={getFilteredUsers()}
               rowKey="id"
               loading={loading}
+              size="small"
+              scroll={{ x: '100%' }}
+              style={{ width: '100%' }}
               pagination={{
-                pageSize: 10,
+                pageSize: 20,
                 showSizeChanger: true,
                 showQuickJumper: true,
                 showTotal: (total) => `Всего: ${total} пользователей`,
+                size: "small"
               }}
             />
           </Card>

@@ -42,9 +42,26 @@ def get_user(db: Session, username: str):
     return db.query(models.User).filter(models.User.username == username).first()
 
 def authenticate_user(db: Session, username: str, password: str):
+    print(f"🔐 Попытка аутентификации пользователя: {username}")
+    
     user = get_user(db, username)
-    if not user or not verify_password(password, user.hashed_password):
+    if not user:
+        print(f"❌ Пользователь {username} не найден в базе данных")
         return False
+    
+    print(f"✅ Пользователь {username} найден, ID: {user.id}")
+    print(f"🔑 Проверяем пароль...")
+    
+    is_valid = verify_password(password, user.hashed_password)
+    print(f"🔑 Результат проверки пароля: {'✅ OK' if is_valid else '❌ НЕВЕРНЫЙ'}")
+    
+    if not is_valid:
+        print(f"❌ Неверный пароль для пользователя {username}")
+        print(f"🔍 Введенный пароль: {password}")
+        print(f"🔍 Хеш в базе: {user.hashed_password}")
+        return False
+    
+    print(f"✅ Аутентификация успешна для пользователя {username}")
     return user
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(database.get_db)):
