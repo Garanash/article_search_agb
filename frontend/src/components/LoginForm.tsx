@@ -1,9 +1,11 @@
-import React, { useState, useContext } from "react";
-import AuthContext from "../context/AuthContext";
+import React, { useState } from "react";
 import { login } from "../api/api";
 
-const LoginForm: React.FC = () => {
-  const { setToken } = useContext(AuthContext);
+interface LoginFormProps {
+  onLogin: (token: string) => void;
+}
+
+const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -15,7 +17,7 @@ const LoginForm: React.FC = () => {
     setError("");
     try {
       const data = await login(username, password);
-      setToken(data.access_token);
+      onLogin(data.access_token);
     } catch (err: any) {
       setError("Неверный логин или пароль");
     } finally {

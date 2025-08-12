@@ -1,4 +1,4 @@
-# Многоэтапная сборка для оптимизации
+# syntax=docker/dockerfile:1.4
 FROM python:3.11-slim as deps
 
 WORKDIR /app
@@ -6,8 +6,9 @@ WORKDIR /app
 # Копируем только файлы зависимостей для лучшего кеширования
 COPY requirements.txt ./
 
-# Устанавливаем зависимости в отдельном слое
-RUN pip install --timeout=120 \
+# Устанавливаем зависимости с кешированием pip
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --timeout=120 \
     --disable-pip-version-check \
     --trusted-host pypi.org \
     --trusted-host pypi.python.org \
@@ -33,4 +34,4 @@ RUN chmod +x /wait-for-it.sh
 COPY . .
 
 # Централизованный запуск миграций и инициализации
-CMD ["/wait-for-it.sh", "postgres:5432", "--", "/bin/bash", "/app/run.sh"] 
+CMD ["/wait-for-it.sh", "postgres:5432", "--", "/bin/bash", "/app/run.sh"]

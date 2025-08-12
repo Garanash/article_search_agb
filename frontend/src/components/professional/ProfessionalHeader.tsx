@@ -9,7 +9,8 @@ import {
   Typography, 
   Divider,
   Menu,
-  Input
+  Input,
+  Tooltip
 } from 'antd';
 import {
   UserOutlined,
@@ -22,7 +23,8 @@ import {
   FileTextOutlined,
   TeamOutlined,
   BarChartOutlined,
-  MessageOutlined
+  MessageOutlined,
+  HomeOutlined
 } from '@ant-design/icons';
 import { User } from '../../context/AuthContext';
 import { professionalDesign, designUtils } from '../../styles/professionalDesign';
@@ -52,7 +54,7 @@ const ProfessionalHeader: React.FC<ProfessionalHeaderProps> = ({
     {
       key: 'profile',
       icon: <UserOutlined />,
-      label: 'Профиль пользователя',
+      label: 'Мой профиль',
     },
     {
       key: 'settings',
@@ -66,7 +68,7 @@ const ProfessionalHeader: React.FC<ProfessionalHeaderProps> = ({
     {
       key: 'logout',
       icon: <LogoutOutlined />,
-      label: 'Выйти',
+      label: 'Выйти из системы',
       onClick: onLogout,
     },
   ];
@@ -78,7 +80,7 @@ const ProfessionalHeader: React.FC<ProfessionalHeaderProps> = ({
       label: (
         <div style={notificationItemStyle}>
           <div style={notificationContentStyle}>
-            <Text strong>Новое обращение пользователя</Text>
+            <Text strong>Новое обращение в поддержку</Text>
             <Text type="secondary" style={notificationTimeStyle}>5 минут назад</Text>
           </div>
         </div>
@@ -89,7 +91,7 @@ const ProfessionalHeader: React.FC<ProfessionalHeaderProps> = ({
       label: (
         <div style={notificationItemStyle}>
           <div style={notificationContentStyle}>
-            <Text strong>Обновление системы</Text>
+            <Text strong>Система обновлена</Text>
             <Text type="secondary" style={notificationTimeStyle}>1 час назад</Text>
           </div>
         </div>
@@ -101,13 +103,13 @@ const ProfessionalHeader: React.FC<ProfessionalHeaderProps> = ({
     },
     {
       key: 'view-all',
-      label: 'Посмотреть все уведомления',
+      label: 'Все уведомления',
     },
   ];
 
   // Навигационные вкладки
   const navigationTabs = [
-    { key: 'dashboard', label: 'Главная', icon: <DashboardOutlined /> },
+    { key: 'dashboard', label: 'Главная', icon: <HomeOutlined /> },
     { key: 'articles', label: 'Статьи', icon: <FileTextOutlined /> },
     { key: 'users', label: 'Пользователи', icon: <TeamOutlined />, adminOnly: true },
     { key: 'analytics', label: 'Аналитика', icon: <BarChartOutlined />, adminOnly: true },
@@ -119,48 +121,41 @@ const ProfessionalHeader: React.FC<ProfessionalHeaderProps> = ({
   return (
     <Header style={headerStyle}>
       <div style={headerContainerStyle}>
-        {/* Логотип и название */}
+        {/* Логотип и название FELIX */}
         <div style={logoSectionStyle}>
           <div style={logoStyle}>
-            <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-              <rect width="32" height="32" rx="8" fill="url(#headerGradient)"/>
-              <path d="M10 13h12v6H10z" fill="white" opacity="0.9"/>
-              <path d="M13 10h6v12h-6z" fill="white" opacity="0.7"/>
-              <defs>
-                <linearGradient id="headerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor={professionalDesign.colors.primary[500]} />
-                  <stop offset="100%" stopColor={professionalDesign.colors.primary[700]} />
-                </linearGradient>
-              </defs>
-            </svg>
+            <div style={logoIconStyle}>
+              <FileTextOutlined style={{ fontSize: '24px', color: '#ffffff' }} />
+            </div>
           </div>
           <div style={brandingStyle}>
-            <Text style={brandTitleStyle}>ArticleSearch</Text>
-            <Text style={brandSubtitleStyle}>Управление системой</Text>
+            <Text style={brandTitleStyle}>FELIX</Text>
+            <Text style={brandSubtitleStyle}>Платформа управления</Text>
           </div>
         </div>
 
         {/* Навигация */}
         <div style={navigationStyle}>
           {filteredTabs.map(tab => (
-            <Button
-              key={tab.key}
-              type={activeTab === tab.key ? 'primary' : 'text'}
-              icon={tab.icon}
-              onClick={() => onTabChange(tab.key)}
-              style={{
-                ...navigationButtonStyle,
-                ...(activeTab === tab.key ? activeNavigationButtonStyle : {})
-              }}
-            >
-              {tab.label}
-            </Button>
+            <Tooltip key={tab.key} title={tab.label} placement="bottom">
+              <Button
+                type={activeTab === tab.key ? 'primary' : 'text'}
+                icon={tab.icon}
+                onClick={() => onTabChange(tab.key)}
+                style={{
+                  ...navigationButtonStyle,
+                  ...(activeTab === tab.key ? activeNavigationButtonStyle : {})
+                }}
+              >
+                {tab.label}
+              </Button>
+            </Tooltip>
           ))}
         </div>
 
         {/* Правая секция */}
         <div style={rightSectionStyle}>
-          <Space size="middle">
+          <Space size="small">
             {/* Поиск */}
             <div style={searchContainerStyle}>
               {searchVisible ? (
@@ -170,33 +165,36 @@ const ProfessionalHeader: React.FC<ProfessionalHeaderProps> = ({
                   style={searchInputStyle}
                   autoFocus
                   onBlur={() => setSearchVisible(false)}
+                  onPressEnter={() => setSearchVisible(false)}
                 />
               ) : (
-                <Button
-                  type="text"
-                  icon={<SearchOutlined />}
-                  onClick={() => setSearchVisible(true)}
-                  style={iconButtonStyle}
-                  title="Поиск"
-                />
+                <Tooltip title="Поиск" placement="bottom">
+                  <Button
+                    type="text"
+                    icon={<SearchOutlined />}
+                    onClick={() => setSearchVisible(true)}
+                    style={iconButtonStyle}
+                  />
+                </Tooltip>
               )}
             </div>
 
             {/* Уведомления */}
-            <Dropdown
-              menu={{ items: notificationMenuItems }}
-              trigger={['click']}
-              placement="bottomRight"
-            >
-              <Badge count={2} size="small">
-                <Button
-                  type="text"
-                  icon={<BellOutlined />}
-                  style={iconButtonStyle}
-                  title="Уведомления"
-                />
-              </Badge>
-            </Dropdown>
+            <Tooltip title="Уведомления" placement="bottom">
+              <Dropdown
+                menu={{ items: notificationMenuItems }}
+                trigger={['click']}
+                placement="bottomRight"
+              >
+                <Badge count={2} size="small" style={badgeStyle}>
+                  <Button
+                    type="text"
+                    icon={<BellOutlined />}
+                    style={iconButtonStyle}
+                  />
+                </Badge>
+              </Dropdown>
+            </Tooltip>
 
             <Divider type="vertical" style={dividerStyle} />
 
@@ -208,13 +206,13 @@ const ProfessionalHeader: React.FC<ProfessionalHeaderProps> = ({
             >
               <div style={userProfileStyle}>
                 <Avatar
-                  size={36}
+                  size={40}
                   src={user?.avatar_url}
                   icon={<UserOutlined />}
                   style={avatarStyle}
                 />
                 <div style={userInfoStyle}>
-                  <Text style={userNameStyle}>{user?.username || 'Пользователь'}</Text>
+                  <Text style={userNameStyle}>{user?.first_name || user?.username || 'Пользователь'}</Text>
                   <Text style={userRoleStyle}>
                     {user?.role === 'admin' ? 'Администратор' : 
                      user?.role === 'manager' ? 'Менеджер' : 'Пользователь'}
@@ -231,12 +229,15 @@ const ProfessionalHeader: React.FC<ProfessionalHeaderProps> = ({
 
 // Стили компонента
 const headerStyle: React.CSSProperties = {
-  backgroundColor: professionalDesign.colors.neutral[0],
-  borderBottom: `1px solid ${professionalDesign.colors.neutral[200]}`,
+  backgroundColor: '#1e293b', // Единый темно-синий цвет
+  borderBottom: 'none',
   padding: 0,
-  height: '72px',
+  height: '64px',
   lineHeight: 'normal',
-  boxShadow: professionalDesign.shadows.sm
+  boxShadow: 'none',
+  position: 'sticky',
+  top: 0,
+  zIndex: 1000
 };
 
 const headerContainerStyle: React.CSSProperties = {
@@ -252,54 +253,80 @@ const headerContainerStyle: React.CSSProperties = {
 const logoSectionStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
-  gap: professionalDesign.spacing[3]
+  gap: professionalDesign.spacing[3],
+  minWidth: '200px'
 };
 
 const logoStyle: React.CSSProperties = {
   display: 'flex',
-  alignItems: 'center'
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: '48px',
+  height: '48px',
+  borderRadius: '8px',
+  backgroundColor: '#3b82f6', // Синий цвет для логотипа
+  border: 'none'
+};
+
+const logoIconStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: '100%',
+  height: '100%'
 };
 
 const brandingStyle: React.CSSProperties = {
   display: 'flex',
-  flexDirection: 'column'
+  flexDirection: 'column',
+  gap: '2px'
 };
 
 const brandTitleStyle: React.CSSProperties = {
-  fontSize: professionalDesign.typography.fontSize.lg,
-  fontWeight: professionalDesign.typography.fontWeight.bold,
-  color: professionalDesign.colors.neutral[900],
-  lineHeight: 1.2
+  fontSize: '24px',
+  fontWeight: 700,
+  color: '#ffffff',
+  lineHeight: 1.2,
+  letterSpacing: '0.5px'
 };
 
 const brandSubtitleStyle: React.CSSProperties = {
-  fontSize: professionalDesign.typography.fontSize.xs,
-  color: professionalDesign.colors.neutral[500],
+  fontSize: '12px',
+  color: '#94a3b8',
   lineHeight: 1.2
 };
 
 const navigationStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
-  gap: professionalDesign.spacing[1]
+  gap: professionalDesign.spacing[1],
+  flex: 1,
+  justifyContent: 'center'
 };
 
 const navigationButtonStyle: React.CSSProperties = {
-  height: '40px',
-  borderRadius: professionalDesign.borderRadius.lg,
+  height: '40px', // Единый размер для всех кнопок
+  borderRadius: '8px',
   border: 'none',
-  fontWeight: professionalDesign.typography.fontWeight.medium,
-  transition: professionalDesign.transitions.fast
+  fontWeight: 500,
+  fontSize: '14px',
+  padding: '0 16px',
+  transition: 'all 0.2s ease',
+  color: '#e2e8f0',
+  backgroundColor: 'transparent'
 };
 
 const activeNavigationButtonStyle: React.CSSProperties = {
-  backgroundColor: professionalDesign.colors.primary[500],
-  color: professionalDesign.colors.neutral[0]
+  backgroundColor: '#3b82f6',
+  color: '#ffffff',
+  boxShadow: '0 2px 4px rgba(59, 130, 246, 0.3)'
 };
 
 const rightSectionStyle: React.CSSProperties = {
   display: 'flex',
-  alignItems: 'center'
+  alignItems: 'center',
+  minWidth: '200px',
+  justifyContent: 'flex-end'
 };
 
 const searchContainerStyle: React.CSSProperties = {
@@ -307,81 +334,94 @@ const searchContainerStyle: React.CSSProperties = {
 };
 
 const searchInputStyle: React.CSSProperties = {
-  width: '300px',
-  height: '36px',
-  borderRadius: professionalDesign.borderRadius.lg,
-  border: `1px solid ${professionalDesign.colors.neutral[300]}`,
-  backgroundColor: professionalDesign.colors.neutral[50]
+  width: '280px',
+  height: '40px', // Единый размер
+  borderRadius: '8px',
+  border: '1px solid #475569',
+  backgroundColor: '#334155',
+  color: '#ffffff',
+  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
 };
 
 const searchIconStyle: React.CSSProperties = {
-  color: professionalDesign.colors.neutral[400]
+  color: '#94a3b8'
 };
 
 const iconButtonStyle: React.CSSProperties = {
-  width: '40px',
-  height: '40px',
-  borderRadius: professionalDesign.borderRadius.lg,
+  width: '40px', // Единый размер для всех кнопок
+  height: '40px', // Единый размер для всех кнопок
+  borderRadius: '8px',
   border: 'none',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  color: professionalDesign.colors.neutral[600],
-  transition: professionalDesign.transitions.fast
+  color: '#e2e8f0',
+  transition: 'all 0.2s ease',
+  backgroundColor: 'transparent'
+};
+
+const badgeStyle: React.CSSProperties = {
+  cursor: 'pointer'
 };
 
 const dividerStyle: React.CSSProperties = {
   height: '24px',
-  borderColor: professionalDesign.colors.neutral[300]
+  borderColor: '#475569',
+  margin: '0 8px'
 };
 
 const userProfileStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
-  gap: professionalDesign.spacing[3],
-  padding: professionalDesign.spacing[2],
-  borderRadius: professionalDesign.borderRadius.lg,
+  gap: professionalDesign.spacing[2],
+  padding: '8px 12px',
+  borderRadius: '8px',
   cursor: 'pointer',
-  transition: professionalDesign.transitions.fast
+  transition: 'all 0.2s ease',
+  border: '1px solid #475569',
+  backgroundColor: '#334155'
 };
 
 const avatarStyle: React.CSSProperties = {
-  backgroundColor: professionalDesign.colors.primary[500],
-  border: `2px solid ${professionalDesign.colors.neutral[200]}`
+  backgroundColor: '#3b82f6',
+  border: '2px solid #475569',
+  flexShrink: 0
 };
 
 const userInfoStyle: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
-  alignItems: 'flex-start'
+  alignItems: 'flex-start',
+  minWidth: '80px'
 };
 
 const userNameStyle: React.CSSProperties = {
-  fontSize: professionalDesign.typography.fontSize.sm,
-  fontWeight: professionalDesign.typography.fontWeight.medium,
-  color: professionalDesign.colors.neutral[900],
+  fontSize: '14px',
+  fontWeight: 500,
+  color: '#ffffff',
   lineHeight: 1.2
 };
 
 const userRoleStyle: React.CSSProperties = {
-  fontSize: professionalDesign.typography.fontSize.xs,
-  color: professionalDesign.colors.neutral[500],
+  fontSize: '11px',
+  color: '#94a3b8',
   lineHeight: 1.2
 };
 
 const notificationItemStyle: React.CSSProperties = {
-  padding: professionalDesign.spacing[2],
-  width: '280px'
+  padding: '12px 16px',
+  width: '300px'
 };
 
 const notificationContentStyle: React.CSSProperties = {
   display: 'flex',
-  flexDirection: 'column'
+  flexDirection: 'column',
+  gap: '4px'
 };
 
 const notificationTimeStyle: React.CSSProperties = {
-  fontSize: professionalDesign.typography.fontSize.xs,
-  marginTop: professionalDesign.spacing[1]
+  fontSize: '12px',
+  color: '#64748b'
 };
 
 export default ProfessionalHeader;

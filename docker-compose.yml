@@ -16,6 +16,11 @@ services:
   backend:
     build:
       context: ./backend
+      dockerfile: Dockerfile.optimized
+      cache_from:
+        - python:3.11-slim
+      args:
+        BUILDKIT_INLINE_CACHE: 1
     environment:
       POSTGRES_USER: appuser
       POSTGRES_PASSWORD: apppassword

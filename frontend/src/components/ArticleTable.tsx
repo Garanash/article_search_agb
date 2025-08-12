@@ -15,12 +15,16 @@ import Papa from "papaparse";
 const { Title } = Typography;
 
 interface ArticleTableProps {
-  activeRequestId: number | null;
-  requests: any[];
-  setRequests: React.Dispatch<React.SetStateAction<any[]>>;
+  activeRequestId?: number | null;
+  requests?: any[];
+  setRequests?: React.Dispatch<React.SetStateAction<any[]>>;
 }
 
-const ArticleTable: React.FC<ArticleTableProps> = ({ activeRequestId, requests, setRequests }) => {
+const ArticleTable: React.FC<ArticleTableProps> = ({ 
+  activeRequestId = null, 
+  requests = [], 
+  setRequests = () => {} 
+}) => {
   const { token } = useAuth();
   const [articles, setArticles] = useState<any[]>([]);
   const [newCode, setNewCode] = useState("");

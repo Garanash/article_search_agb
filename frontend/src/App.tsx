@@ -1,150 +1,164 @@
-import React, { useState, useEffect } from "react";
-import { AuthProvider, useAuth } from "./context/AuthContext";
-import { ThemeProvider } from "./context/ThemeContext";
-import LoginForm from "./components/LoginForm";
-import ProfessionalLoginForm from "./components/professional/ProfessionalLoginForm";
-import ProfessionalHeader from "./components/professional/ProfessionalHeader";
-import ProfessionalDashboard from "./components/professional/ProfessionalDashboard";
-import ArticleTable from "./components/ArticleTable";
-import RequestSidebar from "./components/RequestSidebar";
-import AdminDashboard from "./components/AdminDashboard";
-import UserDashboard from "./components/UserDashboard";
-import ProfileManager from './components/ProfileManager';
-import ChatBot from './components/ChatBot';
-import { Layout, ConfigProvider, message } from "antd";
-import ru_RU from 'antd/lib/locale/ru_RU';
-import { getUserProfile } from "./api/userApi";
-import professionalTheme from './styles/antdConfig';
+import React, { useState, useEffect } from 'react';
+import { Layout, ConfigProvider } from 'antd';
+import { useAuth } from './context/AuthContext';
+import { professionalTheme } from './styles/antdConfig';
 import './styles/professional.css';
+
+// Импорт компонентов
+import ProfessionalSidebar from './components/professional/ProfessionalSidebar';
+import ProfessionalDashboard from './components/professional/ProfessionalDashboard';
+import UserDashboard from './components/UserDashboard';
+import AdminDashboard from './components/AdminDashboard';
+import ArticleTable from './components/ArticleTable';
+import UserManagement from './components/UserManagement';
+import AdminSupport from './components/AdminSupport';
+import AnalyticsView from './components/AnalyticsView';
+import DocumentManager from './components/DocumentManager';
+import EmailCampaigns from './components/EmailCampaigns';
+import PhoneDirectory from './components/PhoneDirectory';
+import ProfileManager from './components/ProfileManager';
+import LoginForm from './components/LoginForm';
 
 const { Content } = Layout;
 
-interface MainAppProps {}
+const App: React.FC = () => {
+  const { user, token, setToken, isAdmin, logout, loading } = useAuth();
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-const MainApp: React.FC<MainAppProps> = () => {
-  const { token, setToken, user, setUser, isAdmin, updateUser, forcePasswordChange, setForcePasswordChange, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<string>(isAdmin ? 'dashboard' : 'dashboard');
-  const [requests, setRequests] = useState<any[]>([]);
-  const [activeRequestId, setActiveRequestId] = useState<number | null>(null);
+  // Проверяем аутентификацию
+  const isAuthenticated = !!token;
 
-  // AuthContext уже управляет загрузкой профиля, поэтому убираем дублированную логику
+  // Отладочная информация
+  useEffect(() => {
+    console.log('App: token changed:', token ? 'present' : 'missing');
+    console.log('App: isAuthenticated:', isAuthenticated);
+    console.log('App: user:', user);
+    console.log('App: isAdmin:', isAdmin);
+    console.log('App: loading:', loading);
+  }, [token, isAuthenticated, user, isAdmin, loading]);
 
-  const handleLogout = () => {
-    logout(); // Используем функцию logout из AuthContext
-    setActiveTab('dashboard');
-    setActiveRequestId(null);
+  // Обработчик входа в систему
+  const handleLogin = (token: string) => {
+    console.log('App: handleLogin called with token:', token ? 'present' : 'missing');
+    setToken(token);
   };
 
+  // Обработчик выхода из системы
+  const handleLogout = () => {
+    console.log('App: handleLogout called');
+    logout();
+    setActiveTab('dashboard');
+  };
+
+  // Обработчик изменения вкладки
   const handleTabChange = (tab: string) => {
+    console.log('App: handleTabChange called with tab:', tab);
     setActiveTab(tab);
   };
 
-  if (!token) {
-    return <ProfessionalLoginForm onLogin={setToken} />;
-  }
+  // Обработчик сворачивания/разворачивания сайдбара
+  const handleSidebarCollapse = (collapsed: boolean) => {
+    setSidebarCollapsed(collapsed);
+  };
 
-  if (forcePasswordChange) {
+  // Показываем загрузку пока проверяется аутентификация
+  if (loading) {
+    console.log('App: showing loading state');
     return (
       <div style={{ 
-        minHeight: '100vh', 
         display: 'flex', 
+        justifyContent: 'center', 
         alignItems: 'center', 
-        justifyContent: 'center',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+        height: '100vh',
+        fontSize: '18px',
+        color: '#666'
       }}>
-        <div style={{ 
-          background: 'white', 
-          padding: '2rem', 
-          borderRadius: '1rem',
-          textAlign: 'center'
-        }}>
-          Необходимо сменить пароль
-        </div>
+        Загрузка...
       </div>
     );
   }
 
-  const renderContent = () => {
+  // Рендер основного контента в зависимости от активной вкладки
+  const renderMainContent = () => {
+    console.log('App: renderMainContent called, isAuthenticated:', isAuthenticated);
+    
+    if (!isAuthenticated) {
+      console.log('App: showing LoginForm');
+      return <LoginForm onLogin={handleLogin} />;
+    }
+
+    console.log('App: showing main content, activeTab:', activeTab);
+    console.log('App: isAdmin:', isAdmin);
+
     switch (activeTab) {
       case 'dashboard':
-        return <ProfessionalDashboard />;
+        return isAdmin ? <AdminDashboard /> : <UserDashboard />;
       case 'articles':
-        return (
-          <div style={{ 
-            display: 'flex', 
-            height: 'calc(100vh - 72px)',
-            background: 'var(--bg-secondary, #f8fafc)'
-          }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <ArticleTable
-                activeRequestId={activeRequestId}
-                requests={requests}
-                setRequests={setRequests}
-              />
-            </div>
-            <RequestSidebar
-              activeRequestId={activeRequestId}
-              onSelect={setActiveRequestId}
-              requests={requests}
-              setRequests={setRequests}
-            />
-          </div>
-        );
+        return <ArticleTable />;
       case 'users':
-        return isAdmin ? <AdminDashboard /> : <ProfessionalDashboard />;
+        return isAdmin ? <UserManagement /> : <div>Доступ запрещен</div>;
       case 'analytics':
-        return isAdmin ? <AdminDashboard /> : <ProfessionalDashboard />;
+        return isAdmin ? <AnalyticsView /> : <div>Доступ запрещен</div>;
       case 'support':
-        return <UserDashboard />;
+        return isAdmin ? <AdminSupport /> : <div>Форма поддержки</div>;
+      case 'documents':
+        return <DocumentManager />;
+      case 'campaigns':
+        return <EmailCampaigns />;
+      case 'directory':
+        return <PhoneDirectory />;
       case 'profile':
-        return (
-          <div style={{ 
-            padding: '24px',
-            background: 'var(--bg-secondary, #f8fafc)',
-            minHeight: 'calc(100vh - 72px)'
-          }}>
-            <ProfileManager />
-          </div>
-        );
-      case 'chat':
-        return (
-          <div style={{ 
-            padding: '24px',
-            background: 'var(--bg-secondary, #f8fafc)',
-            minHeight: 'calc(100vh - 72px)'
-          }}>
-            <ChatBot />
-          </div>
-        );
+        return <ProfileManager />;
       default:
-        return <ProfessionalDashboard />;
+        return isAdmin ? <AdminDashboard /> : <UserDashboard />;
     }
   };
 
-  return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <ProfessionalHeader 
-        user={user}
-        isAdmin={isAdmin}
-        onLogout={handleLogout}
-        activeTab={activeTab}
-        onTabChange={handleTabChange}
-      />
-      <Content style={{ padding: 0 }}>
-        {renderContent()}
-      </Content>
-    </Layout>
-  );
-};
+  // Если пользователь не авторизован, показываем только форму входа
+  if (!isAuthenticated) {
+    console.log('App: rendering login page');
+    return (
+      <ConfigProvider theme={professionalTheme}>
+        <div style={{ minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
+          {renderMainContent()}
+        </div>
+      </ConfigProvider>
+    );
+  }
 
-const App: React.FC = () => {
+  console.log('App: rendering main application');
   return (
-    <ConfigProvider locale={ru_RU} theme={professionalTheme}>
-      <ThemeProvider>
-        <AuthProvider>
-          <MainApp />
-        </AuthProvider>
-      </ThemeProvider>
+    <ConfigProvider theme={professionalTheme}>
+      <Layout style={{ minHeight: '100vh' }}>
+        {/* Боковая панель навигации */}
+        <ProfessionalSidebar
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+          collapsed={sidebarCollapsed}
+          onCollapse={handleSidebarCollapse}
+          isAdmin={isAdmin}
+          user={user}
+          onProfileClick={() => handleTabChange('profile')}
+        />
+
+        {/* Основной контент */}
+        <Layout style={{ 
+          marginLeft: sidebarCollapsed ? 80 : 280,
+          transition: 'margin-left 0.2s ease'
+        }}>
+          <Content style={{ 
+            margin: '24px',
+            padding: '32px',
+            backgroundColor: '#ffffff',
+            borderRadius: '12px',
+            minHeight: 'calc(100vh - 48px)',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
+          }}>
+            {renderMainContent()}
+          </Content>
+        </Layout>
+      </Layout>
     </ConfigProvider>
   );
 };

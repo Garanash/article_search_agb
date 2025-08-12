@@ -128,6 +128,8 @@ export const professionalTheme = {
       actionsBg: professionalDesign.colors.neutral[50],
       tabsMarginBottom: 16,
       paddingLG: 24,
+      // Убираем псевдоэлемент ::before
+      before: 'none',
     },
     
     // Инпуты
