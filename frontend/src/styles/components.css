@@ -1,0 +1,344 @@
+/* Дополнительные стили для компонентов */
+
+/* Улучшение пагинации */
+.ant-pagination {
+  margin-top: 16px;
+  text-align: center;
+}
+
+.ant-pagination-item {
+  margin: 0 4px;
+  border-radius: 6px;
+  border: 1px solid #d9d9d9;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.ant-pagination-item:hover {
+  border-color: #1890ff;
+  color: #1890ff;
+  transform: translateY(-1px);
+}
+
+.ant-pagination-item-active {
+  background-color: #1890ff;
+  border-color: #1890ff;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.3);
+}
+
+.ant-pagination-prev,
+.ant-pagination-next {
+  margin: 0 4px;
+  border-radius: 6px;
+  border: 1px solid #d9d9d9;
+  transition: all 0.2s ease;
+}
+
+.ant-pagination-prev:hover,
+.ant-pagination-next:hover {
+  border-color: #1890ff;
+  color: #1890ff;
+  transform: translateY(-1px);
+}
+
+.ant-pagination-options {
+  margin-left: 16px;
+}
+
+.ant-pagination-options-quick-jumper {
+  font-weight: 500;
+}
+
+.ant-pagination-options-quick-jumper input {
+  border-radius: 4px;
+  border: 1px solid #d9d9d9;
+  margin: 0 8px;
+}
+
+/* Улучшение таблиц */
+.ant-table {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.ant-table-thead > tr > th {
+  background-color: #fafafa;
+  font-weight: 600;
+  color: #262626;
+  border-bottom: 2px solid #f0f0f0;
+  padding: 16px 12px;
+}
+
+.ant-table-tbody > tr > td {
+  padding: 12px;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background-color 0.2s ease;
+}
+
+.ant-table-tbody > tr:hover > td {
+  background-color: #f5f5f5;
+}
+
+/* Улучшение кнопок */
+.ant-btn {
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.ant-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.ant-btn-primary {
+  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+  border: none;
+}
+
+.ant-btn-primary:hover {
+  background: linear-gradient(135deg, #40a9ff 0%, #1890ff 100%);
+}
+
+/* Улучшение форм */
+.ant-form-item-label > label {
+  font-weight: 500;
+  color: #262626;
+  margin-bottom: 8px;
+}
+
+.ant-input,
+.ant-select-selector,
+.ant-picker {
+  border-radius: 6px;
+  border: 1px solid #d9d9d9;
+  transition: all 0.2s ease;
+}
+
+.ant-input:focus,
+.ant-select-selector:focus,
+.ant-picker:focus,
+.ant-input:hover,
+.ant-select-selector:hover,
+.ant-picker:hover {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+}
+
+/* Улучшение карточек */
+.ant-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid #f0f0f0;
+  transition: all 0.2s ease;
+}
+
+.ant-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.ant-card-head {
+  border-radius: 8px 8px 0 0;
+  background-color: #fafafa;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.ant-card-head-title {
+  font-weight: 600;
+  color: #262626;
+  font-size: 16px;
+}
+
+/* Улучшение модальных окон */
+.ant-modal-header {
+  border-radius: 8px 8px 0 0;
+  background-color: #fafafa;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.ant-modal-title {
+  font-weight: 600;
+  color: #262626;
+  font-size: 18px;
+}
+
+.ant-modal-content {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Улучшение селектов */
+.ant-select-dropdown {
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid #f0f0f0;
+}
+
+.ant-select-item {
+  padding: 8px 12px;
+  transition: background-color 0.2s ease;
+}
+
+.ant-select-item:hover {
+  background-color: #f5f5f5;
+}
+
+.ant-select-item-option-selected {
+  background-color: #e6f7ff;
+  color: #1890ff;
+}
+
+/* Улучшение тегов */
+.ant-tag {
+  border-radius: 4px;
+  font-weight: 500;
+  padding: 4px 8px;
+  margin: 2px;
+  transition: all 0.2s ease;
+}
+
+.ant-tag:hover {
+  transform: scale(1.05);
+}
+
+/* Улучшение сообщений */
+.ant-message-notice-content {
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 12px 16px;
+}
+
+/* Улучшение уведомлений */
+.ant-notification-notice {
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid #f0f0f0;
+}
+
+/* Улучшение бокового меню */
+.ant-layout-sider {
+  background: linear-gradient(180deg, #001529 0%, #003a70 100%);
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+}
+
+.ant-menu-dark {
+  background: transparent;
+}
+
+.ant-menu-dark .ant-menu-item {
+  margin: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.ant-menu-dark .ant-menu-item:hover {
+  background-color: #1890ff;
+  transform: translateX(4px);
+}
+
+.ant-menu-dark .ant-menu-item-selected {
+  background-color: #1890ff;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.3);
+}
+
+.ant-menu-dark .ant-menu-submenu-title {
+  margin: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.ant-menu-dark .ant-menu-submenu-title:hover {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Кастомные стили для вилнов инвойсов */
+.invoice-sidebar {
+  background: #f8f9fa;
+  border-right: 1px solid #e9ecef;
+  padding: 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.invoice-item {
+  padding: 12px;
+  margin-bottom: 8px;
+  background: #ffffff;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.invoice-item:hover {
+  border-color: #1890ff;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.15);
+  transform: translateY(-1px);
+}
+
+.invoice-item.active {
+  border-color: #1890ff;
+  background-color: #f0f8ff;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.2);
+}
+
+.invoice-number {
+  font-weight: 600;
+  color: #262626;
+  margin-bottom: 4px;
+  font-size: 13px;
+}
+
+.invoice-date {
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+.invoice-amount {
+  font-weight: 600;
+  color: #52c41a;
+  text-align: right;
+}
+
+/* Анимации */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ant-table-tbody > tr {
+  animation: fadeIn 0.3s ease;
+}
+
+.ant-card {
+  animation: fadeIn 0.4s ease;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .invoice-sidebar {
+    width: 100% !important;
+    margin-top: 16px;
+  }
+  
+  .ant-pagination {
+    text-align: center;
+  }
+  
+  .ant-pagination-options {
+    margin-left: 0;
+    margin-top: 8px;
+  }
+}

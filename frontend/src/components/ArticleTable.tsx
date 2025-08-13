@@ -3,6 +3,7 @@ import { getArticles, addArticle, getSuppliers, searchSuppliers, deleteArticle, 
 import { apiClient } from '../api/api';
 import { useAuth } from "../context/AuthContext";
 import SupplierRow from "./SupplierRow";
+import InvoiceSidebar from "./InvoiceSidebar";
 import { Table, Button, Input, Space, message, Spin, Typography, Form, Card, Tooltip, Modal, Select, List, Tag, Alert } from "antd";
 import { SearchOutlined, PlusOutlined, ReloadOutlined, MailOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
@@ -45,6 +46,7 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
   const [emailSearchLoading, setEmailSearchLoading] = useState<{ [key: number]: boolean }>({});
   const [whoisStatus, setWhoisStatus] = useState<{ [key: string]: 'valid' | 'invalid' | 'checking' | undefined }>({});
   const [emailStatuses, setEmailStatuses] = useState<{ [email: string]: string }>({});
+  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   // 1. Кнопка массовой проверки whois
   const handleWhoisCheckAll = async (articleId: number) => {
     let list = suppliers[articleId] || [];
@@ -775,16 +777,18 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
   };
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', minHeight: '100vh', width: '100%' }}>
-      <Card style={{ marginBottom: 32, width: '100%', maxWidth: '100%' }}>
-        <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <Title level={3} style={{ margin: 0, color: '#1890ff' }}>
-            {activeRequestId ? 
-              requests.find(r => r.id === activeRequestId)?.number || 'Запрос ВЭД' 
-              : 'Все артикулы'
-            }
-          </Title>
-        </div>
+    <div style={{ display: 'flex', gap: '24px', width: '100%', minHeight: '100vh' }}>
+      {/* Основной контент */}
+      <div style={{ flex: '1', minWidth: '0' }}>
+        <Card style={{ marginBottom: 32, width: '100%', maxWidth: '100%' }}>
+          <div style={{ textAlign: 'center', marginBottom: 24 }}>
+            <Title level={3} style={{ margin: 0, color: '#1890ff' }}>
+              {activeRequestId ? 
+                requests.find(r => r.id === activeRequestId)?.number || 'Запрос ВЭД' 
+                : 'Все артикулы'
+              }
+            </Title>
+          </div>
         {/* Кнопка создания запроса */}
         {!activeRequestId && articlesToAdd.length > 0 && (
           <Button type="primary" style={{ marginBottom: 16 }} onClick={() => setShowRequestModal(true)}>
@@ -967,7 +971,13 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
   transition: background 0.3s;
 }
 `}</style>
-      </Card>
+        </Card>
+      </div>
+      {/* Боковое меню с инвойсами */}
+      <InvoiceSidebar
+        onInvoiceSelect={setSelectedInvoice}
+        selectedInvoiceId={selectedInvoice?.id}
+      />
     </div>
   );
 };

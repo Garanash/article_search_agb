@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Layout, ConfigProvider } from 'antd';
 import { useAuth } from './context/AuthContext';
 import { professionalTheme } from './styles/antdConfig';
+import './styles/global.css'; // Импорт глобальных стилей
 import './styles/professional.css';
+import './styles/components.css'; // Импорт стилей компонентов
 
 // Импорт компонентов
 import ProfessionalSidebar from './components/professional/ProfessionalSidebar';
@@ -17,6 +19,10 @@ import DocumentManager from './components/DocumentManager';
 import EmailCampaigns from './components/EmailCampaigns';
 import PhoneDirectory from './components/PhoneDirectory';
 import ProfileManager from './components/ProfileManager';
+import BackupManager from './components/BackupManager';
+import ImportExportManager from './components/ImportExportManager';
+import PassportCreator from './components/PassportCreator';
+import PassportCatalog from './components/PassportCatalog';
 import LoginForm from './components/LoginForm';
 
 const { Content } = Layout;
@@ -108,6 +114,14 @@ const App: React.FC = () => {
         return <EmailCampaigns />;
       case 'directory':
         return <PhoneDirectory />;
+      case 'backup':
+        return isAdmin ? <BackupManager /> : <div>Доступ запрещен</div>;
+      case 'import':
+        return isAdmin ? <ImportExportManager /> : <div>Доступ запрещен</div>;
+      case 'create-passport':
+        return <PassportCreator />;
+      case 'passport-catalog':
+        return <PassportCatalog />;
       case 'profile':
         return <ProfileManager />;
       default:

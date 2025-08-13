@@ -10,7 +10,7 @@ import pandas as pd
 from fastapi.responses import StreamingResponse
 
 from app.database import get_db
-from app.models import User, Article, Request, Supplier, SupportTicket, Role, Department
+from app.models import User, Article, Request, Supplier, SupportTicket, Role, Department, SupportMessage, Document, EmailTemplate, UserBot, SupportEvent
 from app import auth
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -75,14 +75,22 @@ async def get_admin_metrics(
             "recent_users": recent_users,
             "recent_requests": recent_requests,
             "users_by_role": {role: count for role, count in users_by_role},
-            "events": 0,  # Добавим позже если нужно
-            "documents": 0  # Добавим позже если нужно
+            "events": db.query(SupportEvent).count(),
+            "documents": db.query(Document).count()
         }
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Ошибка получения метрик: {str(e)}"
         )
+
+@router.get("/stats")
+async def get_admin_stats(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Получить статистику для админ-дашборда (alias для /metrics)"""
+    return await get_admin_metrics(current_user, db)
 
 @router.get("/table/{table_name}")
 async def get_table_data(
@@ -101,7 +109,12 @@ async def get_table_data(
         'suppliers': Supplier,
         'tickets': SupportTicket,
         'roles': Role,
-        'departments': Department
+        'departments': Department,
+        'support_messages': SupportMessage,
+        'documents': Document,
+        'email_templates': EmailTemplate,
+        'bots': UserBot,
+        'events': SupportEvent,
     }
     
     if table_name not in table_models:

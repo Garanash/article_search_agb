@@ -427,4 +427,24 @@ class SupplierGroupingResponse(BaseModel):
     supplier_country: Optional[str] = None
     articles: List[SupplierGroupingArticle]
     requests: List[int]
-    total_articles: int 
+    total_articles: int
+
+class PhoneBookOut(BaseModel):
+    id: int
+    name: str
+    position: str
+    department: str
+    phone: str
+    mobile: Optional[str] = None
+    email: Optional[str] = None
+    office: Optional[str] = None
+    floor: Optional[str] = None
+    room: Optional[str] = None
+    extension: Optional[str] = None
+    status: str
+    is_favorite: bool
+    user_id: int
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True 

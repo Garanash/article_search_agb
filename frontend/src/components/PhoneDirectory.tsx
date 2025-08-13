@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Card, 
   Input, 
@@ -34,7 +34,99 @@ const { Search } = Input;
 const { Title, Text } = Typography;
 const { Option } = Select;
 
-// Моковые данные для телефонного справочника
+// API функции для телефонного справочника
+const API_BASE = '/api/phone-directory';
+
+const fetchContacts = async () => {
+  try {
+    const response = await fetch(API_BASE);
+    if (response.ok) {
+      return await response.json();
+    }
+    return [];
+  } catch (error) {
+    console.error('Ошибка загрузки контактов:', error);
+    return [];
+  }
+};
+
+const createContact = async (contactData: any) => {
+  try {
+    const response = await fetch(API_BASE, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify(contactData)
+    });
+    if (response.ok) {
+      return await response.json();
+    }
+    throw new Error('Ошибка создания контакта');
+  } catch (error) {
+    console.error('Ошибка создания контакта:', error);
+    throw error;
+  }
+};
+
+const updateContact = async (id: number, contactData: any) => {
+  try {
+    const response = await fetch(`${API_BASE}/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify(contactData)
+    });
+    if (response.ok) {
+      return await response.json();
+    }
+    throw new Error('Ошибка обновления контакта');
+  } catch (error) {
+    console.error('Ошибка обновления контакта:', error);
+    throw error;
+  }
+};
+
+const deleteContact = async (id: number) => {
+  try {
+    const response = await fetch(`${API_BASE}/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+    if (response.ok) {
+      return true;
+    }
+    throw new Error('Ошибка удаления контакта');
+  } catch (error) {
+    console.error('Ошибка удаления контакта:', error);
+    throw error;
+  }
+};
+
+const toggleFavorite = async (id: number) => {
+  try {
+    const response = await fetch(`${API_BASE}/${id}/favorite`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+    if (response.ok) {
+      return await response.json();
+    }
+    throw new Error('Ошибка обновления избранного');
+  } catch (error) {
+    console.error('Ошибка обновления избранного:', error);
+    throw error;
+  }
+};
+
+// Моковые данные для телефонного справочника (как fallback)
 const mockEmployees = [
   {
     id: 1,
@@ -216,6 +308,30 @@ const PhoneDirectory: React.FC = () => {
     isFavorite: false
   });
 
+  // Загружаем контакты из API при инициализации
+  useEffect(() => {
+    const loadContacts = async () => {
+      try {
+        const contacts = await fetchContacts();
+        if (contacts.length > 0) {
+          // Добавляем аватары для контактов из API
+          const contactsWithAvatars = contacts.map((contact: any) => ({
+            ...contact,
+            avatar: contact.avatar || (contact.name.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0,2)),
+            isFavorite: contact.is_favorite
+          }));
+          setEmployees(contactsWithAvatars);
+        }
+      } catch (error) {
+        console.error('Ошибка загрузки контактов:', error);
+        // Используем моковые данные как fallback
+        setEmployees(mockEmployees);
+      }
+    };
+    
+    loadContacts();
+  }, []);
+
   // Фильтрация сотрудников
   const filteredEmployees = employees.filter(employee => {
     const matchesSearch = employee.name.toLowerCase().includes(searchText.toLowerCase()) ||
@@ -247,24 +363,46 @@ const PhoneDirectory: React.FC = () => {
     setIsModalVisible(true);
   };
 
-  const handleAddContact = () => {
+  const handleAddContact = async () => {
     if (!addForm.name || !addForm.phone) {
       message.error('Пожалуйста, заполните хотя бы имя и рабочий телефон');
       return;
     }
-    setEmployees(prev => [
-      {
-        ...addForm,
-        id: Date.now(),
+    
+    try {
+      const contactData = {
+        name: addForm.name,
+        position: addForm.position,
+        department: addForm.department,
+        phone: addForm.phone,
+        mobile: addForm.mobile,
+        email: addForm.email,
+        office: addForm.office,
+        floor: addForm.floor,
+        room: addForm.room,
+        extension: addForm.extension,
+        status: addForm.status,
+        is_favorite: addForm.isFavorite
+      };
+      
+      const newContact = await createContact(contactData);
+      
+      // Добавляем аватар на основе имени
+      const contactWithAvatar = {
+        ...newContact,
         avatar: addForm.avatar || (addForm.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2)),
-      },
-      ...prev
-    ]);
-    setIsAddModalVisible(false);
-    setAddForm({
-      name: '', position: '', department: '', phone: '', mobile: '', email: '', office: '', floor: '', room: '', extension: '', avatar: '', status: 'online', isFavorite: false
-    });
-    message.success('Контакт добавлен!');
+        isFavorite: newContact.is_favorite
+      };
+      
+      setEmployees(prev => [contactWithAvatar, ...prev]);
+      setIsAddModalVisible(false);
+      setAddForm({
+        name: '', position: '', department: '', phone: '', mobile: '', email: '', office: '', floor: '', room: '', extension: '', avatar: '', status: 'online', isFavorite: false
+      });
+      message.success('Контакт добавлен!');
+    } catch (error) {
+      message.error('Ошибка при добавлении контакта');
+    }
   };
 
   // Клонки таблицы

@@ -110,7 +110,7 @@ const ProfessionalHeader: React.FC<ProfessionalHeaderProps> = ({
   // Навигационные вкладки
   const navigationTabs = [
     { key: 'dashboard', label: 'Главная', icon: <HomeOutlined /> },
-    { key: 'articles', label: 'Статьи', icon: <FileTextOutlined /> },
+            { key: 'articles', label: 'Поиск артикулов', icon: <FileTextOutlined /> },
     { key: 'users', label: 'Пользователи', icon: <TeamOutlined />, adminOnly: true },
     { key: 'analytics', label: 'Аналитика', icon: <BarChartOutlined />, adminOnly: true },
     { key: 'support', label: 'Поддержка', icon: <MessageOutlined /> },

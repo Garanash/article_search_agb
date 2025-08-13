@@ -7,7 +7,6 @@ import {
   BarChartOutlined,
   MessageOutlined,
   FolderOutlined,
-  MailOutlined,
   PhoneOutlined,
   UserOutlined,
   SettingOutlined,
@@ -15,7 +14,6 @@ import {
   MenuUnfoldOutlined,
   DatabaseOutlined,
   SecurityScanOutlined,
-  AuditOutlined,
   GlobalOutlined
 } from '@ant-design/icons';
 
@@ -42,18 +40,25 @@ const ProfessionalSidebar: React.FC<ProfessionalSidebarProps> = ({
 }) => {
   const mainMenuItems = [
     { key: 'dashboard', icon: <DashboardOutlined />, label: 'Главная', },
-    { key: 'articles', icon: <FileTextOutlined />, label: 'Статьи', },
+    { key: 'articles', icon: <FileTextOutlined />, label: 'Поиск артикулов', },
     { key: 'documents', icon: <FolderOutlined />, label: 'Документы', },
     { key: 'support', icon: <MessageOutlined />, label: 'Поддержка', },
     { key: 'directory', icon: <PhoneOutlined />, label: 'Справочник', },
+    { 
+      key: 'passports', 
+      icon: <FileTextOutlined />, 
+      label: 'Паспорта изделий', 
+      children: [
+        { key: 'create-passport', icon: <FileTextOutlined />, label: 'Сформировать паспорт', },
+        { key: 'passport-catalog', icon: <FolderOutlined />, label: 'Каталог выданных паспортов', },
+      ],
+    },
   ];
 
   const adminMenuItems = [
     { key: 'admin-section', icon: <SecurityScanOutlined />, label: 'Администрирование', children: [
         { key: 'users', icon: <TeamOutlined />, label: 'Пользователи', },
         { key: 'analytics', icon: <BarChartOutlined />, label: 'Аналитика', },
-        { key: 'campaigns', icon: <MailOutlined />, label: 'Email кампании', },
-        { key: 'audit', icon: <AuditOutlined />, label: 'Аудит', },
         { key: 'system', icon: <SettingOutlined />, label: 'Система', },
       ],
     },

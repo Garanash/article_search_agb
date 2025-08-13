@@ -285,7 +285,7 @@ const ProfessionalDashboard: React.FC = () => {
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
-              title="Статьи в системе"
+              title="Артикулы в системе"
               value={stats.totalArticles}
               loading={loading}
               prefix={<FileTextOutlined style={{ color: '#52c41a' }} />}

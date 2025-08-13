@@ -3,84 +3,63 @@ import {
   Card,
   Table,
   Button,
+  Space,
+  Tag,
+  Typography,
   Modal,
   Form,
   Input,
   Select,
-  Space,
-  Popconfirm,
   message,
-  Tag,
-  Typography,
   Row,
   Col,
-  Divider,
-  Tooltip,
-  Badge,
+  Statistic,
   Avatar,
-  Drawer,
-  Switch,
-  Alert,
-  Spin
+  Tooltip,
+  Popconfirm,
+  Divider
 } from 'antd';
 import {
-  UserAddOutlined,
+  UserOutlined,
   EditOutlined,
   DeleteOutlined,
-  KeyOutlined,
-  EyeOutlined,
-  CopyOutlined,
-  ReloadOutlined,
   LockOutlined,
-  UnlockOutlined,
-  UserOutlined,
-  MailOutlined,
-  PhoneOutlined,
+  UserAddOutlined,
   TeamOutlined,
-  SafetyOutlined
+  SettingOutlined,
+  ReloadOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  ExclamationCircleOutlined
 } from '@ant-design/icons';
-import { apiClient } from '../api/api';
-import UserAvatar from './UserAvatar';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
-const { TextArea } = Input;
 
 interface User {
   id: number;
   username: string;
   email: string;
-  first_name?: string;
-  last_name?: string;
-  patronymic?: string;
   role: string;
-  department?: string;
-  position?: string;
-  phone?: string;
-  company?: string;
-  avatar_url?: string;
-  force_password_change: boolean;
+  department: string;
   is_active: boolean;
   is_marked_for_deletion: boolean;
   created_at: string;
-  updated_at: string;
+  last_login?: string;
 }
 
 interface Role {
-  id: number;
+  id: string;
   name: string;
   description: string;
   permissions: string[];
-  created_at: string;
-  updated_at: string;
 }
 
 interface Department {
-  id: number;
+  id: string;
   name: string;
   description: string;
-  created_at: string;
-  updated_at: string;
+  manager?: string;
 }
 
 const UserManagement: React.FC = () => {
@@ -88,30 +67,31 @@ const UserManagement: React.FC = () => {
   const [roles, setRoles] = useState<Role[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(false);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [roleModalVisible, setRoleModalVisible] = useState(false);
-  const [departmentModalVisible, setDepartmentModalVisible] = useState(false);
-  const [passwordModalVisible, setPasswordModalVisible] = useState(false);
-  const [userDetailsVisible, setUserDetailsVisible] = useState(false);
-  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [editModalVisible, setEditModalVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [generatedPassword, setGeneratedPassword] = useState<string>('');
+  const [editForm] = Form.useForm();
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [form] = Form.useForm();
-  const [roleForm] = Form.useForm();
-  const [departmentForm] = Form.useForm();
 
   // Загрузка данных
+  useEffect(() => {
+    loadUsers();
+    loadRoles();
+    loadDepartments();
+  }, []);
+
   const loadUsers = async () => {
     setLoading(true);
     try {
-      const response = await apiClient.get('/api/users/users');
-      if (response.status >= 200 && response.status < 300) {
-        setUsers(response.data);
+      const response = await fetch('/api/admin/users', {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setUsers(data);
       }
     } catch (error) {
       console.error('Ошибка загрузки пользователей:', error);
-      message.error('Не удалось загрузить список пользователей');
+      message.error('Ошибка при загрузке пользователей');
     } finally {
       setLoading(false);
     }
@@ -119,9 +99,12 @@ const UserManagement: React.FC = () => {
 
   const loadRoles = async () => {
     try {
-      const response = await apiClient.get('/api/users/roles');
-      if (response.status >= 200 && response.status < 300) {
-        setRoles(response.data);
+      const response = await fetch('/api/admin/roles', {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setRoles(data);
       }
     } catch (error) {
       console.error('Ошибка загрузки ролей:', error);
@@ -130,374 +113,243 @@ const UserManagement: React.FC = () => {
 
   const loadDepartments = async () => {
     try {
-      const response = await apiClient.get('/api/users/departments');
-      if (response.status >= 200 && response.status < 300) {
-        setDepartments(response.data);
+      const response = await fetch('/api/admin/departments', {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setDepartments(data);
       }
     } catch (error) {
       console.error('Ошибка загрузки департаментов:', error);
     }
   };
 
-  useEffect(() => {
-    loadUsers();
-    loadRoles();
-    loadDepartments();
-  }, []);
-
-  // Генерация пароля
-  const generatePassword = (length: number = 12): string => {
-    const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
-    let password = '';
-    
-    // Обязательно включаем по одному символу каждого типа
-    const lowercase = 'abcdefghijklmnopqrstuvwxyz';
-    const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    const numbers = '0123456789';
-    const symbols = '!@#$%^&*';
-    
-    password += lowercase[Math.floor(Math.random() * lowercase.length)];
-    password += uppercase[Math.floor(Math.random() * uppercase.length)];
-    password += numbers[Math.floor(Math.random() * numbers.length)];
-    password += symbols[Math.floor(Math.random() * symbols.length)];
-    
-    // Заполняем остальную часть случайными символами
-    for (let i = 4; i < length; i++) {
-      password += charset[Math.floor(Math.random() * charset.length)];
-    }
-    
-    // Перемешиваем пароль
-    return password.split('').sort(() => Math.random() - 0.5).join('');
+  const handleEditUser = (user: User) => {
+    setSelectedUser(user);
+    editForm.setFieldsValue({
+      username: user.username,
+      email: user.email,
+      role: user.role,
+      department: user.department
+    });
+    setEditModalVisible(true);
   };
 
-  // Создание пользователя
-  const handleCreateUser = async (values: any) => {
+  const handleSaveUser = async (values: any) => {
+    if (!selectedUser) return;
+
     try {
-      const userData = {
-        ...values
-      };
+      const response = await fetch(`/api/admin/users/${selectedUser.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(values)
+      });
 
-      const response = await apiClient.post('/api/users/', userData);
-      if (response.status >= 200 && response.status < 300) {
-        message.success('Пользователь успешно создан!');
-        setModalVisible(false);
-        form.resetFields();
+      if (response.ok) {
+        message.success('Пользователь обновлен');
+        setEditModalVisible(false);
+        editForm.resetFields();
         loadUsers();
-        
-        // Показываем пароль, сгенерированный сервером
-        const serverPassword = response.data.generated_password;
-        setGeneratedPassword(serverPassword);
-        setPasswordModalVisible(true);
+      } else {
+        message.error('Ошибка при обновлении пользователя');
       }
-    } catch (error: any) {
-      console.error('Ошибка создания пользователя:', error);
-      const errorMessage = error.response?.data?.detail || 'Не удалось создать пользователя';
-      message.error(errorMessage);
+    } catch (error) {
+      message.error('Ошибка при обновлении пользователя');
     }
   };
 
-  // Обновление пользователя
-  const handleUpdateUser = async (values: any) => {
-    if (!editingUser) return;
-    
-    try {
-      const response = await apiClient.put(`/api/users/${editingUser.id}`, values);
-      if (response.status >= 200 && response.status < 300) {
-        message.success('Пользователь успешно обновлен!');
-        setModalVisible(false);
-        setEditingUser(null);
-        form.resetFields();
-        loadUsers();
-      }
-    } catch (error: any) {
-      console.error('Ошибка обновления пользователя:', error);
-      const errorMessage = error.response?.data?.detail || 'Не удалось обновить пользователя';
-      message.error(errorMessage);
-    }
-  };
-
-  // Удаление пользователя
-  const handleDeleteUser = async (userId: number) => {
-    try {
-      const response = await apiClient.delete(`/api/users/${userId}`);
-      if (response.status >= 200 && response.status < 300) {
-        message.success('Пользователь успешно удален!');
-        loadUsers();
-      }
-    } catch (error: any) {
-      console.error('Ошибка удаления пользователя:', error);
-      const errorMessage = error.response?.data?.detail || 'Не удалось удалить пользователя';
-      message.error(errorMessage);
-    }
-  };
-
-  // Сброс пароля
   const handleResetPassword = async (userId: number) => {
     try {
-      const response = await apiClient.post(`/api/users/${userId}/reset-password`);
-      if (response.status >= 200 && response.status < 300) {
-        const newPassword = response.data.new_password;
-        setGeneratedPassword(newPassword);
-        setPasswordModalVisible(true);
-        message.success('Пароль успешно сброшен!');
+      const response = await fetch(`/api/admin/users/${userId}/reset-password`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        message.success(`Новый пароль: ${data.generated_password}`);
+      } else {
+        message.error('Ошибка при сбросе пароля');
       }
-    } catch (error: any) {
-      console.error('Ошибка сброса пароля:', error);
-      const errorMessage = error.response?.data?.detail || 'Не удалось сбросить пароль';
-      message.error(errorMessage);
+    } catch (error) {
+      message.error('Ошибка при сбросе пароля');
     }
   };
 
-  // Деактивация/активация пользователя
   const handleDeactivateUser = async (userId: number) => {
     try {
-      const user = users.find(u => u.id === userId);
-      if (!user) return;
-      
-      const isCurrentlyActive = user.is_active;
-      const endpoint = isCurrentlyActive ? 'deactivate' : 'activate';
-      
-      const response = await apiClient.put(`/api/users/${userId}/${endpoint}`);
-      if (response.status >= 200 && response.status < 300) {
-        const action = isCurrentlyActive ? 'деактивирован' : 'активирован';
-        message.success(`Пользователь успешно ${action}!`);
+      const response = await fetch(`/api/admin/users/${userId}/deactivate`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+
+      if (response.ok) {
+        message.success('Пользователь деактивирован');
         loadUsers();
+      } else {
+        message.error('Ошибка при деактивации пользователя');
       }
-    } catch (error: any) {
-      console.error('Ошибка изменения статуса пользователя:', error);
-      const errorMessage = error.response?.data?.detail || 'Не удалось изменить статус пользователя';
-      message.error(errorMessage);
+    } catch (error) {
+      message.error('Ошибка при деактивации пользователя');
     }
   };
 
-  // Пометка/убирание пометки на удаление пользователя
+  const handleActivateUser = async (userId: number) => {
+    try {
+      const response = await fetch(`/api/admin/users/${userId}/activate`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+
+      if (response.ok) {
+        message.success('Пользователь активирован');
+        loadUsers();
+      } else {
+        message.error('Ошибка при активации пользователя');
+      }
+    } catch (error) {
+      message.error('Ошибка при активации пользователя');
+    }
+  };
+
   const handleMarkForDeletion = async (userId: number) => {
     try {
-      const user = users.find(u => u.id === userId);
-      if (!user) return;
-      
-      const isCurrentlyMarked = user.is_marked_for_deletion;
-      const endpoint = isCurrentlyMarked ? 'unmark-for-deletion' : 'mark-for-deletion';
-      
-      const response = await apiClient.put(`/api/users/${userId}/${endpoint}`);
-      if (response.status >= 200 && response.status < 300) {
-        const action = isCurrentlyMarked ? 'убрана пометка на удаление' : 'помечен на удаление';
-        message.success(`Пользователь ${action}!`);
+      const response = await fetch(`/api/admin/users/${userId}/mark-for-deletion`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+
+      if (response.ok) {
+        message.success('Пользователь помечен на удаление');
         loadUsers();
+      } else {
+        message.error('Ошибка при пометке на удаление');
       }
-    } catch (error: any) {
-      console.error('Ошибка изменения пометки на удаление:', error);
-      const errorMessage = error.response?.data?.detail || 'Не удалось изменить пометку на удаление';
-      message.error(errorMessage);
+    } catch (error) {
+      message.error('Ошибка при пометке на удаление');
     }
   };
 
-  // Создание роли
-  const handleCreateRole = async (values: any) => {
+  const handleUnmarkForDeletion = async (userId: number) => {
     try {
-      const response = await apiClient.post('/api/users/roles', values);
-      if (response.status >= 200 && response.status < 300) {
-        message.success('Роль успешно создана!');
-        setRoleModalVisible(false);
-        roleForm.resetFields();
-        loadRoles();
+      const response = await fetch(`/api/admin/users/${userId}/unmark-for-deletion`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+
+      if (response.ok) {
+        message.success('Пользователь убран из списка на удаление');
+        loadUsers();
+      } else {
+        message.error('Ошибка при снятии пометки на удаление');
       }
-    } catch (error: any) {
-      console.error('Ошибка создания роли:', error);
-      const errorMessage = error.response?.data?.detail || 'Не удалось создать роль';
-      message.error(errorMessage);
+    } catch (error) {
+      message.error('Ошибка при снятии пометки на удаление');
     }
   };
 
-  // Создание департамента
-  const handleCreateDepartment = async (values: any) => {
-    try {
-      const response = await apiClient.post('/api/users/departments', values);
-      if (response.status >= 200 && response.status < 300) {
-        message.success('Департамент успешно создан!');
-        setDepartmentModalVisible(false);
-        departmentForm.resetFields();
-        loadDepartments();
-      }
-    } catch (error: any) {
-      console.error('Ошибка создания департамента:', error);
-      const errorMessage = error.response?.data?.detail || 'Не удалось создать департамент';
-      message.error(errorMessage);
-    }
-  };
-
-  // Копирование в буфер обмена
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text).then(() => {
-      message.success('Скопировано в буфер обмена!');
-    });
-  };
-
-  // Получение цвета роли
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'admin': return 'red';
-      case 'manager': return 'orange';
-      case 'user': return 'green';
-      default: return 'default';
-    }
-  };
-
-  // Получение названия роли
-  const getRoleName = (role: string) => {
-    switch (role) {
-      case 'admin': return 'Администратор';
-      case 'manager': return 'Менеджер';
-      case 'user': return 'Пользователь';
-      default: return role;
-    }
-  };
-
-  // Фильтрация пользователей по статусу
   const getFilteredUsers = () => {
-    switch (statusFilter) {
-      case 'active':
-        return users.filter(user => user.is_active && !user.is_marked_for_deletion);
-      case 'inactive':
-        return users.filter(user => !user.is_active);
-      case 'marked_for_deletion':
-        return users.filter(user => user.is_marked_for_deletion);
-      case 'force_password_change':
-        return users.filter(user => user.force_password_change);
-      default:
-        return users;
-    }
+    if (statusFilter === 'all') return users;
+    if (statusFilter === 'active') return users.filter(user => user.is_active);
+    if (statusFilter === 'inactive') return users.filter(user => !user.is_active);
+    if (statusFilter === 'marked') return users.filter(user => user.is_marked_for_deletion);
+    return users;
   };
 
-  // Колонки таблицы пользователей
+  // Статистика пользователей
+  const userStats = {
+    total: users.length,
+    active: users.filter(u => u.is_active).length,
+    inactive: users.filter(u => !u.is_active).length,
+    marked: users.filter(u => u.is_marked_for_deletion).length
+  };
+
+  // Колонки таблицы
   const userColumns = [
     {
       title: 'Пользователь',
       key: 'user',
-      width: '22%',
       render: (record: User) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <UserAvatar user={record} size="small" />
-          <div style={{ lineHeight: '1.2' }}>
-            <div style={{ fontWeight: 500 }}>
-              {[record.last_name, record.first_name, record.patronymic].filter(Boolean).join(' ')}
-            </div>
-            <div style={{ fontSize: 12, color: '#888' }}>@{record.username}</div>
+        <Space>
+          <UserAvatar user={record} />
+          <div>
+            <div style={{ fontWeight: 'bold' }}>{record.username}</div>
+            <div style={{ fontSize: '11px', color: '#666' }}>{record.email}</div>
           </div>
-        </div>
+        </Space>
       ),
-    },
-    {
-      title: 'Контакты',
-      key: 'contacts',
-      width: '20%',
-      render: (record: User) => (
-        <div style={{ fontSize: 12, lineHeight: '1.2' }}>
-          {record.email && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
-              <MailOutlined style={{ fontSize: 11, color: '#888' }} />
-              <span>{record.email}</span>
-            </div>
-          )}
-          {record.phone && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <PhoneOutlined style={{ fontSize: 11, color: '#888' }} />
-              <span>{record.phone}</span>
-            </div>
-          )}
-        </div>
-      ),
+      width: 200
     },
     {
       title: 'Роль',
       dataIndex: 'role',
       key: 'role',
-      width: '12%',
       render: (role: string) => (
-        <Tag color={getRoleColor(role)}>{getRoleName(role)}</Tag>
+        <Tag color="blue">{role}</Tag>
       ),
+      width: 120
     },
     {
       title: 'Департамент',
       dataIndex: 'department',
       key: 'department',
-      width: '15%',
-      render: (department: string) => department || '-',
-    },
-    {
-      title: 'Должность',
-      dataIndex: 'position',
-      key: 'position',
-      width: '15%',
-      render: (position: string) => position || '-',
+      render: (dept: string) => (
+        <Tag color="green">{dept}</Tag>
+      ),
+      width: 150
     },
     {
       title: 'Статус',
       key: 'status',
-      width: '15%',
-      render: (record: User) => {
-        const statuses = [];
-        
-        if (!record.is_active) {
-          statuses.push({ status: 'error', text: 'Деактивирован' });
-        } else if (record.force_password_change) {
-          statuses.push({ status: 'warning', text: 'Смена пароля' });
-        } else {
-          statuses.push({ status: 'success', text: 'Активен' });
-        }
-        
-        if (record.is_marked_for_deletion) {
-          statuses.push({ status: 'error', text: 'На удаление' });
-        }
-        
-        return (
-          <Space direction="vertical" size={2} style={{ fontSize: 12 }}>
-            {statuses.map((s, idx) => (
-              <Badge 
-                key={idx}
-                status={s.status as any}
-                text={s.text}
-                style={{ lineHeight: '1.2' }}
-              />
-            ))}
-          </Space>
-        );
-      },
+      render: (record: User) => (
+        <Space>
+          {record.is_active ? (
+            <Tag color="green" icon={<CheckCircleOutlined />}>
+              Активен
+            </Tag>
+          ) : (
+            <Tag color="red" icon={<CloseCircleOutlined />}>
+              Неактивен
+            </Tag>
+          )}
+          {record.is_marked_for_deletion && (
+            <Tag color="orange" icon={<ExclamationCircleOutlined />}>
+              На удаление
+            </Tag>
+          )}
+        </Space>
+      ),
+      width: 150
+    },
+    {
+      title: 'Дата регистрации',
+      dataIndex: 'created_at',
+      key: 'created_at',
+      render: (date: string) => new Date(date).toLocaleDateString('ru-RU'),
+      width: 120
     },
     {
       title: 'Действия',
       key: 'actions',
-      width: '140px',
       render: (record: User) => (
-        <Space size={4}>
-          <Tooltip title="Просмотр">
+        <Space size="small">
+          <Tooltip title="Редактировать">
             <Button
               type="text"
-              size="small"
-              icon={<EyeOutlined />}
-              onClick={() => {
-                setSelectedUser(record);
-                setUserDetailsVisible(true);
-              }}
-            />
-          </Tooltip>
-          <Tooltip title="Изменить">
-            <Button
-              type="text"
-              size="small"
               icon={<EditOutlined />}
-              onClick={() => {
-                setEditingUser(record);
-                form.setFieldsValue(record);
-                setModalVisible(true);
-              }}
+              size="small"
+              onClick={() => handleEditUser(record)}
             />
           </Tooltip>
           <Tooltip title="Сбросить пароль">
             <Button
               type="text"
+              icon={<LockOutlined />}
               size="small"
-              icon={<KeyOutlined />}
               onClick={() => handleResetPassword(record.id)}
             />
           </Tooltip>
@@ -505,8 +357,9 @@ const UserManagement: React.FC = () => {
             <Tooltip title="Деактивировать">
               <Button
                 type="text"
+                danger
+                icon={<CloseCircleOutlined />}
                 size="small"
-                icon={<LockOutlined />}
                 onClick={() => handleDeactivateUser(record.id)}
               />
             </Tooltip>
@@ -514,9 +367,9 @@ const UserManagement: React.FC = () => {
             <Tooltip title="Активировать">
               <Button
                 type="text"
+                icon={<CheckCircleOutlined />}
                 size="small"
-                icon={<UnlockOutlined />}
-                onClick={() => handleDeactivateUser(record.id)}
+                onClick={() => handleActivateUser(record.id)}
               />
             </Tooltip>
           )}
@@ -524,495 +377,323 @@ const UserManagement: React.FC = () => {
             <Tooltip title="Пометить на удаление">
               <Button
                 type="text"
-                size="small"
                 danger
                 icon={<DeleteOutlined />}
+                size="small"
                 onClick={() => handleMarkForDeletion(record.id)}
               />
             </Tooltip>
           ) : (
-            <Tooltip title="Убрать пометку">
+            <Tooltip title="Убрать пометку на удаление">
               <Button
                 type="text"
+                icon={<CheckCircleOutlined />}
                 size="small"
-                icon={<DeleteOutlined />}
-                onClick={() => handleMarkForDeletion(record.id)}
+                onClick={() => handleUnmarkForDeletion(record.id)}
               />
             </Tooltip>
           )}
         </Space>
       ),
-    },
+      width: 200
+    }
   ];
 
   return (
-    <div style={{ padding: 24, width: '100%', maxWidth: '100%' }}>
-      <Row gutter={[16, 16]} style={{ width: '100%', margin: 0 }}>
-        {/* Главная карточка с пользователями */}
-        <Col span={24} style={{ padding: 0 }}>
-          <Card style={{ width: '100%' }}
-            title={
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <TeamOutlined />
-                <span>Управление пользователями</span>
-              </div>
-            }
-            extra={
-              <Space>
-                <Select
-                  value={statusFilter}
-                  onChange={setStatusFilter}
-                  style={{ width: 200 }}
-                  placeholder="Фильтр по статусу"
-                >
-                  <Option value="all">Все пользователи</Option>
-                  <Option value="active">Активные</Option>
-                  <Option value="inactive">Деактивированные</Option>
-                  <Option value="marked_for_deletion">Помеченные на удаление</Option>
-                  <Option value="force_password_change">Требуют смены пароля</Option>
-                </Select>
-                <Button 
-                  icon={<ReloadOutlined />} 
-                  onClick={loadUsers}
-                  loading={loading}
-                >
-                  Обновить
-                </Button>
-                <Button
-                  type="primary"
-                  icon={<UserAddOutlined />}
-                  onClick={() => {
-                    setEditingUser(null);
-                    form.resetFields();
-                    setModalVisible(true);
+    <div style={{ 
+      padding: 24, 
+      width: '100%', 
+      maxWidth: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '24px'
+    }}>
+      {/* Главная карточка с пользователями - НА ВСЮ ШИРИНУ ЭКРАНА */}
+      <div style={{ width: '100%' }}>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          marginBottom: '24px',
+          width: '100%'
+        }}>
+          <div>
+            <Title level={3} style={{ margin: 0 }}>
+              <TeamOutlined style={{ marginRight: '8px', color: '#1890ff' }} />
+              Управление пользователями
+            </Title>
+            <Text type="secondary">Администрирование пользователей системы</Text>
+          </div>
+          <Space>
+            <Select
+              value={statusFilter}
+              onChange={setStatusFilter}
+              style={{ width: 120 }}
+              size="small"
+            >
+              <Option value="all">Все</Option>
+              <Option value="active">Активные</Option>
+              <Option value="inactive">Неактивные</Option>
+              <Option value="marked">На удаление</Option>
+            </Select>
+            <Button 
+              type="primary" 
+              icon={<ReloadOutlined />}
+              size="small"
+              onClick={loadUsers}
+            >
+              Обновить
+            </Button>
+          </Space>
+        </div>
+
+        {/* Статистика пользователей */}
+        <div style={{ 
+          marginBottom: 24, 
+          padding: '16px', 
+          background: '#fafafa', 
+          borderRadius: 8,
+          display: 'flex',
+          gap: '16px',
+          flexWrap: 'wrap'
+        }}>
+          <div style={{ flex: '1', minWidth: '150px' }}>
+            <Statistic title="Всего" value={userStats.total} />
+          </div>
+          <div style={{ flex: '1', minWidth: '150px' }}>
+            <Statistic title="Активных" value={userStats.active} />
+          </div>
+          <div style={{ flex: '1', minWidth: '150px' }}>
+            <Statistic title="Неактивных" value={userStats.inactive} />
+          </div>
+          <div style={{ flex: '1', minWidth: '150px' }}>
+            <Statistic title="На удаление" value={userStats.marked} />
+          </div>
+        </div>
+        
+        <Table
+          columns={userColumns}
+          dataSource={getFilteredUsers()}
+          rowKey="id"
+          loading={loading}
+          size="small"
+          scroll={{ x: '100%' }}
+          style={{ width: '100%' }}
+          pagination={{
+            pageSize: 20,
+            showSizeChanger: true,
+            showQuickJumper: true,
+            showTotal: (total) => `Всего: ${total} пользователей`,
+            size: "small"
+          }}
+        />
+      </div>
+
+      {/* РОЛИ СИСТЕМЫ - НА ВСЮ ШИРИНУ ЭКРАНА */}
+      <div style={{ width: '100%' }}>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          marginBottom: '24px',
+          width: '100%'
+        }}>
+          <div>
+            <Title level={4} style={{ margin: 0 }}>
+              <SettingOutlined style={{ marginRight: '8px', color: '#1890ff' }} />
+              Роли системы
+            </Title>
+            <Text type="secondary">Управление ролями и правами доступа</Text>
+          </div>
+          <Button type="primary" icon={<UserAddOutlined />} size="small">
+            Добавить роль
+          </Button>
+        </div>
+
+        <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+          {roles.length > 0 ? (
+            <div style={{ 
+              display: 'flex', 
+              gap: '16px', 
+              flexWrap: 'wrap'
+            }}>
+              {roles.map(role => (
+                <Card 
+                  key={role.id} 
+                  size="small" 
+                  style={{ 
+                    flex: '1', 
+                    minWidth: '250px',
+                    maxWidth: '300px'
                   }}
                 >
-                  Добавить пользователя
-                </Button>
-              </Space>
-            }
-          >
-            {/* Статистика пользователей */}
-            <div style={{ marginBottom: 12, padding: '8px 12px', background: '#fafafa', borderRadius: 4 }}>
-              <Row gutter={[8, 8]} style={{ margin: 0 }}>
-                <Col span={6} style={{ padding: '0 4px' }}>
-                  <div style={{ textAlign: 'center', padding: '4px 0' }}>
-                    <div style={{ fontSize: 16, fontWeight: 600, color: '#52c41a', lineHeight: '1' }}>
-                      {users.filter(u => u.is_active && !u.is_marked_for_deletion).length}
-                    </div>
-                    <div style={{ fontSize: 11, color: '#666', marginTop: 2 }}>Активные</div>
+                  <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>
+                    {role.name}
                   </div>
-                </Col>
-                <Col span={6} style={{ padding: '0 4px' }}>
-                  <div style={{ textAlign: 'center', padding: '4px 0' }}>
-                    <div style={{ fontSize: 16, fontWeight: 600, color: '#faad14', lineHeight: '1' }}>
-                      {users.filter(u => u.force_password_change).length}
-                    </div>
-                    <div style={{ fontSize: 11, color: '#666', marginTop: 2 }}>Смена пароля</div>
+                  <div style={{ fontSize: '12px', color: '#666', marginBottom: '8px' }}>
+                    {role.description}
                   </div>
-                </Col>
-                <Col span={6} style={{ padding: '0 4px' }}>
-                  <div style={{ textAlign: 'center', padding: '4px 0' }}>
-                    <div style={{ fontSize: 16, fontWeight: 600, color: '#ff4d4f', lineHeight: '1' }}>
-                      {users.filter(u => !u.is_active).length}
-                    </div>
-                    <div style={{ fontSize: 11, color: '#666', marginTop: 2 }}>Деактивированные</div>
+                  <div>
+                    {role.permissions.slice(0, 3).map((perm, index) => (
+                      <Tag key={index} style={{ marginBottom: '4px' }}>
+                        {perm}
+                      </Tag>
+                    ))}
+                    {role.permissions.length > 3 && (
+                      <Tag>+{role.permissions.length - 3}</Tag>
+                    )}
                   </div>
-                </Col>
-                <Col span={6} style={{ padding: '0 4px' }}>
-                  <div style={{ textAlign: 'center', padding: '4px 0' }}>
-                    <div style={{ fontSize: 16, fontWeight: 600, color: '#ff7875', lineHeight: '1' }}>
-                      {users.filter(u => u.is_marked_for_deletion).length}
-                    </div>
-                    <div style={{ fontSize: 11, color: '#666', marginTop: 2 }}>На удаление</div>
-                  </div>
-                </Col>
-              </Row>
-            </div>
-            
-            <Table
-              columns={userColumns}
-              dataSource={getFilteredUsers()}
-              rowKey="id"
-              loading={loading}
-              size="small"
-              scroll={{ x: '100%' }}
-              style={{ width: '100%' }}
-              pagination={{
-                pageSize: 20,
-                showSizeChanger: true,
-                showQuickJumper: true,
-                showTotal: (total) => `Всего: ${total} пользователей`,
-                size: "small"
-              }}
-            />
-          </Card>
-        </Col>
-
-        {/* Карточки управления ролями и департаментами */}
-        <Col xs={24} md={12}>
-          <Card
-            title={
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <SafetyOutlined />
-                <span>Роли системы</span>
-              </div>
-            }
-            extra={
-              <Button
-                type="primary"
-                size="small"
-                onClick={() => setRoleModalVisible(true)}
-              >
-                Добавить роль
-              </Button>
-            }
-          >
-            <div style={{ maxHeight: 200, overflowY: 'auto' }}>
-              {roles.map((role) => (
-                <div key={role.id} style={{ marginBottom: 8, padding: 8, border: '1px solid #f0f0f0', borderRadius: 4 }}>
-                  <div style={{ fontWeight: 600 }}>{role.description}</div>
-                  <div style={{ fontSize: 12, color: '#888' }}>
-                    Права: {role.permissions.join(', ')}
-                  </div>
-                </div>
+                </Card>
               ))}
             </div>
-          </Card>
-        </Col>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+              Роли не найдены
+            </div>
+          )}
+        </div>
+      </div>
 
-        <Col xs={24} md={12}>
-          <Card
-            title={
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <TeamOutlined />
-                <span>Департаменты</span>
-              </div>
-            }
-            extra={
-              <Button
-                type="primary"
-                size="small"
-                onClick={() => setDepartmentModalVisible(true)}
-              >
-                Добавить департамент
-              </Button>
-            }
-          >
-            <div style={{ maxHeight: 200, overflowY: 'auto' }}>
-              {departments.map((dept) => (
-                <div key={dept.id} style={{ marginBottom: 8, padding: 8, border: '1px solid #f0f0f0', borderRadius: 4 }}>
-                  <div style={{ fontWeight: 600 }}>{dept.name}</div>
-                  <div style={{ fontSize: 12, color: '#888' }}>{dept.description}</div>
-                </div>
+      {/* ДЕПАРТАМЕНТЫ - НА ВСЮ ШИРИНУ ЭКРАНА */}
+      <div style={{ width: '100%' }}>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          marginBottom: '24px',
+          width: '100%'
+        }}>
+          <div>
+            <Title level={4} style={{ margin: 0 }}>
+              <TeamOutlined style={{ marginRight: '8px', color: '#1890ff' }} />
+              Департаменты
+            </Title>
+            <Text type="secondary">Управление структурой организации</Text>
+          </div>
+          <Button type="primary" icon={<UserAddOutlined />} size="small">
+            Добавить департамент
+          </Button>
+        </div>
+
+        <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+          {departments.length > 0 ? (
+            <div style={{ 
+              display: 'flex', 
+              gap: '16px', 
+              flexWrap: 'wrap'
+            }}>
+              {departments.map(dept => (
+                <Card 
+                  key={dept.id} 
+                  size="small" 
+                  style={{ 
+                    flex: '1', 
+                    minWidth: '250px',
+                    maxWidth: '300px'
+                  }}
+                >
+                  <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>
+                    {dept.name}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#666', marginBottom: '8px' }}>
+                    {dept.description}
+                  </div>
+                  {dept.manager && (
+                    <div style={{ fontSize: '11px', color: '#999' }}>
+                      Руководитель: {dept.manager}
+                    </div>
+                  )}
+                </Card>
               ))}
             </div>
-          </Card>
-        </Col>
-      </Row>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+              Департаменты не найдены
+            </div>
+          )}
+        </div>
+      </div>
 
-      {/* Модальное окно создания/редактирования пользователя */}
+      {/* Модальное окно редактирования пользователя */}
       <Modal
-        title={editingUser ? 'Редактировать пользователя' : 'Создать пользователя'}
-        open={modalVisible}
+        title="Редактировать пользователя"
+        open={editModalVisible}
         onCancel={() => {
-          setModalVisible(false);
-          setEditingUser(null);
-          form.resetFields();
+          setEditModalVisible(false);
+          editForm.resetFields();
         }}
-        onOk={() => form.submit()}
-        width={600}
+        footer={[
+          <Button key="cancel" onClick={() => {
+            setEditModalVisible(false);
+            editForm.resetFields();
+          }}>
+            Отмена
+          </Button>,
+          <Button key="submit" type="primary" onClick={() => editForm.submit()}>
+            Сохранить
+          </Button>
+        ]}
+        width={500}
       >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={editingUser ? handleUpdateUser : handleCreateUser}
-        >
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="username"
-                label="Логин"
-                rules={[{ required: true, message: 'Введите логин' }]}
-              >
-                <Input prefix={<UserOutlined />} />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="email"
-                label="Email"
-                rules={[
-                  { required: true, message: 'Введите email' },
-                  { type: 'email', message: 'Неверный формат email' }
-                ]}
-              >
-                <Input prefix={<MailOutlined />} />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={8}>
-              <Form.Item name="last_name" label="Фамилия">
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item name="first_name" label="Имя">
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item name="patronymic" label="Отчество">
-                <Input />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="role"
-                label="Роль"
-                rules={[{ required: true, message: 'Выберите роль' }]}
-              >
-                <Select>
-                  <Option value="user">Пользователь</Option>
-                  <Option value="manager">Менеджер</Option>
-                  <Option value="admin">Администратор</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="department" label="Департамент">
-                <Select allowClear>
-                  {departments.map((dept) => (
-                    <Option key={dept.id} value={dept.name}>
-                      {dept.name}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item name="position" label="Должность">
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="phone" label="Телефон">
-                <Input prefix={<PhoneOutlined />} />
-              </Form.Item>
-            </Col>
-          </Row>
-        </Form>
-      </Modal>
-
-      {/* Модальное окно создания роли */}
-      <Modal
-        title="Создать роль"
-        open={roleModalVisible}
-        onCancel={() => {
-          setRoleModalVisible(false);
-          roleForm.resetFields();
-        }}
-        onOk={() => roleForm.submit()}
-      >
-        <Form form={roleForm} layout="vertical" onFinish={handleCreateRole}>
+        <Form form={editForm} layout="vertical" onFinish={handleSaveUser}>
           <Form.Item
-            name="name"
-            label="Название роли"
-            rules={[{ required: true, message: 'Введите название роли' }]}
+            name="username"
+            label="Имя пользователя"
+            rules={[{ required: true, message: 'Введите имя пользователя' }]}
           >
             <Input />
           </Form.Item>
-          <Form.Item name="description" label="Описание">
-            <TextArea rows={3} />
+          <Form.Item
+            name="email"
+            label="Email"
+            rules={[
+              { required: true, message: 'Введите email' },
+              { type: 'email', message: 'Введите корректный email' }
+            ]}
+          >
+            <Input />
           </Form.Item>
-          <Form.Item name="permissions" label="Права доступа">
-            <Select mode="multiple" placeholder="Выберите права доступа">
-              <Option value="read_own_data">Чтение собственных данных</Option>
-              <Option value="create_requests">Создание запросов</Option>
-              <Option value="read_department_data">Чтение данных департамента</Option>
-              <Option value="approve_documents">Одобрение документов</Option>
-              <Option value="manage_users">Управление пользователями</Option>
-              <Option value="all">Все права</Option>
+          <Form.Item
+            name="role"
+            label="Роль"
+            rules={[{ required: true, message: 'Выберите роль' }]}
+          >
+            <Select>
+              {roles.map(role => (
+                <Option key={role.id} value={role.id}>{role.name}</Option>
+              ))}
+            </Select>
+          </Form.Item>
+          <Form.Item
+            name="department"
+            label="Департамент"
+            rules={[{ required: true, message: 'Выберите департамент' }]}
+          >
+            <Select>
+              {departments.map(dept => (
+                <Option key={dept.id} value={dept.id}>{dept.name}</Option>
+              ))}
             </Select>
           </Form.Item>
         </Form>
       </Modal>
-
-      {/* Модальное окно создания департамента */}
-      <Modal
-        title="Создать департамент"
-        open={departmentModalVisible}
-        onCancel={() => {
-          setDepartmentModalVisible(false);
-          departmentForm.resetFields();
-        }}
-        onOk={() => departmentForm.submit()}
-      >
-        <Form form={departmentForm} layout="vertical" onFinish={handleCreateDepartment}>
-          <Form.Item
-            name="name"
-            label="Название департамента"
-            rules={[{ required: true, message: 'Введите название департамента' }]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item name="description" label="Описание">
-            <TextArea rows={3} />
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      {/* Модальное окно с паролем */}
-      <Modal
-        title="Сгенерированный пароль"
-        open={passwordModalVisible}
-        onCancel={() => setPasswordModalVisible(false)}
-        footer={[
-          <Button key="copy" onClick={() => copyToClipboard(generatedPassword)}>
-            <CopyOutlined /> Копировать
-          </Button>,
-          <Button key="close" type="primary" onClick={() => setPasswordModalVisible(false)}>
-            Закрыть
-          </Button>,
-        ]}
-      >
-        <Alert
-          message="Важно!"
-          description="Сохраните этот пароль в надежном месте. Он больше не будет показан."
-          type="warning"
-          showIcon
-          style={{ marginBottom: 16 }}
-        />
-        <div style={{ 
-          padding: 16, 
-          background: '#f5f5f5', 
-          border: '1px solid #d9d9d9', 
-          borderRadius: 6,
-          textAlign: 'center',
-          fontSize: 16,
-          fontFamily: 'monospace',
-          wordBreak: 'break-all'
-        }}>
-          {generatedPassword}
-        </div>
-      </Modal>
-
-      {/* Drawer с деталями пользователя */}
-      <Drawer
-        title="Детали пользователя"
-        placement="right"
-        onClose={() => setUserDetailsVisible(false)}
-        open={userDetailsVisible}
-        width={400}
-      >
-        {selectedUser && (
-          <div>
-            <div style={{ textAlign: 'center', marginBottom: 24 }}>
-              <UserAvatar user={selectedUser} size="large" />
-              <Title level={4} style={{ marginTop: 16, marginBottom: 4 }}>
-                {selectedUser.last_name} {selectedUser.first_name} {selectedUser.patronymic}
-              </Title>
-              <Text type="secondary">@{selectedUser.username}</Text>
-            </div>
-
-            <Divider />
-
-            <div style={{ marginBottom: 16 }}>
-              <Text strong>Роль:</Text>
-              <div style={{ marginTop: 4 }}>
-                <Tag color={getRoleColor(selectedUser.role)}>{getRoleName(selectedUser.role)}</Tag>
-              </div>
-            </div>
-
-            {selectedUser.email && (
-              <div style={{ marginBottom: 16 }}>
-                <Text strong>Email:</Text>
-                <div style={{ marginTop: 4 }}>
-                  <MailOutlined style={{ marginRight: 8 }} />
-                  {selectedUser.email}
-                </div>
-              </div>
-            )}
-
-            {selectedUser.phone && (
-              <div style={{ marginBottom: 16 }}>
-                <Text strong>Телефон:</Text>
-                <div style={{ marginTop: 4 }}>
-                  <PhoneOutlined style={{ marginRight: 8 }} />
-                  {selectedUser.phone}
-                </div>
-              </div>
-            )}
-
-            {selectedUser.department && (
-              <div style={{ marginBottom: 16 }}>
-                <Text strong>Департамент:</Text>
-                <div style={{ marginTop: 4 }}>{selectedUser.department}</div>
-              </div>
-            )}
-
-            {selectedUser.position && (
-              <div style={{ marginBottom: 16 }}>
-                <Text strong>Должность:</Text>
-                <div style={{ marginTop: 4 }}>{selectedUser.position}</div>
-              </div>
-            )}
-
-            <div style={{ marginBottom: 16 }}>
-              <Text strong>Статус:</Text>
-              <div style={{ marginTop: 4 }}>
-                <Badge 
-                  status={selectedUser.force_password_change ? "warning" : "success"} 
-                  text={selectedUser.force_password_change ? "Требуется смена пароля" : "Активен"}
-                />
-              </div>
-            </div>
-
-            <div style={{ marginBottom: 16 }}>
-              <Text strong>Дата создания:</Text>
-              <div style={{ marginTop: 4 }}>
-                {new Date(selectedUser.created_at).toLocaleString('ru-RU')}
-              </div>
-            </div>
-
-            <Divider />
-
-            <Space direction="vertical" style={{ width: '100%' }}>
-              <Button 
-                block 
-                icon={<EditOutlined />}
-                onClick={() => {
-                  setEditingUser(selectedUser);
-                  form.setFieldsValue(selectedUser);
-                  setModalVisible(true);
-                  setUserDetailsVisible(false);
-                }}
-              >
-                Редактировать
-              </Button>
-              <Button 
-                block 
-                icon={<KeyOutlined />}
-                onClick={() => {
-                  handleResetPassword(selectedUser.id);
-                  setUserDetailsVisible(false);
-                }}
-              >
-                Сбросить пароль
-              </Button>
-            </Space>
-          </div>
-        )}
-      </Drawer>
     </div>
+  );
+};
+
+// Компонент аватара пользователя
+const UserAvatar: React.FC<{ user: User }> = ({ user }) => {
+  const getInitials = (name: string) => {
+    return name.split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  return (
+    <Avatar 
+      size="small" 
+      style={{ backgroundColor: user.is_active ? '#52c41a' : '#d9d9d9' }}
+    >
+      {getInitials(user.username)}
+    </Avatar>
   );
 };
 

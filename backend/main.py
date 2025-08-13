@@ -1,7 +1,8 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from api import auth_api, users_api, suppliers_api, chat_api, documents_api, email_campaigns_api
-from api import news_api, calendar_api, requests_api, support_api, analytics_api
+from api import news_api, calendar_api, requests_api, support_api, analytics_api, admin_api
+from api import support_tickets_api, backup_api, import_export_api, articles_api, phone_directory_api
 
 app = FastAPI()
 
@@ -20,6 +21,12 @@ app.include_router(calendar_api.router, prefix="/api")
 app.include_router(requests_api.router, prefix="/api")
 app.include_router(support_api.router, prefix="/api")
 app.include_router(analytics_api.router, prefix="/api")
+app.include_router(admin_api.router, prefix="/api")
+app.include_router(support_tickets_api.router, prefix="/api")
+app.include_router(backup_api.router, prefix="/api")
+app.include_router(import_export_api.router, prefix="/api")
+app.include_router(articles_api.router, prefix="/api")
+app.include_router(phone_directory_api.router, prefix="/api")
 
 # --- Глобальный обработчик ошибок ---
 @app.exception_handler(Exception)

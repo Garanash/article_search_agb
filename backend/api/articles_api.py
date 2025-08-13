@@ -10,12 +10,15 @@ from app.auth import get_current_user
 class ArticleCreate(BaseModel):
     code: str
     request_id: Optional[int] = None
+    user_id: Optional[int] = None
 
 router = APIRouter(prefix="/articles", tags=["articles"])
 
 @router.post("/", response_model=ArticleOut)
 def create_article(article: ArticleCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    db_article = Article(code=article.code, user_id=current_user.id, request_id=article.request_id)
+    # Используем user_id из запроса или текущего пользователя
+    user_id = article.user_id if article.user_id is not None else current_user.id
+    db_article = Article(code=article.code, user_id=user_id, request_id=article.request_id)
     db.add(db_article)
     db.commit()
     db.refresh(db_article)
@@ -23,7 +26,8 @@ def create_article(article: ArticleCreate, db: Session = Depends(get_db), curren
 
 @router.get("/", response_model=List[ArticleOut])
 def get_articles(db: Session = Depends(get_db)):
-    return db.query(Article).all()
+    articles = db.query(Article).all()
+    return [{"id": a.id, "code": a.code, "request_id": a.request_id} for a in articles]
 
 @router.get("/{article_id}", response_model=ArticleOut)
 def get_article(article_id: int, db: Session = Depends(get_db)):
