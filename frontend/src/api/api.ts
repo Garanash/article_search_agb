@@ -224,4 +224,33 @@ export const changePassword = async (currentPassword: string | undefined, newPas
 export const getUserProfile = async () => {
   const response = await apiClient.get("/api/users/profile");
   return response.data;
-}; 
+};
+
+// Экспорт по умолчанию для обратной совместимости
+export default {
+  apiClient,
+  login,
+  getArticles,
+  addArticle,
+  deleteArticle,
+  getSuppliers,
+  searchSuppliers,
+  getEmailTemplates,
+  sendEmail,
+  whoisCheck,
+  searchEmailPerplexity,
+  getRequests,
+  createRequest,
+  addArticleToRequest,
+  removeArticleFromRequest,
+  getArticlesByRequest,
+  deleteRequest,
+  getUserBots,
+  assignBotToUser,
+  removeBotFromUser,
+  getUsersWithBots,
+  createUser,
+  getUserStatistics,
+  changePassword,
+  getUserProfile
+};

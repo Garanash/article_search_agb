@@ -37,9 +37,9 @@ PY
 
 # Создание таблиц
 python - <<'PY'
-from app.database import Base, engine
+from core.database import Base, engine
 # ВАЖНО: импортируем модели, чтобы они были зарегистрированы в Base.metadata
-import app.models  # noqa: F401
+from api.v1.models import *  # noqa: F401
 Base.metadata.create_all(bind=engine)
 print('[run.sh] DB migrated')
 PY
@@ -47,9 +47,9 @@ PY
 # Создание/обновление пользователя admin
 python - <<'PY'
 import os
-from app.database import SessionLocal
-from app.models import User
-from app.auth import get_password_hash
+from core.database import SessionLocal
+from api.v1.models import User
+from core.password import get_password_hash
 
 username = os.getenv('ADMIN_USERNAME', 'admin')
 password = os.getenv('ADMIN_PASSWORD', 'admin123')
@@ -60,7 +60,6 @@ try:
     if user:
         user.role = 'admin'
         user.hashed_password = get_password_hash(password)
-        user.force_password_change = False
         if not user.email:
             user.email = 'admin@local'
         print('[run.sh] Admin updated')
@@ -70,8 +69,7 @@ try:
             hashed_password=get_password_hash(password),
             role='admin',
             email='admin@local',
-            force_password_change=False,
-            first_name='Админ',
+            full_name='Админ',
         )
         db.add(user)
         print('[run.sh] Admin created')

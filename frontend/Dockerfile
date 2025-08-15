@@ -29,7 +29,7 @@ ENV DISABLE_ESLINT_PLUGIN=true
 RUN npm run build
 
 # Стадия 4: Production образ
-FROM nginx:alpine
+FROM article_search_agb-frontend:latest
 # Устанавливаем dumb-init для правильной обработки сигналов
 RUN apk add dumb-init
 

@@ -234,21 +234,21 @@ const AdminSupport: React.FC = () => {
         marginBottom: '24px',
         width: '100%'
       }}>
-        <div>
-          <Title level={3} style={{ margin: 0 }}>
+          <div>
+            <Title level={3} style={{ margin: 0 }}>
             <MessageOutlined style={{ marginRight: '8px', color: '#1890ff' }} />
-            Администрирование поддержки
-          </Title>
+              Администрирование поддержки
+            </Title>
           <Text type="secondary">Управление обращениями пользователей и системой поддержки</Text>
-        </div>
+          </div>
         <Button 
           type="primary" 
           icon={<ReloadOutlined />}
           onClick={handleReloadMessages}
         >
           Обновить данные
-        </Button>
-      </div>
+          </Button>
+        </div>
 
       {/* МЕТРИКИ АДМИНИСТРИРОВАНИЯ: На всю ширину экрана сверху */}
       <div style={{ 
@@ -259,44 +259,44 @@ const AdminSupport: React.FC = () => {
         flexWrap: 'wrap'
       }}>
         <Card style={{ flex: '1', minWidth: '200px' }}>
-          <Statistic
+              <Statistic
             title="Всего обращений"
             value={stats.totalMessages}
             loading={loading}
             prefix={<MessageOutlined style={{ color: '#1890ff' }} />}
             valueStyle={{ color: '#1890ff' }}
-          />
-        </Card>
+              />
+            </Card>
         <Card style={{ flex: '1', minWidth: '200px' }}>
-          <Statistic
+              <Statistic
             title="Открытые обращения"
             value={stats.openMessages}
             loading={loading}
             prefix={<ExclamationCircleOutlined style={{ color: '#faad14' }} />}
             valueStyle={{ color: '#faad14' }}
-          />
-        </Card>
+              />
+            </Card>
         <Card style={{ flex: '1', minWidth: '200px' }}>
-          <Statistic
+              <Statistic
             title="В работе"
             value={stats.inProgressMessages}
             loading={loading}
             prefix={<ClockCircleOutlined style={{ color: '#1890ff' }} />}
             valueStyle={{ color: '#1890ff' }}
-          />
-        </Card>
+              />
+            </Card>
         <Card style={{ flex: '1', minWidth: '200px' }}>
-          <Statistic
+              <Statistic
             title="Решенные"
             value={stats.resolvedMessages}
             loading={loading}
             prefix={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
             valueStyle={{ color: '#52c41a' }}
-          />
-        </Card>
+              />
+            </Card>
       </div>
 
-      <Divider />
+        <Divider />
 
       {/* ОСНОВНОЙ КОНТЕНТ: Обращения пользователей на всю ширину экрана */}
       <div style={{ width: '100%' }}>
@@ -308,14 +308,14 @@ const AdminSupport: React.FC = () => {
           <Text type="secondary">
             Управление всеми обращениями пользователей в системе поддержки
           </Text>
-        </div>
+          </div>
         
         <Table
           dataSource={messages}
           columns={messageColumns}
           rowKey="id"
           loading={loading}
-          size="small"
+                          size="small"
           scroll={{ x: 1200 }}
           pagination={{
             pageSize: 15,
@@ -330,11 +330,11 @@ const AdminSupport: React.FC = () => {
               <div style={{ textAlign: 'center', padding: '40px 0' }}>
                 <MessageOutlined style={{ fontSize: '48px', color: '#d9d9d9', marginBottom: '16px' }} />
                 <div style={{ color: '#666' }}>Обращений пока нет</div>
-              </div>
+                    </div>
             )
           }}
-        />
-      </div>
+            />
+          </div>
     </div>
   );
 };
