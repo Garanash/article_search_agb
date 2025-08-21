@@ -234,8 +234,7 @@ const AdminTicketManagement: React.FC = () => {
         pagination={{
           pageSize: 10,
           showSizeChanger: true,
-          showQuickJumper: true,
-          showTotal: (total) => `Всего: ${total} обращений`,
+          showTotal: (total) => `Всего: ${total} обращений`
         }}
         scroll={{ x: 1000 }}
       />

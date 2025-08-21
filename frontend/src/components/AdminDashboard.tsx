@@ -1578,7 +1578,12 @@ const AdminDashboard: React.FC = () => {
                 dataSource={cleanedTickets}
                 columns={columns}
                 rowKey="id"
-                pagination={{ pageSize: 10 }}
+                pagination={{
+                  pageSize: 10,
+                  showSizeChanger: true,
+                  showTotal: (total, range) =>
+                    `${range[0]}-${range[1]} из ${total} записей`
+                }}
                 expandable={{
                   expandedRowRender: (record) => (
                     <div style={{ padding: '16px' }}>
@@ -1759,7 +1764,12 @@ const AdminDashboard: React.FC = () => {
             loading={tableLoading}
             rowKey={row => row.id || row._id || JSON.stringify(row)}
             columns={universalTableColumns}
-            pagination={{ pageSize: 10 }}
+            pagination={{
+              pageSize: 10,
+              showSizeChanger: true,
+              showTotal: (total, range) =>
+                `${range[0]}-${range[1]} из ${total} записей`
+            }}
             size="small"
             scroll={{ x: 'max-content' }}
           />

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Layout, ConfigProvider } from 'antd';
 import { useAuth } from './context/AuthContext';
 import { professionalTheme } from './styles/antdConfig';
+import { PassportProvider } from './context/PassportContext';
 import './styles/professional.css';
 
 // Импорт компонентов
@@ -17,11 +18,23 @@ import DocumentManager from './components/DocumentManager';
 import EmailCampaigns from './components/EmailCampaigns';
 import PhoneDirectory from './components/PhoneDirectory';
 import ProfileManager from './components/ProfileManager';
+import CreatePassport from './components/CreatePassport';
+import PassportArchive from './components/PassportArchive';
 import LoginForm from './components/LoginForm';
 
 const { Content } = Layout;
 
 const App: React.FC = () => {
+  return (
+    <ConfigProvider theme={professionalTheme}>
+      <PassportProvider>
+        <AppContent />
+      </PassportProvider>
+    </ConfigProvider>
+  );
+};
+
+const AppContent: React.FC = () => {
   const { user, token, setToken, isAdmin, logout, loading } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -108,6 +121,10 @@ const App: React.FC = () => {
         return <EmailCampaigns />;
       case 'directory':
         return <PhoneDirectory />;
+      case 'create-passport':
+        return <CreatePassport />;
+      case 'passport-archive':
+        return <PassportArchive />;
       case 'profile':
         return <ProfileManager />;
       default:

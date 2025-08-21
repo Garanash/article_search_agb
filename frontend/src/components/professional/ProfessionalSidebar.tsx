@@ -1,5 +1,5 @@
 import React from 'react';
-import { Layout, Menu, Button, Tooltip, Avatar } from 'antd';
+import { Layout, Menu, Button, Tooltip, Avatar, Badge } from 'antd';
 import {
   DashboardOutlined,
   FileTextOutlined,
@@ -16,7 +16,10 @@ import {
   DatabaseOutlined,
   SecurityScanOutlined,
   AuditOutlined,
-  GlobalOutlined
+  GlobalOutlined,
+  FileProtectOutlined,
+  PlusOutlined,
+  InboxOutlined
 } from '@ant-design/icons';
 
 const { Sider } = Layout;
@@ -42,13 +45,22 @@ const ProfessionalSidebar: React.FC<ProfessionalSidebarProps> = ({
 }) => {
   const mainMenuItems = [
     { key: 'dashboard', icon: <DashboardOutlined />, label: 'Главная', },
-    { key: 'articles', icon: <FileTextOutlined />, label: 'Статьи', },
+    { key: 'articles', icon: <FileTextOutlined />, label: 'Поиск артикулов', },
     { key: 'documents', icon: <FolderOutlined />, label: 'Документы', },
-    { key: 'support', icon: <MessageOutlined />, label: 'Поддержка', },
-    { key: 'directory', icon: <PhoneOutlined />, label: 'Справочник', },
+    { key: 'directory', icon: <PhoneOutlined />, label: 'Телефонный справочник', },
+    { 
+      key: 'passports', 
+      icon: <FileProtectOutlined />, 
+      label: 'Формирование паспортов',
+      children: [
+        { key: 'create-passport', icon: <PlusOutlined />, label: 'Создать паспорт' },
+        { key: 'passport-archive', icon: <InboxOutlined />, label: 'Архив паспортов' },
+      ],
+    },
   ];
 
   const adminMenuItems = [
+    { key: 'support', icon: <MessageOutlined />, label: 'Поддержка', },
     { key: 'admin-section', icon: <SecurityScanOutlined />, label: 'Администрирование', children: [
         { key: 'users', icon: <TeamOutlined />, label: 'Пользователи', },
         { key: 'analytics', icon: <BarChartOutlined />, label: 'Аналитика', },
@@ -68,6 +80,27 @@ const ProfessionalSidebar: React.FC<ProfessionalSidebarProps> = ({
 
   const handleMenuClick = ({ key }: { key: string }) => { onTabChange(key); };
   const handleCollapse = () => { onCollapse(!collapsed); };
+
+  // Получаем полное имя пользователя
+  const getUserDisplayName = () => {
+    if (user?.first_name && user?.last_name) {
+      return `${user.first_name} ${user.last_name}`;
+    }
+    return user?.username || 'Пользователь';
+  };
+
+  // Получаем должность пользователя
+  const getUserPosition = () => {
+    return user?.position || user?.department || 'Сотрудник';
+  };
+
+  // Получаем инициалы для аватара
+  const getUserInitials = () => {
+    if (user?.first_name && user?.last_name) {
+      return `${user.first_name[0]}${user.last_name[0]}`.toUpperCase();
+    }
+    return user?.username?.substring(0, 2).toUpperCase() || 'U';
+  };
 
   return (
     <Sider
@@ -148,7 +181,7 @@ const ProfessionalSidebar: React.FC<ProfessionalSidebarProps> = ({
         />
       </div>
 
-      {/* Кнопка входа в профиль пользователя */}
+      {/* Профиль пользователя */}
       <div style={{ 
         padding: '16px', 
         borderTop: '1px solid #303030',
@@ -169,25 +202,32 @@ const ProfessionalSidebar: React.FC<ProfessionalSidebarProps> = ({
             gap: '12px'
           }}
         >
-          <Avatar 
-            size={32} 
-            src={user?.avatar_url} 
-            icon={<UserOutlined />}
-            style={{ 
-              backgroundColor: user?.avatar_url ? 'transparent' : '#1890ff',
-              border: '2px solid #ffffff'
-            }}
-          />
+          <Badge 
+            dot={false}
+            offset={[-2, 2]}
+          >
+            <Avatar 
+              size={32} 
+              src={user?.avatar_url ? `http://localhost:8000${user.avatar_url}` : undefined}
+              icon={<UserOutlined />}
+              style={{ 
+                backgroundColor: user?.avatar_url ? 'transparent' : '#1890ff',
+                border: '2px solid #ffffff',
+                fontSize: '14px',
+                fontWeight: '600'
+              }}
+            >
+              {!user?.avatar_url && getUserInitials()}
+            </Avatar>
+          </Badge>
+          
           {!collapsed && (
             <div style={{ textAlign: 'left' }}>
               <div style={{ fontSize: '14px', fontWeight: '500', color: '#ffffff' }}>
-                {user?.first_name && user?.last_name 
-                  ? `${user.first_name} ${user.last_name}` 
-                  : user?.username || 'Пользователь'
-                }
+                {getUserDisplayName()}
               </div>
               <div style={{ fontSize: '11px', color: '#8c8c8c' }}>
-                {user?.position || 'Сотрудник'}
+                {getUserPosition()}
               </div>
             </div>
           )}

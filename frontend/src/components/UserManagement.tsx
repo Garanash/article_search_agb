@@ -470,8 +470,7 @@ const UserManagement: React.FC = () => {
               pagination={{
                 pageSize: 10,
                 showSizeChanger: true,
-                showQuickJumper: true,
-                showTotal: (total) => `Всего: ${total} пользователей`,
+                showTotal: (total) => `Всего: ${total} пользователей`
               }}
             />
           </Card>

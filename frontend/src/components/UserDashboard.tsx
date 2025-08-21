@@ -1,6 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Typography, Button, Form, Input, Select, message, Calendar, Badge, Modal, List, Avatar, Tag, Divider, Space, Tooltip, DatePicker, Skeleton } from 'antd';
-import { MessageOutlined, CalendarOutlined, BellOutlined, UserOutlined, SendOutlined, WarningOutlined, CloseOutlined, CheckCircleOutlined, HeartOutlined, StarOutlined, FireOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { Card, Row, Col, Typography, Button, Form, Input, Select, message, Badge, Modal, List, Avatar, Tag, Divider, Space, Tooltip, Skeleton } from 'antd';
+import { 
+  MessageOutlined, 
+  CalendarOutlined, 
+  BellOutlined, 
+  UserOutlined, 
+  SendOutlined, 
+  WarningOutlined, 
+  CloseOutlined, 
+  CheckCircleOutlined, 
+  ExclamationCircleOutlined,
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  EyeOutlined
+} from '@ant-design/icons';
 import { useAuth } from '../context/AuthContext';
 import { apiClient } from '../api/api';
 import dayjs from 'dayjs';
@@ -44,8 +58,9 @@ const UserDashboard: React.FC = () => {
   const [news, setNews] = useState<News[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
-  const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
+  const [currentDate, setCurrentDate] = useState<Dayjs>(dayjs());
   const [ticketModalVisible, setTicketModalVisible] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
 
   // Загрузка данных
   useEffect(() => {
@@ -102,36 +117,6 @@ const UserDashboard: React.FC = () => {
     );
   };
 
-  // Рендер ячейки календаря
-  const dateCellRender = (date: Dayjs) => {
-    const dayEvents = getEventsForDate(date);
-    return (
-      <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-        {dayEvents.slice(0, 2).map(event => (
-          <li key={event.id}>
-            <Badge 
-              status={event.type === 'meeting' ? 'processing' : 
-                     event.type === 'deadline' ? 'error' : 
-                     event.type === 'holiday' ? 'success' : 'default'} 
-              text={
-                <span style={{ fontSize: '11px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '60px', display: 'inline-block' }}>
-                  {event.title}
-                </span>
-              } 
-            />
-          </li>
-        ))}
-        {dayEvents.length > 2 && (
-          <li>
-            <span style={{ fontSize: '10px', color: '#999' }}>
-              +{dayEvents.length - 2} еще
-            </span>
-          </li>
-        )}
-      </ul>
-    );
-  };
-
   // Получение цвета статуса тикета
   const getTicketStatusColor = (status: string) => {
     switch (status) {
@@ -165,318 +150,230 @@ const UserDashboard: React.FC = () => {
     }
   };
 
+  // Календарь компонент
+  const CalendarComponent = () => {
+    const [currentMonth, setCurrentMonth] = useState(dayjs());
+    
+    const getMonthDays = () => {
+      const startOfMonth = currentMonth.startOf('month');
+      const endOfMonth = currentMonth.endOf('month');
+      const startDate = startOfMonth.startOf('week');
+      const endDate = endOfMonth.endOf('week');
+      
+      const days = [];
+      let currentDay = startDate;
+      
+      while (currentDay.isBefore(endDate) || currentDay.isSame(endDate, 'day')) {
+        const dayEvents = events.filter(event => 
+          dayjs(event.date).isSame(currentDay, 'day')
+        );
+        
+        days.push({
+          date: currentDay,
+          events: dayEvents,
+          isCurrentMonth: currentDay.isSame(currentMonth, 'month'),
+          isToday: currentDay.isSame(dayjs(), 'day')
+        });
+        
+        currentDay = currentDay.add(1, 'day');
+      }
+      
+      return days;
+    };
+
+    const goToPrevious = () => {
+      setCurrentMonth(currentMonth.subtract(1, 'month'));
+    };
+
+    const goToNext = () => {
+      setCurrentMonth(currentMonth.add(1, 'month'));
+    };
+
+    const goToToday = () => {
+      setCurrentMonth(dayjs());
+    };
+
+    const handleDayClick = (date: Dayjs) => {
+      setSelectedDate(date);
+    };
+
+    const monthDays = getMonthDays();
+
+    return (
+      <div>
+        {/* Навигация календаря */}
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between', 
+          marginBottom: '16px',
+          padding: '0 8px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Button size="small" onClick={goToPrevious} icon={<span>‹</span>} />
+            <Button size="small" onClick={goToNext} icon={<span>›</span>} />
+          </div>
+          
+          <Text strong style={{ fontSize: '16px' }}>
+            {currentMonth.format('MMMM YYYY')}
+          </Text>
+          
+          <Button size="small" onClick={goToToday}>
+            Сегодня
+          </Button>
+        </div>
+
+        {/* Календарная сетка */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(7, 1fr)', 
+          gap: '1px',
+          border: '1px solid #f0f0f0',
+          borderRadius: '8px',
+          overflow: 'hidden'
+        }}>
+          {/* Заголовки дней недели */}
+          {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map((day) => (
+            <div
+              key={day}
+              style={{
+                padding: '12px 8px',
+                textAlign: 'center',
+                fontWeight: '600',
+                color: '#666',
+                fontSize: '14px',
+                backgroundColor: '#fafafa',
+                borderBottom: '1px solid #f0f0f0'
+              }}
+            >
+              {day}
+            </div>
+          ))}
+
+          {/* Дни месяца */}
+          {monthDays.map((day, index) => (
+            <div
+              key={index}
+              onClick={() => handleDayClick(day.date)}
+              className={`calendar-day ${day.isToday ? 'today' : ''}`}
+              style={{
+                minHeight: '80px',
+                padding: '8px',
+                borderRight: (index + 1) % 7 !== 0 ? '1px solid #f0f0f0' : 'none',
+                borderBottom: '1px solid #f0f0f0',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                backgroundColor: day.isToday ? '#e6f7ff' : 
+                               (!day.isCurrentMonth ? '#fafafa' : 'white'),
+                opacity: !day.isCurrentMonth ? 0.5 : 1,
+                position: 'relative'
+              }}
+            >
+              <Text
+                style={{
+                  fontWeight: day.isToday ? '700' : '500',
+                  color: day.isToday ? '#1890ff' : '#333',
+                  fontSize: '14px',
+                  position: 'absolute',
+                  top: '4px',
+                  right: '4px'
+                }}
+              >
+                {day.date.format('D')}
+              </Text>
+
+              {/* События дня */}
+              <div style={{ 
+                marginTop: '24px', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                gap: '4px' 
+              }}>
+                {day.events.slice(0, 2).map((event, eventIndex) => (
+                  <Tag
+                    key={eventIndex}
+                    color={event.type === 'meeting' ? 'blue' : 
+                           event.type === 'deadline' ? 'red' : 
+                           event.type === 'holiday' ? 'green' : 'default'}
+                    style={{
+                      fontSize: '11px',
+                      margin: 0,
+                      padding: '2px 6px',
+                      borderRadius: '4px'
+                    }}
+                  >
+                    {event.title}
+                  </Tag>
+                ))}
+                {day.events.length > 2 && (
+                  <Text style={{ fontSize: '10px', color: '#999' }}>
+                    +{day.events.length - 2} еще
+                  </Text>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div style={{ 
-      padding: '0', 
-      background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', 
-      minHeight: '100vh',
-      position: 'relative'
+      padding: '24px', 
+      backgroundColor: '#f5f5f5',
+      minHeight: '100vh'
     }}>
-      {/* Современный хедер с приветствием */}
-      <div style={{
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        padding: '40px 24px',
-        color: 'white',
-        borderRadius: '0 0 50px 50px',
-        marginBottom: '20px',
-        boxShadow: '0 10px 40px rgba(0,0,0,0.15)'
+      {/* Заголовок страницы */}
+      <div style={{ 
+        marginBottom: '32px',
+        textAlign: 'center'
       }}>
-        <div style={{ 
-          maxWidth: '1200px', 
-          margin: '0 auto',
-          textAlign: 'center'
+        <Title level={2} style={{ 
+          color: '#262626',
+          marginBottom: '8px',
+          fontWeight: '600'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
-            <HeartOutlined style={{ fontSize: '32px', color: '#ff6b6b', marginRight: '16px' }} />
-            <Title level={1} style={{ 
-              color: 'white', 
-              margin: 0,
-              fontSize: '42px',
-              fontWeight: '700'
-            }}>
-              Привет, {user?.username}! 
-            </Title>
-            <StarOutlined style={{ fontSize: '32px', color: '#feca57', marginLeft: '16px' }} />
-          </div>
-          <Paragraph style={{ 
-            color: 'rgba(255,255,255,0.9)', 
-            margin: 0, 
-            fontSize: '18px',
-            fontWeight: '300'
-          }}>
-            {dayjs().format('dddd, DD MMMM YYYY')} • Добро пожаловать в ваш личный кабинет
-          </Paragraph>
-        </div>
+          Добро пожаловать, {user?.username}!
+        </Title>
+        <Text style={{ 
+          color: '#8c8c8c',
+          fontSize: '16px'
+        }}>
+          {dayjs().format('dddd, DD MMMM YYYY')}
+        </Text>
       </div>
 
       {/* Основной контент */}
-      <div style={{ 
-        maxWidth: '1200px', 
-        margin: '0 auto', 
-        padding: '0 24px 40px 24px'
-      }}>
-
-        {/* Статистика в верхней части */}
-        <Row gutter={[16, 16]} style={{ marginBottom: '32px' }}>
-          <Col xs={24} sm={8}>
-            <Card style={{
-              background: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
-              border: 'none',
-              borderRadius: '20px',
-              textAlign: 'center',
-              color: 'white',
-              boxShadow: '0 8px 25px rgba(255, 154, 158, 0.3)'
-            }}>
-              <BellOutlined style={{ fontSize: '48px', marginBottom: '12px' }} />
-              <Title level={3} style={{ color: 'white', margin: 0 }}>
-                {news.length}
-              </Title>
-              <Text style={{ color: 'rgba(255,255,255,0.9)' }}>Новостей</Text>
-            </Card>
-          </Col>
-          <Col xs={24} sm={8}>
-            <Card style={{
-              background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-              border: 'none',
-              borderRadius: '20px',
-              textAlign: 'center',
-              color: 'white',
-              boxShadow: '0 8px 25px rgba(168, 237, 234, 0.3)'
-            }}>
-              <CalendarOutlined style={{ fontSize: '48px', marginBottom: '12px' }} />
-              <Title level={3} style={{ color: 'white', margin: 0 }}>
-                {events.length}
-              </Title>
-              <Text style={{ color: 'rgba(255,255,255,0.9)' }}>Событий</Text>
-            </Card>
-          </Col>
-          <Col xs={24} sm={8}>
-            <Card style={{
-              background: 'linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%)',
-              border: 'none',
-              borderRadius: '20px',
-              textAlign: 'center',
-              color: 'white',
-              boxShadow: '0 8px 25px rgba(251, 194, 235, 0.3)'
-            }}>
-              <MessageOutlined style={{ fontSize: '48px', marginBottom: '12px' }} />
-              <Title level={3} style={{ color: 'white', margin: 0 }}>
-                {tickets.length}
-              </Title>
-              <Text style={{ color: 'rgba(255,255,255,0.9)' }}>Обращений</Text>
-            </Card>
-          </Col>
-        </Row>
-
-        <Row gutter={[24, 24]}>
-        {/* Левая колонка - Новости и Обращения */}
-        <Col xs={24} lg={12}>
-          {/* Новости */}
+      <Row gutter={[24, 24]}>
+        {/* Левая колонка - Календарь */}
+        <Col xs={24} lg={14}>
           <Card 
             title={
               <Space>
-                <BellOutlined style={{ color: '#667eea', fontSize: '20px' }} />
-                <span style={{ fontSize: '18px', fontWeight: '600' }}>Новости компании</span>
+                <CalendarOutlined style={{ color: '#1890ff', fontSize: '18px' }} />
+                <span style={{ fontSize: '16px', fontWeight: '600' }}>Календарь событий</span>
               </Space>
             }
             style={{ 
-              marginBottom: '24px',
-              borderRadius: '20px',
-              border: 'none',
-              boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
-              background: 'rgba(255,255,255,0.95)',
-              backdropFilter: 'blur(10px)'
+              borderRadius: '12px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              height: 'fit-content'
             }}
             headStyle={{ 
-              background: 'transparent',
-              borderBottom: '2px solid #f0f0f0',
-              borderRadius: '20px 20px 0 0',
-              padding: '20px 24px'
+              borderBottom: '1px solid #f0f0f0',
+              padding: '16px 24px'
             }}
-            bodyStyle={{ padding: '20px 24px' }}
+            bodyStyle={{ padding: '24px' }}
           >
-            <List
-              dataSource={news.slice(0, 5)}
-              locale={{ emptyText: 'Нет новостей' }}
-              renderItem={(item) => (
-                <List.Item style={{ border: 'none', padding: '12px 0' }}>
-                  <List.Item.Meta
-                    avatar={
-                      <div style={{
-                        width: '50px',
-                        height: '50px',
-                        borderRadius: '15px',
-                        background: `linear-gradient(135deg, ${getNewsTypeColor(item.type)}20, ${getNewsTypeColor(item.type)})`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        boxShadow: `0 4px 15px ${getNewsTypeColor(item.type)}30`
-                      }}>
-                        {item.type === 'warning' ? 
-                          <WarningOutlined style={{ color: getNewsTypeColor(item.type), fontSize: '20px' }} /> :
-                          item.type === 'success' ? 
-                          <CheckCircleOutlined style={{ color: getNewsTypeColor(item.type), fontSize: '20px' }} /> :
-                          item.type === 'error' ?
-                          <CloseOutlined style={{ color: getNewsTypeColor(item.type), fontSize: '20px' }} /> :
-                          <BellOutlined style={{ color: getNewsTypeColor(item.type), fontSize: '20px' }} />
-                        }
-                      </div>
-                    }
-                    title={
-                      <Text strong style={{ fontSize: '14px' }}>
-                        {item.title}
-                      </Text>
-                    }
-                    description={
-                      <div>
-                        <Paragraph 
-                          ellipsis={{ rows: 2 }} 
-                          style={{ margin: '4px 0', color: '#666' }}
-                        >
-                          {item.content}
-                        </Paragraph>
-                        <Text type="secondary" style={{ fontSize: '12px' }}>
-                          {dayjs(item.created_at).format('DD.MM.YYYY HH:mm')} • {item.author}
-                        </Text>
-                      </div>
-                    }
-                  />
-                </List.Item>
-              )}
-            />
-          </Card>
-
-          {/* Мои обращения */}
-          <Card 
-            title={
-              <Space>
-                <MessageOutlined style={{ color: '#667eea', fontSize: '20px' }} />
-                <span style={{ fontSize: '18px', fontWeight: '600' }}>Мои обращения</span>
-              </Space>
-            }
-            extra={
-              <Button 
-                type="primary" 
-                icon={<SendOutlined />}
-                onClick={() => setTicketModalVisible(true)}
-                style={{ 
-                  borderRadius: '25px',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  border: 'none',
-                  height: '45px',
-                  padding: '0 25px',
-                  boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
-                  fontSize: '14px',
-                  fontWeight: '600'
-                }}
-              >
-                Новое обращение
-              </Button>
-            }
-            style={{ 
-              borderRadius: '20px',
-              border: 'none',
-              boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
-              background: 'rgba(255,255,255,0.95)',
-              backdropFilter: 'blur(10px)'
-            }}
-            headStyle={{ 
-              background: 'transparent',
-              borderBottom: '2px solid #f0f0f0',
-              borderRadius: '20px 20px 0 0',
-              padding: '20px 24px'
-            }}
-            bodyStyle={{ padding: '20px 24px' }}
-          >
-            <List
-              dataSource={tickets.slice(0, 5)}
-              locale={{ emptyText: 'У вас нет обращений' }}
-              renderItem={(item) => (
-                <List.Item 
-                  style={{ border: 'none', padding: '12px 0' }}
-                  actions={[
-                    <Tag color={getTicketStatusColor(item.status)}>
-                      {item.status === 'open' ? 'Открыто' :
-                       item.status === 'in_progress' ? 'В работе' :
-                       item.status === 'resolved' ? 'Решено' : 'Закрыто'}
-                    </Tag>
-                  ]}
-                >
-                  <List.Item.Meta
-                    avatar={
-                      <Avatar 
-                        style={{ backgroundColor: getPriorityColor(item.priority) }}
-                        icon={<ExclamationCircleOutlined />}
-                      />
-                    }
-                    title={
-                      <Text strong style={{ fontSize: '14px' }}>
-                        {item.title}
-                      </Text>
-                    }
-                    description={
-                      <div>
-                        <Paragraph 
-                          ellipsis={{ rows: 1 }} 
-                          style={{ margin: '4px 0', color: '#666' }}
-                        >
-                          {item.description}
-                        </Paragraph>
-                        <Text type="secondary" style={{ fontSize: '12px' }}>
-                          {dayjs(item.created_at).format('DD.MM.YYYY HH:mm')}
-                        </Text>
-                      </div>
-                    }
-                  />
-                </List.Item>
-              )}
-            />
-          </Card>
-        </Col>
-
-        {/* Правая колонка - Календарь */}
-        <Col xs={24} lg={12}>
-          <Card 
-            title={
-              <Space>
-                <CalendarOutlined style={{ color: '#667eea', fontSize: '20px' }} />
-                <span style={{ fontSize: '18px', fontWeight: '600' }}>Календарь событий</span>
-              </Space>
-            }
-            style={{ 
-              borderRadius: '20px',
-              border: 'none',
-              boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
-              background: 'rgba(255,255,255,0.95)',
-              backdropFilter: 'blur(10px)'
-            }}
-            headStyle={{ 
-              background: 'transparent',
-              borderBottom: '2px solid #f0f0f0',
-              borderRadius: '20px 20px 0 0',
-              padding: '20px 24px'
-            }}
-            bodyStyle={{ padding: '20px 24px' }}
-          >
-            <Calendar
-              fullscreen={false}
-              value={selectedDate}
-              onSelect={setSelectedDate}
-              dateCellRender={dateCellRender}
-              style={{ 
-                background: 'white',
-                borderRadius: '8px'
-              }}
-            />
+            <CalendarComponent />
             
             {/* События выбранного дня */}
             {selectedDate && (
-              <div style={{ marginTop: '16px' }}>
-                <Divider orientation="left">
-                  <Text strong>
-                    События на {selectedDate.format('DD MMMM YYYY')}
-                  </Text>
-                </Divider>
+              <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid #f0f0f0' }}>
+                <Title level={5} style={{ marginBottom: '16px' }}>
+                  События на {selectedDate.format('DD MMMM YYYY')}
+                </Title>
                 {getEventsForDate(selectedDate).length > 0 ? (
                   <List
                     size="small"
@@ -504,25 +401,174 @@ const UserDashboard: React.FC = () => {
             )}
           </Card>
         </Col>
+
+        {/* Правая колонка - Новости и Обращения */}
+        <Col xs={24} lg={10}>
+          {/* Новости */}
+          <Card 
+            title={
+              <Space>
+                <BellOutlined style={{ color: '#1890ff', fontSize: '18px' }} />
+                <span style={{ fontSize: '16px', fontWeight: '600' }}>Новости компании</span>
+              </Space>
+            }
+            style={{ 
+              marginBottom: '24px',
+              borderRadius: '12px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+            }}
+            headStyle={{ 
+              borderBottom: '1px solid #f0f0f0',
+              padding: '16px 24px'
+            }}
+            bodyStyle={{ padding: '16px 24px' }}
+          >
+            <List
+              dataSource={news.slice(0, 5)}
+              locale={{ emptyText: 'Нет новостей' }}
+              renderItem={(item) => (
+                <List.Item style={{ border: 'none', padding: '12px 0' }}>
+                  <List.Item.Meta
+                    avatar={
+                      <div style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '8px',
+                        background: `${getNewsTypeColor(item.type)}20`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        {item.type === 'warning' ? 
+                          <WarningOutlined style={{ color: getNewsTypeColor(item.type), fontSize: '16px' }} /> :
+                          item.type === 'success' ? 
+                          <CheckCircleOutlined style={{ color: getNewsTypeColor(item.type), fontSize: '16px' }} /> :
+                          item.type === 'error' ?
+                          <CloseOutlined style={{ color: getNewsTypeColor(item.type), fontSize: '16px' }} /> :
+                          <BellOutlined style={{ color: getNewsTypeColor(item.type), fontSize: '16px' }} />
+                        }
+                      </div>
+                    }
+                    title={
+                      <Text strong style={{ fontSize: '14px' }}>
+                        {item.title}
+                      </Text>
+                    }
+                    description={
+                      <div>
+                        <Paragraph 
+                          ellipsis={{ rows: 2 }} 
+                          style={{ margin: '4px 0', color: '#666', fontSize: '13px' }}
+                        >
+                          {item.content}
+                        </Paragraph>
+                        <Text type="secondary" style={{ fontSize: '12px' }}>
+                          {dayjs(item.created_at).format('DD.MM.YYYY HH:mm')} • {item.author}
+                        </Text>
+                      </div>
+                    }
+                  />
+                </List.Item>
+              )}
+            />
+          </Card>
+
+          {/* Мои обращения */}
+          <Card 
+            title={
+              <Space>
+                <MessageOutlined style={{ color: '#1890ff', fontSize: '18px' }} />
+                <span style={{ fontSize: '16px', fontWeight: '600' }}>Мои обращения</span>
+              </Space>
+            }
+            extra={
+              <Button 
+                type="primary" 
+                icon={<PlusOutlined />}
+                onClick={() => setTicketModalVisible(true)}
+                size="small"
+                style={{ 
+                  borderRadius: '6px',
+                  height: '32px'
+                }}
+              >
+                Новое
+              </Button>
+            }
+            style={{ 
+              borderRadius: '12px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+            }}
+            headStyle={{ 
+              borderBottom: '1px solid #f0f0f0',
+              padding: '16px 24px'
+            }}
+            bodyStyle={{ padding: '16px 24px' }}
+          >
+            <List
+              dataSource={tickets.slice(0, 5)}
+              locale={{ emptyText: 'У вас нет обращений' }}
+              renderItem={(item) => (
+                <List.Item 
+                  style={{ border: 'none', padding: '12px 0' }}
+                  actions={[
+                    <Tag color={getTicketStatusColor(item.status)}>
+                      {item.status === 'open' ? 'Открыто' :
+                       item.status === 'in_progress' ? 'В работе' :
+                       item.status === 'resolved' ? 'Решено' : 'Закрыто'}
+                    </Tag>
+                  ]}
+                >
+                  <List.Item.Meta
+                    avatar={
+                      <Avatar 
+                        size="small"
+                        style={{ backgroundColor: getPriorityColor(item.priority) }}
+                        icon={<ExclamationCircleOutlined />}
+                      />
+                    }
+                    title={
+                      <Text strong style={{ fontSize: '14px' }}>
+                        {item.title}
+                      </Text>
+                    }
+                    description={
+                      <div>
+                        <Paragraph 
+                          ellipsis={{ rows: 1 }} 
+                          style={{ margin: '4px 0', color: '#666', fontSize: '13px' }}
+                        >
+                          {item.description}
+                        </Paragraph>
+                        <Text type="secondary" style={{ fontSize: '12px' }}>
+                          {dayjs(item.created_at).format('DD.MM.YYYY HH:mm')}
+                        </Text>
+                      </div>
+                    }
+                  />
+                </List.Item>
+              )}
+            />
+          </Card>
+        </Col>
       </Row>
-      </div>
 
       {/* Модальное окно создания обращения */}
       <Modal
         title={
           <Space>
             <div style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '12px',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              width: '32px',
+              height: '32px',
+              borderRadius: '6px',
+              background: '#1890ff',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center'
             }}>
-              <SendOutlined style={{ color: 'white', fontSize: '18px' }} />
+              <PlusOutlined style={{ color: 'white', fontSize: '14px' }} />
             </div>
-            <span style={{ fontSize: '20px', fontWeight: '600' }}>Новое обращение</span>
+            <span style={{ fontSize: '16px', fontWeight: '600' }}>Новое обращение</span>
           </Space>
         }
         open={ticketModalVisible}
@@ -531,17 +577,17 @@ const UserDashboard: React.FC = () => {
           form.resetFields();
         }}
         footer={null}
-        width={700}
+        width={600}
         style={{ top: 20 }}
         styles={{
           content: {
-            borderRadius: '20px',
-            padding: '30px'
+            borderRadius: '12px',
+            padding: '24px'
           },
           header: {
-            borderBottom: '2px solid #f0f0f0',
-            paddingBottom: '20px',
-            marginBottom: '20px'
+            borderBottom: '1px solid #f0f0f0',
+            paddingBottom: '16px',
+            marginBottom: '16px'
           }
         }}
       >
@@ -558,7 +604,7 @@ const UserDashboard: React.FC = () => {
           >
             <Input 
               placeholder="Кратко опишите суть вопроса"
-              style={{ borderRadius: '8px' }}
+              style={{ borderRadius: '6px' }}
             />
           </Form.Item>
 
@@ -569,7 +615,7 @@ const UserDashboard: React.FC = () => {
           >
             <Select 
               placeholder="Выберите отдел"
-              style={{ borderRadius: '8px' }}
+              style={{ borderRadius: '6px' }}
             >
               <Option value="it">IT отдел</Option>
               <Option value="hr">HR отдел</Option>
@@ -584,7 +630,7 @@ const UserDashboard: React.FC = () => {
             name="priority"
             initialValue="medium"
           >
-            <Select style={{ borderRadius: '8px' }}>
+            <Select style={{ borderRadius: '6px' }}>
               <Option value="low">Низкий</Option>
               <Option value="medium">Средний</Option>
               <Option value="high">Высокий</Option>
@@ -600,7 +646,7 @@ const UserDashboard: React.FC = () => {
             <TextArea
               rows={4}
               placeholder="Подробно опишите ваш вопрос или проблему"
-              style={{ borderRadius: '8px' }}
+              style={{ borderRadius: '6px' }}
             />
           </Form.Item>
 
@@ -612,11 +658,9 @@ const UserDashboard: React.FC = () => {
                   form.resetFields();
                 }}
                 style={{ 
-                  borderRadius: '20px',
-                  height: '45px',
-                  padding: '0 25px',
-                  border: '2px solid #f0f0f0',
-                  fontWeight: '600'
+                  borderRadius: '6px',
+                  height: '36px',
+                  padding: '0 16px'
                 }}
               >
                 Отмена
@@ -625,15 +669,11 @@ const UserDashboard: React.FC = () => {
                 type="primary" 
                 htmlType="submit" 
                 loading={loading}
-                icon={<SendOutlined />}
+                icon={<PlusOutlined />}
                 style={{ 
-                  borderRadius: '20px',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  border: 'none',
-                  height: '45px',
-                  padding: '0 25px',
-                  boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
-                  fontWeight: '600'
+                  borderRadius: '6px',
+                  height: '36px',
+                  padding: '0 16px'
                 }}
               >
                 Отправить
@@ -642,6 +682,8 @@ const UserDashboard: React.FC = () => {
           </Form.Item>
         </Form>
       </Modal>
+
+
     </div>
   );
 };

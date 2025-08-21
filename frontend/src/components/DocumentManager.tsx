@@ -456,7 +456,12 @@ const DocumentManager: React.FC = () => {
         dataSource={myDocuments}
         columns={documentColumns}
         rowKey="id"
-        pagination={{ pageSize: 10 }}
+        pagination={{
+          pageSize: 10,
+          showSizeChanger: true,
+          showTotal: (total, range) =>
+            `${range[0]}-${range[1]} из ${total} записей`
+        }}
         title={() => 'Мои документы'}
       />
 
@@ -465,7 +470,12 @@ const DocumentManager: React.FC = () => {
           dataSource={pendingApprovals}
           columns={approvalColumns}
           rowKey="id"
-          pagination={{ pageSize: 10 }}
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
+            showTotal: (total, range) =>
+              `${range[0]}-${range[1]} из ${total} записей`
+          }}
           title={() => 'Документы на согласование'}
         />
       )}
