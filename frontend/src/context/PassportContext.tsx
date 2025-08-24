@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+/* eslint-disable no-undef */
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 export interface ProductData {
   code_1c: string;
@@ -39,7 +40,7 @@ export const usePassports = () => {
 };
 
 interface PassportProviderProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 export const PassportProvider: React.FC<PassportProviderProps> = ({ children }) => {
@@ -123,7 +124,7 @@ export const PassportProvider: React.FC<PassportProviderProps> = ({ children }) 
 
   const getNextSequenceNumber = () => {
     // Получаем текущий номер и увеличиваем счетчик
-    const currentNumber = sequenceCounter;
+    let currentNumber = sequenceCounter;
     
     // Проверяем, что номер действительно уникален среди существующих паспортов
     let isUnique = false;

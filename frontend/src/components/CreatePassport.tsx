@@ -263,7 +263,7 @@ const CreatePassport: React.FC = () => {
   ];
 
   return (
-    <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 16px' }}>
+    <div style={{ width: '100%', minHeight: '100vh' }}>
       <Title level={2} style={{ marginBottom: '24px', textAlign: 'center' }}>
         Создание паспортов бурового оборудования
       </Title>
@@ -277,17 +277,18 @@ const CreatePassport: React.FC = () => {
         style={{ marginBottom: '24px' }}
       />
 
-      <Row gutter={[16, 16]}>
+      <Row gutter={[16, 16]} style={{ width: '100%' }}>
         {/* Форма создания паспортов */}
-        <Col xs={24}>
-          <Card title="Параметры создания" style={{ borderRadius: '12px' }}>
+        <Col xs={24} style={{ width: '100%' }}>
+          <Card title="Параметры создания" style={{ borderRadius: '12px', width: '100%' }}>
             <Form
               form={form}
               layout="vertical"
               onFinish={handleCreatePassports}
+              style={{ width: '100%' }}
             >
-              <Row gutter={[16, 0]} align="bottom">
-                <Col xs={24} sm={12} md={10}>
+              <Row gutter={[16, 0]} align="bottom" style={{ width: '100%' }}>
+                <Col xs={24} sm={12} md={8} style={{ width: '100%' }}>
                   <Form.Item
                     label="Выберите продукт"
                     name="product"
@@ -303,6 +304,7 @@ const CreatePassport: React.FC = () => {
                       filterOption={(input, option) =>
                         String(option?.children || '').toLowerCase().includes(input.toLowerCase())
                       }
+                      style={{ width: '100%' }}
                     >
                       {productsData.map(product => (
                         <Option key={product.code_1c} value={product.code_1c}>
@@ -313,7 +315,7 @@ const CreatePassport: React.FC = () => {
                   </Form.Item>
                 </Col>
 
-                <Col xs={24} sm={12} md={4}>
+                <Col xs={24} sm={12} md={4} style={{ width: '100%' }}>
                   <Form.Item
                     label="Количество паспортов"
                     name="quantity"
@@ -328,7 +330,7 @@ const CreatePassport: React.FC = () => {
                   </Form.Item>
                 </Col>
 
-                <Col xs={24} sm={24} md={10}>
+                <Col xs={24} sm={24} md={12} style={{ width: '100%' }}>
                   <Form.Item>
                     <Button
                       type="primary"
@@ -342,7 +344,8 @@ const CreatePassport: React.FC = () => {
                         padding: '0 32px',
                         background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
                         border: 'none',
-                        fontWeight: '600'
+                        fontWeight: '600',
+                        width: '100%'
                       }}
                     >
                       Создать паспорта
@@ -353,34 +356,34 @@ const CreatePassport: React.FC = () => {
             </Form>
 
             {selectedProduct && (
-              <Card size="small" style={{ marginTop: '12px', background: '#f8f9fa' }}>
-                <Row gutter={[12, 12]}>
-                  <Col xs={24} sm={12} md={6}>
+              <Card size="small" style={{ marginTop: '12px', background: '#f8f9fa', width: '100%' }}>
+                <Row gutter={[12, 12]} style={{ width: '100%' }}>
+                  <Col xs={24} sm={12} md={6} style={{ width: '100%' }}>
                     <Text strong>Артикул:</Text>
                     <br />
                     <Text>{selectedProduct.article}</Text>
                   </Col>
-                  <Col xs={24} sm={12} md={6}>
+                  <Col xs={24} sm={12} md={6} style={{ width: '100%' }}>
                     <Text strong>Матрица:</Text>
                     <br />
                     <Text>{selectedProduct.matrix}</Text>
                   </Col>
                   {selectedProduct.drilling_depth && (
-                    <Col xs={24} sm={12} md={6}>
+                    <Col xs={24} sm={12} md={6} style={{ width: '100%' }}>
                       <Text strong>Глубина:</Text>
                       <br />
                       <Text>{selectedProduct.drilling_depth}</Text>
                     </Col>
                   )}
                   {selectedProduct.height && (
-                    <Col xs={24} sm={12} md={6}>
+                    <Col xs={24} sm={12} md={6} style={{ width: '100%' }}>
                       <Text strong>Высота:</Text>
                       <br />
                       <Text>{selectedProduct.height}</Text>
                     </Col>
                   )}
                   {selectedProduct.thread && (
-                    <Col xs={24} sm={12} md={6}>
+                    <Col xs={24} sm={12} md={6} style={{ width: '100%' }}>
                       <Text strong>Резьба:</Text>
                       <br />
                       <Text>{selectedProduct.thread}</Text>
@@ -393,7 +396,7 @@ const CreatePassport: React.FC = () => {
         </Col>
 
         {/* Список созданных паспортов */}
-        <Col xs={24}>
+        <Col xs={24} style={{ width: '100%' }}>
           <Card 
             title={
               <Space>
@@ -417,7 +420,7 @@ const CreatePassport: React.FC = () => {
                 </Space>
               )
             }
-            style={{ borderRadius: '12px' }}
+            style={{ borderRadius: '12px', width: '100%' }}
           >
             {generatedPassports.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '32px', color: '#8c8c8c' }}>
@@ -431,7 +434,8 @@ const CreatePassport: React.FC = () => {
                 rowKey="id"
                 pagination={false}
                 size="small"
-                scroll={{ x: 800 }}
+                scroll={{ x: 1200 }}
+                style={{ width: '100%' }}
               />
             )}
           </Card>

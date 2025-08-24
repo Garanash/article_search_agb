@@ -775,190 +775,181 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
   };
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', minHeight: '100vh', width: '100%' }}>
-      <Card style={{ marginBottom: 32, width: '100%', maxWidth: '100%' }}>
-        <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <Title level={3} style={{ margin: 0, color: '#1890ff' }}>
-            {activeRequestId ? 
-              requests.find(r => r.id === activeRequestId)?.number || 'Запрос ВЭД' 
-              : 'Все артикулы'
-            }
-          </Title>
-        </div>
-        {/* Кнопка создания запроса */}
-        {!activeRequestId && articlesToAdd.length > 0 && (
-          <Button type="primary" style={{ marginBottom: 16 }} onClick={() => setShowRequestModal(true)}>
-            Создать запрос из этих артикулов
-          </Button>
-        )}
-        <Modal
-          open={showRequestModal}
-          title="Создать запрос"
-          onCancel={() => setShowRequestModal(false)}
-          onOk={handleCreateRequest}
-          confirmLoading={creatingRequest}
-          okText="Создать"
-          cancelText="Отмена"
-        >
-          <Input
-            placeholder="Введите номер запроса"
-            value={requestNumber}
-            onChange={e => setRequestNumber(e.target.value)}
-            onPressEnter={handleCreateRequest}
-            disabled={creatingRequest}
-          />
-        </Modal>
-        <Space style={{ marginBottom: 16 }}>
-          <Input
-            placeholder="Введите артикул"
-            value={newCode}
-            onChange={e => setNewCode(e.target.value)}
-            onPressEnter={handleAdd}
-            style={{ width: 200 }}
-          />
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-            Добавить
-          </Button>
-          <label style={{ marginLeft: 12 }}>
-            <Button>Импорт CSV</Button>
-            <input ref={fileInputRef} type="file" accept=".csv" style={{ display: 'none' }} onChange={handleImport} />
-          </label>
-        </Space>
-        <Spin spinning={loading} tip="Загрузка...">
-          <Table
-            className="article-table"
-            dataSource={Array.isArray(articles) ? articles : []}
-            rowKey="id"
-            pagination={false}
-            bordered
-            scroll={{ x: 500 }}
-            rowSelection={!activeRequestId ? {
-              selectedRowKeys,
-              onChange: setSelectedRowKeys,
-              preserveSelectedRowKeys: true,
-            } : undefined}
-            columns={[
-              {
-                title: "Артикул",
-                dataIndex: "code",
-                key: "code",
-                width: 200,
-                ellipsis: true,
-                render: (text, article) => (
-                  <span style={{
-                    background: suppliers[article.id] && suppliers[article.id].length > 0 ? '#d6f5d6' : undefined,
-                    borderRadius: 4,
-                    padding: '2px 8px',
-                    display: 'inline-block',
-                    transition: 'background 0.3s',
-                  }}>{text}</span>
-                ),
-                sorter: (a, b) => (a.code || '').localeCompare(b.code || ''),
-                showSorterTooltip: false,
-              },
-              {
-                title: "Поставщики",
-                key: "actions",
-                width: 400,
-                render: (_, article) => (
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }} className="action-buttons">
-                    <Button
-                      type="primary"
-                      size="large"
-                      style={{ minWidth: 200, fontWeight: 600 }}
-                      icon={suppliers[article.id] && suppliers[article.id].length > 0 ? <ReloadOutlined /> : <SearchOutlined />}
-                      loading={supLoading[article.id]}
-                      onClick={() => handleSearchSuppliers(article.id)}
-                    >
-                      Найти поставщиков
+    <>
+      {/* Кнопка создания запроса */}
+      {!activeRequestId && articlesToAdd.length > 0 && (
+        <Button type="primary" style={{ marginBottom: 16 }} onClick={() => setShowRequestModal(true)}>
+          Создать запрос из этих артикулов
+        </Button>
+      )}
+      <Modal
+        open={showRequestModal}
+        title="Создать запрос"
+        onCancel={() => setShowRequestModal(false)}
+        onOk={handleCreateRequest}
+        confirmLoading={creatingRequest}
+        okText="Создать"
+        cancelText="Отмена"
+      >
+        <Input
+          placeholder="Введите номер запроса"
+          value={requestNumber}
+          onChange={e => setRequestNumber(e.target.value)}
+          onPressEnter={handleCreateRequest}
+          disabled={creatingRequest}
+        />
+      </Modal>
+      <Space style={{ marginBottom: 16 }}>
+        <Input
+          placeholder="Введите артикул"
+          value={newCode}
+          onChange={e => setNewCode(e.target.value)}
+          onPressEnter={handleAdd}
+          style={{ width: 200 }}
+        />
+        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+          Добавить
+        </Button>
+        <label style={{ marginLeft: 12 }}>
+          <Button>Импорт CSV</Button>
+          <input ref={fileInputRef} type="file" accept=".csv" style={{ display: 'none' }} onChange={handleImport} />
+        </label>
+      </Space>
+      <Spin spinning={loading} tip="Загрузка...">
+        <Table
+          className="article-table"
+          dataSource={Array.isArray(articles) ? articles : []}
+          rowKey="id"
+          pagination={false}
+          bordered
+          scroll={{ x: 500 }}
+          rowSelection={!activeRequestId ? {
+            selectedRowKeys,
+            onChange: setSelectedRowKeys,
+            preserveSelectedRowKeys: true,
+          } : undefined}
+          columns={[
+            {
+              title: "Артикул",
+              dataIndex: "code",
+              key: "code",
+              width: 200,
+              ellipsis: true,
+              render: (text, article) => (
+                <span style={{
+                  background: suppliers[article.id] && suppliers[article.id].length > 0 ? '#d6f5d6' : undefined,
+                  borderRadius: 4,
+                  padding: '2px 8px',
+                  display: 'inline-block',
+                  transition: 'background 0.3s',
+                }}>{text}</span>
+              ),
+              sorter: (a, b) => (a.code || '').localeCompare(b.code || ''),
+              showSorterTooltip: false,
+            },
+            {
+              title: "Поставщики",
+              key: "actions",
+              width: 400,
+              render: (_, article) => (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }} className="action-buttons">
+                  <Button
+                    type="primary"
+                    size="large"
+                    style={{ minWidth: 200, fontWeight: 600 }}
+                    icon={suppliers[article.id] && suppliers[article.id].length > 0 ? <ReloadOutlined /> : <SearchOutlined />}
+                    loading={supLoading[article.id]}
+                    onClick={() => handleShowSuppliers(article.id)}
+                  >
+                    {suppliers[article.id] && suppliers[article.id].length > 0 ? 'Обновить' : 'Найти поставщиков'}
+                  </Button>
+                  {/* Кнопка удалить только если не выбран запрос */}
+                  {!activeRequestId && (
+                    <Button danger onClick={() => handleDelete(article.id)}>
+                      Удалить
                     </Button>
-                    {/* Кнопка удалить только если не выбран запрос */}
-                    {!activeRequestId && (
-                      <Button danger onClick={() => handleDelete(article.id)}>
-                        Удалить
-                      </Button>
-                    )}
-                    {/* Кнопка убрать из запроса */}
-                    {activeRequestId && (
-                      <Button danger onClick={() => handleRemoveFromRequest(article.id)}>
-                        Убрать из запроса
-                      </Button>
-                    )}
-                  </div>
-                ),
-                sorter: false,
-                showSorterTooltip: false,
-              },
-            ]}
-            rowClassName={(record) => suppliers[record.id] && suppliers[record.id].length > 0 ? 'article-has-suppliers' : ''}
-            expandable={{
-              expandedRowRender: (article) => (
-                <div style={{ padding: 0 }}>
-                  {suppliers[article.id] && suppliers[article.id].length > 0 ? (
-                    <Table
-                      dataSource={Array.isArray(suppliers[article.id]) ? suppliers[article.id] : []}
-                      rowKey="id"
-                      pagination={false}
-                      size="small"
-                      columns={supplierColumns}
-                      components={{ header: { cell: ResizableTitle } }}
-                      scroll={{ x: Object.values(supplierColWidths).reduce((a, b) => a + b, 0) + 50 }}
-                      bordered
-                      style={{ minWidth: Object.values(supplierColWidths).reduce((a, b) => a + b, 0) + 50, background: '#fff', borderRadius: 8 }}
-                    />
-                  ) : (
-                    <span style={{ color: "#888" }}>Нет данных</span>
+                  )}
+                  {/* Кнопка убрать из запроса */}
+                  {activeRequestId && (
+                    <Button danger onClick={() => handleRemoveFromRequest(article.id)}>
+                      Убрать из запроса
+                    </Button>
                   )}
                 </div>
               ),
-              onExpand: (expanded, article) => {
-                if (expanded && !suppliers[article.id]) {
-                  handleShowSuppliers(article.id);
-                }
-                setCurrentArticleId(expanded ? article.id : null);
-              },
-            }}
-          />
-        </Spin>
-        {activeRequestId && groupedCompanies.length > 0 && (
-          <Card style={{ marginTop: 32, background: '#FCB8131A', border: '1px solid #FCB813' }}>
-            <Title level={4} style={{ color: '#FCB813' }}>Запросить цены у компаний</Title>
-            <List
-              dataSource={groupedCompanies}
-              renderItem={company => (
-                <List.Item
-                  actions={[
-                    <Tooltip title="Отправить письмо на email">
-                      <Button
-                        type="primary"
-                        icon={<MailOutlined />}
-                        loading={emailStatuses[company.email]?.startsWith('⏳')}
-                        onClick={() => handleSendEmail(company)}
-                        disabled={!!emailStatuses[company.email]?.startsWith('✅')}
-                      >
-                        Запросить цены
-                      </Button>
-                    </Tooltip>,
-                    emailStatuses[company.email] && (
-                      <span style={{ minWidth: 120, display: 'inline-block' }}>{emailStatuses[company.email]}</span>
-                    )
-                  ]}
-                >
-                  <List.Item.Meta
-                    title={<span><b>{company.name}</b> <Tag color="#FCB813">{company.email}</Tag></span>}
-                    description={<span>Артикулы: {company.articles.map(a => <Tag key={a}>{a}</Tag>)}</span>}
+              sorter: false,
+              showSorterTooltip: false,
+            },
+          ]}
+          rowClassName={(record) => suppliers[record.id] && suppliers[record.id].length > 0 ? 'article-has-suppliers' : ''}
+          expandable={{
+            expandedRowRender: (article) => (
+              <div style={{ padding: 0 }}>
+                {suppliers[article.id] && suppliers[article.id].length > 0 ? (
+                  <Table
+                    dataSource={Array.isArray(suppliers[article.id]) ? suppliers[article.id] : []}
+                    rowKey="id"
+                    pagination={false}
+                    size="small"
+                    columns={supplierColumns}
+                    components={{ header: { cell: ResizableTitle } }}
+                    scroll={{ x: Object.values(supplierColWidths).reduce((a, b) => a + b, 0) + 50 }}
+                    bordered
+                    style={{ minWidth: Object.values(supplierColWidths).reduce((a, b) => a + b, 0) + 50, background: '#fff', borderRadius: 8 }}
                   />
-                </List.Item>
-              )}
-              locale={{ emptyText: 'Нет компаний с email для отправки запроса.' }}
-            />
-            <Alert type="info" showIcon style={{ marginTop: 16 }} message="Письмо отправляется через внешний сервис. Статус отображается справа от кнопки." />
-          </Card>
-        )}
-        {emailDialogSupplier && (
-          <EmailDialog supplier={emailDialogSupplier} onClose={() => setEmailDialogSupplier(null)} />
-        )}
-        <style>{`
+                ) : (
+                  <span style={{ color: "#888" }}>Нет данных</span>
+                )}
+              </div>
+            ),
+            onExpand: (expanded, article) => {
+              if (expanded && !suppliers[article.id]) {
+                handleShowSuppliers(article.id);
+              }
+              setCurrentArticleId(expanded ? article.id : null);
+            },
+          }}
+        />
+      </Spin>
+      {activeRequestId && groupedCompanies.length > 0 && (
+        <Card style={{ marginTop: 32, background: '#FCB8131A', border: '1px solid #FCB813' }}>
+          <Title level={4} style={{ color: '#FCB813' }}>Запросить цены у компаний</Title>
+          <List
+            dataSource={groupedCompanies}
+            renderItem={company => (
+              <List.Item
+                actions={[
+                  <Tooltip title="Отправить письмо на email">
+                    <Button
+                      type="primary"
+                      icon={<MailOutlined />}
+                      loading={emailStatuses[company.email]?.startsWith('⏳')}
+                      onClick={() => handleSendEmail(company)}
+                      disabled={!!emailStatuses[company.email]?.startsWith('✅')}
+                    >
+                      Запросить цены
+                    </Button>
+                  </Tooltip>,
+                  emailStatuses[company.email] && (
+                    <span style={{ minWidth: 120, display: 'inline-block' }}>{emailStatuses[company.email]}</span>
+                  )
+                ]}
+              >
+                <List.Item.Meta
+                  title={<span><b>{company.name}</b> <Tag color="#FCB813">{company.email}</Tag></span>}
+                  description={<span>Артикулы: {company.articles.map(a => <Tag key={a}>{a}</Tag>)}</span>}
+                />
+              </List.Item>
+            )}
+            locale={{ emptyText: 'Нет компаний с email для отправки запроса.' }}
+          />
+          <Alert type="info" showIcon style={{ marginTop: 16 }} message="Письмо отправляется через внешний сервис. Статус отображается справа от кнопки." />
+        </Card>
+      )}
+      {emailDialogSupplier && (
+        <EmailDialog supplier={emailDialogSupplier} onClose={() => setEmailDialogSupplier(null)} />
+      )}
+      <style>{`
 .react-resizable-handle {
   display: none !important;
 }
@@ -967,8 +958,7 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
   transition: background 0.3s;
 }
 `}</style>
-      </Card>
-    </div>
+    </>
   );
 };
 

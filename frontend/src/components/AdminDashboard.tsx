@@ -1582,7 +1582,11 @@ const AdminDashboard: React.FC = () => {
                   pageSize: 10,
                   showSizeChanger: true,
                   showTotal: (total, range) =>
-                    `${range[0]}-${range[1]} из ${total} записей`
+                    `${range[0]}-${range[1]} из ${total} записей`,
+                  pageSizeOptions: ['10', '20', '50'],
+                  size: 'default',
+                  position: ['bottomCenter'],
+                  style: { marginTop: '16px' }
                 }}
                 expandable={{
                   expandedRowRender: (record) => (
@@ -1768,7 +1772,11 @@ const AdminDashboard: React.FC = () => {
               pageSize: 10,
               showSizeChanger: true,
               showTotal: (total, range) =>
-                `${range[0]}-${range[1]} из ${total} записей`
+                `${range[0]}-${range[1]} из ${total} записей`,
+              pageSizeOptions: ['10', '20', '50'],
+              size: 'default',
+              position: ['bottomCenter'],
+              style: { marginTop: '16px' }
             }}
             size="small"
             scroll={{ x: 'max-content' }}

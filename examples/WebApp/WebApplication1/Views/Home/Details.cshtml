@@ -1,0 +1,406 @@
+﻿@model DataAccess.Models.OcrPhoto
+
+@{
+    Layout = null;
+}
+
+<div class="container p-2">
+    <div class="row g-2">
+        <div class="col-md-6">
+            @if (Model.ImageData != null && Model.ImageData.Length > 0)
+            {
+                var base64 = Convert.ToBase64String(Model.ImageData);
+                <div class="card mb-2">
+                    <div class="card-header py-2">
+                        <h6 class="mb-0">
+                            <i class="fas fa-image"></i> Оригинальная визитка
+                        </h6>
+                    </div>
+                    <div class="card-body text-center py-2">
+                        <img src="data:image/jpeg;base64,@base64" alt="Визитка" class="img-fluid rounded" style="max-width: 100%; max-height: 200px; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);" />
+                    </div>
+                </div>
+            }
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card mb-2">
+                <div class="card-header py-2">
+                    <h6 class="mb-0">
+                        <i class="fas fa-file-text"></i> Распознанный текст
+                    </h6>
+                </div>
+                <div class="card-body py-2">
+                    <div class="bg-dark p-2 rounded" style="max-height: 200px; overflow-y: auto;">
+                        <pre class="text-light mb-0" style="white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 0.85rem;">@Model.ExtractedText</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header py-2">
+            <h6 class="mb-0">
+                <i class="fas fa-edit"></i> Редактирование данных
+            </h6>
+        </div>
+        <div class="card-body py-2">
+            <form id="editForm" method="post" action="/Home/EditCustomFields" onsubmit="return saveDetails(event)">
+                @Html.AntiForgeryToken()
+                @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+                <input type="hidden" name="id" value="@Model.Id" />
+
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <div class="mb-1">
+                            <label for="RepresentativePhone" class="form-label small">
+                                <i class="fas fa-phone"></i> Телефон представителя
+                            </label>
+                            <input type="text" name="RepresentativePhone" class="form-control form-control-sm" value="@Model.RepresentativePhone" placeholder="+7 (XXX) XXX-XX-XX" />
+                            @Html.ValidationMessage("RepresentativePhone", "", new { @class = "text-danger" })
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-1">
+                            <label for="Email" class="form-label small">
+                                <i class="fas fa-envelope"></i> Email
+                            </label>
+                            <input type="email" name="Email" class="form-control form-control-sm" value="@Model.Email" placeholder="example@email.com" />
+                            @Html.ValidationMessage("Email", "", new { @class = "text-danger" })
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <div class="mb-1">
+                            <label for="City" class="form-label small">
+                                <i class="fas fa-city"></i> Город
+                            </label>
+                            <input type="text" name="City" class="form-control form-control-sm" value="@Model.City" placeholder="Москва" />
+                            @Html.ValidationMessage("City", "", new { @class = "text-danger" })
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-1">
+                            <label for="BirthDate" class="form-label small">
+                                <i class="fas fa-birthday-cake"></i> Дата рождения
+                            </label>
+                            <input type="date" name="BirthDate" class="form-control form-control-sm" value="@(Model.BirthDate?.ToString("yyyy-MM-dd"))" />
+                            @Html.ValidationMessage("BirthDate", "", new { @class = "text-danger" })
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <div class="mb-1">
+                            <label for="CarBrand" class="form-label small">
+                                <i class="fas fa-car"></i> Марка автомобиля
+                            </label>
+                            <input type="text" name="CarBrand" class="form-control form-control-sm" value="@Model.CarBrand" placeholder="ЛАДА" />
+                            @Html.ValidationMessage("CarBrand", "", new { @class = "text-danger" })
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-1">
+                            <label for="CarNumber" class="form-label small">
+                                <i class="fas fa-hashtag"></i> Номер автомобиля
+                            </label>
+                            <input type="text" name="CarNumber" class="form-control form-control-sm" value="@Model.CarNumber" placeholder="А123БВ" />
+                            @Html.ValidationMessage("CarNumber", "", new { @class = "text-danger" })
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <div class="mb-1">
+                            <label for="IsMarried" class="form-label small">
+                                <i class="fas fa-heart"></i> Семейное положение
+                            </label>
+                            <select name="IsMarried" id="IsMarried" class="form-select form-select-sm" onchange="toggleSpouseFields()">
+                                <option value="false" @(!Model.IsMarried ? "selected" : "")>Не женат/Не замужем</option>
+                                <option value="true" @(Model.IsMarried ? "selected" : "")>Женат/Замужем</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-1">
+                            <label for="hasChildren" class="form-label small">
+                                <i class="fas fa-baby"></i> Дети
+                            </label>
+                            <select name="HasChildren" id="hasChildren" class="form-select form-select-sm" onchange="toggleChildrenFields()">
+                                <option value="false" @(!Model.HasChildren ? "selected" : "")>Нет детей</option>
+                                <option value="true" @(Model.HasChildren ? "selected" : "")>Есть дети</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="spouseFields" style="display: @(Model.IsMarried ? "block" : "none")" class="border-start border-warning ps-2 ms-2">
+                    <h6 class="text-warning mb-1">
+                        <i class="fas fa-user-friends"></i> Данные супруга/супруги
+                    </h6>
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <div class="mb-1">
+                                <label for="SpouseFullName" class="form-label small">ФИО супруга/супруги</label>
+                                <input type="text" id="SpouseFullName" name="SpouseFullName" class="form-control form-control-sm" value="@Model.SpouseFullName" placeholder="Иванов Иван Иванович" />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-1">
+                                <label for="SpouseBirthDate" class="form-label small">Дата рождения супруга/супруги</label>
+                                <input type="date" id="SpouseBirthDate" name="SpouseBirthDate" class="form-control form-control-sm" value="@(Model.SpouseBirthDate?.ToString("yyyy-MM-dd"))" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="childrenFields" style="display: @(Model.HasChildren ? "block" : "none")" class="border-start border-info ps-2 ms-2">
+                    <h6 class="text-info mb-1">
+                        <i class="fas fa-baby"></i> Информация о детях
+                    </h6>
+                    <div class="mb-1">
+                        <label for="ChildrenCount" class="form-label small">Количество детей</label>
+                        <input type="number" name="ChildrenCount" class="form-control form-control-sm" value="@Model.ChildrenCount" min="1" id="childrenCountInput" onchange="renderChildrenInputs()" />
+                    </div>
+                    <div id="childrenInputs">
+                        @for (int i = 0; i < (Model.ChildrenCount ?? 0); i++)
+                        {
+                            var child = Model.Children?.ElementAtOrDefault(i);
+                            <div class="child-input border rounded p-2 mb-2" style="background: rgba(23, 162, 184, 0.1);">
+                                <h6 class="text-info mb-2">Ребенок @(i + 1)</h6>
+                                <div class="row g-2">
+                                    <div class="col-md-4">
+                                        <label class="form-label">Имя</label>
+                                        <input type="text" name="Children[@i].Name" class="form-control form-control-sm" placeholder="Имя ребенка" value="@(child?.Name)" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Возраст</label>
+                                        <input type="number" name="Children[@i].Age" class="form-control form-control-sm" placeholder="Возраст" value="@(child?.Age)" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Дата рождения</label>
+                                        <input type="date" name="Children[@i].BirthDate" class="form-control form-control-sm" value="@(child?.BirthDate?.ToString("yyyy-MM-dd"))" />
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div id="saveResult"></div>
+
+                <div class="d-flex justify-content-end gap-2 mt-2">
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal()">
+                        <i class="fas fa-times"></i> Отмена
+                    </button>
+                    <button type="submit" class="btn btn-warning btn-sm">
+                        <i class="fas fa-save"></i> Сохранить
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Темная тема для модального окна */
+.container {
+    background: #2c2c2c;
+    color: #ffffff;
+}
+
+.card {
+    background: #333333;
+    border: 1px solid #444444;
+    color: #ffffff;
+}
+
+.card-header {
+    background: linear-gradient(135deg, #FFD700 0%, #E6B800 100%);
+    color: #000000;
+    border-bottom: 1px solid #444444;
+}
+
+.card-body {
+    background: #333333;
+    color: #ffffff;
+}
+
+.form-label {
+    color: #ffffff;
+}
+
+.form-control, .form-select {
+    background: #444444;
+    border: 1px solid #555555;
+    color: #ffffff;
+}
+
+.form-control:focus, .form-select:focus {
+    background: #555555;
+    border-color: #FFD700;
+    color: #ffffff;
+    box-shadow: 0 0 0 0.2rem rgba(255, 215, 0, 0.25);
+}
+
+.form-control::placeholder {
+    color: #999999;
+}
+
+.border-warning {
+    border-color: #FFD700 !important;
+}
+
+.border-info {
+    border-color: #17a2b8 !important;
+}
+
+.text-warning {
+    color: #FFD700 !important;
+}
+
+.text-info {
+    color: #17a2b8 !important;
+}
+
+.bg-dark {
+    background: #1a1a1a !important;
+}
+
+.text-light {
+    color: #ffffff !important;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    border-color: #6c757d;
+    color: #ffffff;
+}
+
+.btn-warning {
+    background: linear-gradient(135deg, #FFD700 0%, #E6B800 100%);
+    border-color: #E6B800;
+    color: #000000;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.child-input {
+    background: rgba(23, 162, 184, 0.1) !important;
+    border-color: #17a2b8 !important;
+}
+
+.alert-success {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: #ffffff;
+    border: none;
+}
+
+.alert-danger {
+    background: linear-gradient(135deg, #dc3545 0%, #c0392b 100%);
+    color: #ffffff;
+    border: none;
+}
+</style>
+
+<script>
+function toggleSpouseFields() {
+    var isMarried = document.getElementById('IsMarried').value === "true";
+    document.getElementById('spouseFields').style.display = isMarried ? 'block' : 'none';
+}
+
+function toggleChildrenFields() {
+    var hasChildren = document.getElementById('hasChildren').value === "true";
+    document.getElementById('childrenFields').style.display = hasChildren ? 'block' : 'none';
+}
+
+function renderChildrenInputs() {
+    var count = parseInt(document.getElementById('childrenCountInput').value) || 0;
+    var container = document.getElementById('childrenInputs');
+    container.innerHTML = '';
+
+    for (var i = 0; i < count; i++) {
+        var childDiv = document.createElement('div');
+        childDiv.className = 'child-input border rounded p-2 mb-2';
+        childDiv.style.background = 'rgba(23, 162, 184, 0.1)';
+        
+        childDiv.innerHTML = `
+            <h6 class="text-info mb-2">Ребенок ${i + 1}</h6>
+            <div class="row g-2">
+                <div class="col-md-4">
+                    <label class="form-label">Имя</label>
+                    <input type="text" name="Children[${i}].Name" class="form-control form-control-sm" placeholder="Имя ребенка" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Возраст</label>
+                    <input type="number" name="Children[${i}].Age" class="form-control form-control-sm" placeholder="Возраст" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Дата рождения</label>
+                    <input type="date" name="Children[${i}].BirthDate" class="form-control form-control-sm" />
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(childDiv);
+    }
+}
+
+function closeModal() {
+    var modalElement = document.getElementById('detailsModal');
+    var modal = bootstrap.Modal.getInstance(modalElement);
+    
+    if (modal) {
+        modal.hide();
+    }
+    
+    // Принудительно скрываем модальное окно
+    if (modalElement) {
+        modalElement.classList.remove('show');
+        modalElement.style.display = 'none';
+        modalElement.setAttribute('aria-hidden', 'true');
+    }
+    
+    // Убираем backdrop
+    var backdrop = document.getElementById('modalBackdrop');
+    if (backdrop) {
+        backdrop.remove();
+    }
+    
+    // Убираем класс modal-open с body
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+}
+
+function saveDetails(event) {
+    event.preventDefault();
+    var form = document.getElementById('editForm');
+    var formData = new FormData(form);
+
+    fetch(form.action, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (response.ok) {
+            document.getElementById('saveResult').innerHTML = '<div class="alert alert-success mt-2">✅ Данные успешно обновлены!</div>';
+            setTimeout(() => {
+                closeModal();
+                setTimeout(() => location.reload(), 400);
+            }, 1200);
+        } else {
+            document.getElementById('saveResult').innerHTML = '<div class="alert alert-danger mt-2">❌ Ошибка при сохранении</div>';
+        }
+    });
+    return false;
+}
+</script>

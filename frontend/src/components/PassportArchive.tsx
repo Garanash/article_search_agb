@@ -326,15 +326,15 @@ const PassportArchive: React.FC = () => {
   const stats = getStatistics();
 
   return (
-    <div style={{ maxWidth: '100%', margin: '0 auto', padding: '0 16px' }}>
+    <div style={{ width: '100%', minHeight: '100vh' }}>
       <Title level={2} style={{ marginBottom: '24px', textAlign: 'center' }}>
         Архив паспортов бурового оборудования
       </Title>
 
       {/* Статистика */}
-      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-        <Col xs={24} sm={8}>
-          <Card>
+      <Row gutter={[16, 16]} style={{ marginBottom: '24px', width: '100%' }}>
+        <Col xs={24} sm={8} style={{ width: '100%' }}>
+          <Card style={{ width: '100%' }}>
             <Statistic
               title="Всего паспортов"
               value={stats.total}
@@ -342,8 +342,8 @@ const PassportArchive: React.FC = () => {
             />
           </Card>
         </Col>
-        <Col xs={24} sm={8}>
-          <Card>
+        <Col xs={24} sm={8} style={{ width: '100%' }}>
+          <Card style={{ width: '100%' }}>
             <Statistic
               title="Активных"
               value={stats.active}
@@ -351,8 +351,8 @@ const PassportArchive: React.FC = () => {
             />
           </Card>
         </Col>
-        <Col xs={24} sm={8}>
-          <Card>
+        <Col xs={24} sm={8} style={{ width: '100%' }}>
+          <Card style={{ width: '100%' }}>
             <Statistic
               title="В архиве"
               value={stats.archived}
@@ -363,9 +363,9 @@ const PassportArchive: React.FC = () => {
       </Row>
 
       {/* Фильтры и поиск */}
-      <Card style={{ marginBottom: '24px', borderRadius: '12px' }}>
-        <Row gutter={[16, 16]} align="middle">
-          <Col xs={24} sm={12} md={8}>
+      <Card style={{ marginBottom: '24px', borderRadius: '12px', width: '100%' }}>
+        <Row gutter={[16, 16]} align="middle" style={{ width: '100%' }}>
+          <Col xs={24} sm={12} md={8} style={{ width: '100%' }}>
             <Input
               placeholder="Поиск по номеру паспорта, коду 1С, артикулу..."
               prefix={<SearchOutlined />}
@@ -373,9 +373,10 @@ const PassportArchive: React.FC = () => {
               onChange={(e) => setSearchText(e.target.value)}
               onPressEnter={(e) => handleSearch((e.target as HTMLInputElement).value)}
               allowClear
+              style={{ width: '100%' }}
             />
           </Col>
-          <Col xs={24} sm={12} md={4}>
+          <Col xs={24} sm={12} md={4} style={{ width: '100%' }}>
             <Select
               placeholder="Статус"
               value={statusFilter}
@@ -387,7 +388,7 @@ const PassportArchive: React.FC = () => {
               <Option value="archived">Архив</Option>
             </Select>
           </Col>
-          <Col xs={24} sm={12} md={6}>
+          <Col xs={24} sm={12} md={6} style={{ width: '100%' }}>
             <RangePicker
               placeholder={['Дата от', 'Дата до']}
               onChange={(dates) => {
@@ -404,7 +405,7 @@ const PassportArchive: React.FC = () => {
               style={{ width: '100%' }}
             />
           </Col>
-          <Col xs={24} sm={12} md={6}>
+          <Col xs={24} sm={12} md={6} style={{ width: '100%' }}>
             <Space>
               <Button
                 icon={<FilterOutlined />}
@@ -445,7 +446,7 @@ const PassportArchive: React.FC = () => {
             </Button>
           </Space>
         }
-        style={{ borderRadius: '12px' }}
+        style={{ borderRadius: '12px', width: '100%' }}
       >
         <Table
           columns={columns}
@@ -472,10 +473,15 @@ const PassportArchive: React.FC = () => {
                 current: 1,
                 pageSize: size
               }));
-            }
+            },
+            pageSizeOptions: ['10', '20', '50', '100'],
+            size: 'default',
+            position: ['bottomCenter'],
+            style: { marginTop: '16px' }
           }}
           scroll={{ x: 1400 }}
           size="small"
+          style={{ width: '100%' }}
         />
       </Card>
 

@@ -7,7 +7,6 @@ import './styles/professional.css';
 
 // Импорт компонентов
 import ProfessionalSidebar from './components/professional/ProfessionalSidebar';
-import ProfessionalDashboard from './components/professional/ProfessionalDashboard';
 import UserDashboard from './components/UserDashboard';
 import AdminDashboard from './components/AdminDashboard';
 import ArticleTable from './components/ArticleTable';
@@ -20,6 +19,12 @@ import PhoneDirectory from './components/PhoneDirectory';
 import ProfileManager from './components/ProfileManager';
 import CreatePassport from './components/CreatePassport';
 import PassportArchive from './components/PassportArchive';
+import OrderForm from './components/OrderForm';
+import OrdersArchive from './components/OrdersArchive';
+import JobApplicationForm from './components/JobApplicationForm';
+import DocumentRecognition from './components/DocumentRecognition';
+import ApplicantsCatalog from './components/ApplicantsCatalog';
+import AboutUs from './components/AboutUs';
 import LoginForm from './components/LoginForm';
 
 const { Content } = Layout;
@@ -35,7 +40,7 @@ const App: React.FC = () => {
 };
 
 const AppContent: React.FC = () => {
-  const { user, token, setToken, isAdmin, logout, loading } = useAuth();
+  const { user, token, setToken, isAdmin, loading } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
@@ -55,13 +60,6 @@ const AppContent: React.FC = () => {
   const handleLogin = (token: string) => {
     console.log('App: handleLogin called with token:', token ? 'present' : 'missing');
     setToken(token);
-  };
-
-  // Обработчик выхода из системы
-  const handleLogout = () => {
-    console.log('App: handleLogout called');
-    logout();
-    setActiveTab('dashboard');
   };
 
   // Обработчик изменения вкладки
@@ -107,6 +105,8 @@ const AppContent: React.FC = () => {
     switch (activeTab) {
       case 'dashboard':
         return isAdmin ? <AdminDashboard /> : <UserDashboard />;
+      case 'about-us':
+        return <AboutUs />;
       case 'articles':
         return <ArticleTable />;
       case 'users':
@@ -125,12 +125,25 @@ const AppContent: React.FC = () => {
         return <CreatePassport />;
       case 'passport-archive':
         return <PassportArchive />;
+      case 'order-form':
+        return <OrderForm />;
+      case 'orders-archive':
+        return <OrdersArchive />;
+      case 'job-application':
+        return <JobApplicationForm />;
       case 'profile':
         return <ProfileManager />;
+      case 'document-recognition':
+        return <DocumentRecognition />;
+      case 'applicants-catalog':
+        return <ApplicantsCatalog />;
       default:
         return isAdmin ? <AdminDashboard /> : <UserDashboard />;
     }
   };
+
+  // Проверяем, нужно ли убрать отступы для полноэкранных компонентов
+  const isFullWidthComponent = activeTab === 'orders-archive' || activeTab === 'applicants-catalog';
 
   // Если пользователь не авторизован, показываем только форму входа
   if (!isAuthenticated) {
@@ -165,12 +178,12 @@ const AppContent: React.FC = () => {
           transition: 'margin-left 0.2s ease'
         }}>
           <Content style={{ 
-            margin: '24px',
-            padding: '32px',
-            backgroundColor: '#ffffff',
-            borderRadius: '12px',
+            margin: isFullWidthComponent ? '0' : '24px',
+            padding: isFullWidthComponent ? '0' : '32px',
+            backgroundColor: isFullWidthComponent ? 'transparent' : '#ffffff',
+            borderRadius: isFullWidthComponent ? '0' : '12px',
             minHeight: 'calc(100vh - 48px)',
-            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
+            boxShadow: isFullWidthComponent ? 'none' : '0 2px 8px rgba(0, 0, 0, 0.1)'
           }}>
             {renderMainContent()}
           </Content>

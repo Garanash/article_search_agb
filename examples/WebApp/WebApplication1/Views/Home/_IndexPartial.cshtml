@@ -1,0 +1,405 @@
+@model List<DataAccess.Models.OcrPhoto>
+
+@{
+    int currentPage = ViewBag.CurrentPage ?? 1;
+    int pageSize = ViewBag.PageSize ?? 10;
+    int totalCount = ViewBag.TotalCount ?? Model.Count;
+    int totalPages = ViewBag.TotalPages ?? (int)Math.Ceiling((double)totalCount / pageSize);
+    string currentFilter = ViewData["CurrentFilter"] as string ?? "";
+    string sortOrder = ViewData["sortOrder"] as string ?? "";
+}
+
+@section Styles {
+    <style>
+        /* Улучшенные badge'и - всегда видны и красивы */
+        .badge {
+            font-size: 0.85rem;
+            font-weight: 600;
+            padding: 0.5rem 0.75rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .badge:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Специальные стили для разных типов badge'ей */
+        .badge.bg-secondary {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%) !important;
+            color: white !important;
+        }
+        
+        .badge.bg-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
+            color: white !important;
+        }
+        
+        .badge.bg-primary {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%) !important;
+            color: white !important;
+        }
+        
+        .badge.bg-info {
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%) !important;
+            color: white !important;
+        }
+        
+        .badge.bg-warning {
+            background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%) !important;
+            color: #212529 !important;
+        }
+        
+        .badge.bg-dark {
+            background: linear-gradient(135deg, #343a40 0%, #212529 100%) !important;
+            color: white !important;
+        }
+        
+        .badge.bg-danger {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%) !important;
+            color: white !important;
+        }
+        
+
+        
+        /* Кнопки действий */
+        .action-buttons {
+            display: flex;
+            gap: 0.25rem;
+            flex-wrap: wrap;
+        }
+        
+        .action-buttons .btn {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+        
+        /* Разделительные линии между строками */
+        .table tbody tr {
+            border-bottom: 2px solid rgba(212, 175, 55, 0.3); /* Золотая линия между строками */
+        }
+        
+        .table tbody tr:last-child {
+            border-bottom: none; /* Убираем линию у последней строки */
+        }
+        
+        .table tbody tr:hover {
+            border-bottom-color: rgba(212, 175, 55, 0.6); /* Усиливаем линию при наведении */
+        }
+    </style>
+}
+
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>
+                    <a href="javascript:void(0)" onclick="sortTable('@(sortOrder == "Id" ? "Id_desc" : "Id")')" class="text-decoration-none text-dark" style="cursor: pointer;">
+                        <i class="fas fa-hashtag"></i> ID
+                        @if (sortOrder == "Id")
+                        {
+                            <i class="fas fa-sort-up"></i>
+                        }
+                        else if (sortOrder == "Id_desc")
+                        {
+                            <i class="fas fa-sort-down"></i>
+                        }
+                        else
+                        {
+                            <i class="fas fa-sort text-muted"></i>
+                        }
+                    </a>
+                </th>
+
+                <th>
+                    <a href="javascript:void(0)" onclick="sortTable('@(sortOrder == "ExtractedText" ? "ExtractedText_desc" : "ExtractedText")')" class="text-decoration-none text-dark" style="cursor: pointer;">
+                        <i class="fas fa-file-text"></i> Текст
+                        @if (sortOrder == "ExtractedText")
+                        {
+                            <i class="fas fa-sort-up"></i>
+                        }
+                        else if (sortOrder == "ExtractedText_desc")
+                        {
+                            <i class="fas fa-sort-down"></i>
+                        }
+                        else
+                        {
+                            <i class="fas fa-sort text-muted"></i>
+                        }
+                    </a>
+                </th>
+                <th>
+                    <a href="javascript:void(0)" onclick="sortTable('@(sortOrder == "City" ? "City_desc" : "City")')" class="text-decoration-none text-dark" style="cursor: pointer;">
+                        <i class="fas fa-map-marker-alt"></i> Город
+                        @if (sortOrder == "City")
+                        {
+                            <i class="fas fa-sort-up"></i>
+                        }
+                        else if (sortOrder == "City_desc")
+                        {
+                            <i class="fas fa-sort-down"></i>
+                        }
+                        else
+                        {
+                            <i class="fas fa-sort text-muted"></i>
+                        }
+                    </a>
+                </th>
+                <th>
+                    <a href="javascript:void(0)" onclick="sortTable('@(sortOrder == "RepresentativePhone" ? "RepresentativePhone_desc" : "RepresentativePhone")')" class="text-decoration-none text-dark" style="cursor: pointer;">
+                        <i class="fas fa-phone"></i> Телефон
+                        @if (sortOrder == "RepresentativePhone")
+                        {
+                            <i class="fas fa-sort-up"></i>
+                        }
+                        else if (sortOrder == "RepresentativePhone_desc")
+                        {
+                            <i class="fas fa-sort-down"></i>
+                        }
+                        else
+                        {
+                            <i class="fas fa-sort text-muted"></i>
+                        }
+                    </a>
+                </th>
+                <th>
+                    <a href="javascript:void(0)" onclick="sortTable('@(sortOrder == "Email" ? "Email_desc" : "Email")')" class="text-decoration-none text-dark" style="cursor: pointer;">
+                        <i class="fas fa-envelope"></i> Email
+                        @if (sortOrder == "Email")
+                        {
+                            <i class="fas fa-sort-up"></i>
+                        }
+                        else if (sortOrder == "Email_desc")
+                        {
+                            <i class="fas fa-sort-down"></i>
+                        }
+                        else
+                        {
+                            <i class="fas fa-sort text-muted"></i>
+                        }
+                    </a>
+                </th>
+                <th>
+                    <a href="javascript:void(0)" onclick="sortTable('@(sortOrder == "BirthDate" ? "BirthDate_desc" : "BirthDate")')" class="text-decoration-none text-dark" style="cursor: pointer;">
+                        <i class="fas fa-calendar"></i> Дата рождения
+                        @if (sortOrder == "BirthDate")
+                        {
+                            <i class="fas fa-sort-up"></i>
+                        }
+                        else if (sortOrder == "BirthDate_desc")
+                        {
+                            <i class="fas fa-sort-down"></i>
+                        }
+                        else
+                        {
+                            <i class="fas fa-sort text-muted"></i>
+                        }
+                    </a>
+                </th>
+
+                <th>
+                    <a href="javascript:void(0)" onclick="sortTable('@(sortOrder == "CarBrand" ? "CarBrand_desc" : "CarBrand")')" class="text-decoration-none text-dark" style="cursor: pointer;">
+                        <i class="fas fa-car"></i> Автомобиль
+                        @if (sortOrder == "CarBrand")
+                        {
+                            <i class="fas fa-sort-up"></i>
+                        }
+                        else if (sortOrder == "CarBrand_desc")
+                        {
+                            <i class="fas fa-sort-down"></i>
+                        }
+                        else
+                        {
+                            <i class="fas fa-sort text-muted"></i>
+                        }
+                    </a>
+                </th>
+                <th>
+                    <a href="javascript:void(0)" onclick="sortTable('@(sortOrder == "IsMarried" ? "IsMarried_desc" : "IsMarried")')" class="text-decoration-none text-dark" style="cursor: pointer;">
+                        <i class="fas fa-heart"></i> Семья
+                        @if (sortOrder == "IsMarried")
+                        {
+                            <i class="fas fa-sort-up"></i>
+                        }
+                        else if (sortOrder == "IsMarried_desc")
+                        {
+                            <i class="fas fa-sort-down"></i>
+                        }
+                        else
+                        {
+                            <i class="fas fa-sort text-muted"></i>
+                        }
+                    </a>
+                </th>
+                <th>
+                    <a href="javascript:void(0)" onclick="sortTable('@(sortOrder == "HasChildren" ? "HasChildren_desc" : "HasChildren")')" class="text-decoration-none text-dark" style="cursor: pointer;">
+                        <i class="fas fa-child"></i> Дети
+                        @if (sortOrder == "HasChildren")
+                        {
+                            <i class="fas fa-sort-up"></i>
+                        }
+                        else if (sortOrder == "HasChildren_desc")
+                        {
+                            <i class="fas fa-sort-down"></i>
+                        }
+                        else
+                        {
+                            <i class="fas fa-sort text-muted"></i>
+                        }
+                    </a>
+                </th>
+                <th>
+                    <i class="fas fa-cogs"></i> Действия
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var photo in Model)
+            {
+                <tr>
+                    <td>
+                        <span class="badge bg-secondary">@photo.Id</span>
+                    </td>
+
+                    <td>
+                        <div class="text-truncate" style="max-width: 200px;" title="@photo.ExtractedText">
+                            @(photo.ExtractedText.Length > 50 ? photo.ExtractedText.Substring(0, 50) + "..." : photo.ExtractedText)
+                        </div>
+                    </td>
+                    <td>
+                        @if (!string.IsNullOrEmpty(photo.City))
+                        {
+                            <span class="badge bg-success">@photo.City</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">-</span>
+                        }
+                    </td>
+                    <td>
+                        @if (!string.IsNullOrEmpty(photo.RepresentativePhone))
+                        {
+                            <span class="badge bg-primary">@photo.RepresentativePhone</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">-</span>
+                        }
+                    </td>
+                    <td>
+                        @if (!string.IsNullOrEmpty(photo.Email))
+                        {
+                            <span class="badge bg-info">@photo.Email</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">-</span>
+                        }
+                    </td>
+                    <td>
+                        @if (photo.BirthDate.HasValue)
+                        {
+                            <span class="badge bg-warning text-dark">@photo.BirthDate.Value.ToString("dd.MM.yyyy")</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">-</span>
+                        }
+                    </td>
+
+                    <td>
+                        @if (!string.IsNullOrEmpty(photo.CarBrand) || !string.IsNullOrEmpty(photo.CarNumber))
+                        {
+                            <div>
+                                @if (!string.IsNullOrEmpty(photo.CarBrand))
+                                {
+                                    <span class="badge bg-dark">@photo.CarBrand</span>
+                                }
+                                @if (!string.IsNullOrEmpty(photo.CarNumber))
+                                {
+                                    <span class="badge bg-dark">@photo.CarNumber</span>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <span class="text-muted">-</span>
+                        }
+                    </td>
+                    <td>
+                        @if (photo.IsMarried)
+                        {
+                            <span class="badge bg-danger">
+                                <i class="fas fa-heart"></i> Женат
+                            </span>
+                            @if (!string.IsNullOrEmpty(photo.SpouseFullName))
+                            {
+                                <br><small>@photo.SpouseFullName</small>
+                            }
+                        }
+                        else
+                        {
+                            <span class="text-muted">-</span>
+                        }
+                    </td>
+                    <td>
+                        @if (photo.HasChildren && photo.ChildrenCount > 0)
+                        {
+                            <span class="badge bg-info">
+                                <i class="fas fa-child"></i> @photo.ChildrenCount
+                            </span>
+                            @if (photo.Children != null && photo.Children.Any())
+                            {
+                                <br>
+                                @foreach (var child in photo.Children.Take(2))
+                                {
+                                    <small>@child.Name</small><br>
+                                }
+                                @if (photo.Children.Count() > 2)
+                                {
+                                    <small class="text-muted">+@(photo.Children.Count() - 2)</small>
+                                }
+                            }
+                        }
+                        else
+                        {
+                            <span class="text-muted">-</span>
+                        }
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn btn-success btn-sm" onclick="editRecord(@photo.Id)" title="Редактировать">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- Пагинация -->
+@if (totalPages > 1)
+{
+    <nav aria-label="Навигация по страницам">
+        <ul class="pagination justify-content-center mt-4">
+            <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                <a class="page-link" href="javascript:void(0)" onclick="return goToPage(@(currentPage - 1))">&laquo; Назад</a>
+            </li>
+            @for (int i = 1; i <= totalPages; i++)
+            {
+                <li class="page-item @(i == currentPage ? "active" : "")">
+                    <a class="page-link" href="javascript:void(0)" onclick="return goToPage(@i)">@i</a>
+                </li>
+            }
+            <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                <a class="page-link" href="javascript:void(0)" onclick="return goToPage(@(currentPage + 1))">Вперёд &raquo;</a>
+            </li>
+        </ul>
+    </nav>
+} 

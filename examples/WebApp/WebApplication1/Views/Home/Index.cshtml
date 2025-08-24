@@ -1,0 +1,2303 @@
+﻿@model List<DataAccess.Models.OcrPhoto>
+
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Алмазгеобур";
+    int currentPage = ViewBag.CurrentPage ?? 1;
+    int pageSize = ViewBag.PageSize ?? 10;
+    int totalCount = ViewBag.TotalCount ?? Model.Count;
+    int totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+    string currentFilter = ViewData["CurrentFilter"] as string ?? "";
+    string sortOrder = ViewData["sortOrder"] as string ?? "";
+}
+
+<!-- Индикатор загрузки -->
+<div id="loadingIndicator" class="loading-indicator">
+    <i class="fas fa-spinner fa-spin me-2"></i>
+    Загрузка...
+</div>
+
+<!-- Toast-уведомления -->
+<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;">
+    <div id="successToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header bg-success text-white">
+            <i class="fas fa-check-circle me-2"></i>
+            <strong class="me-auto">Успешно!</strong>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Закрыть"></button>
+        </div>
+        <div class="toast-body" id="successToastBody">
+            Операция выполнена успешно
+        </div>
+    </div>
+    
+    <div id="errorToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header bg-danger text-white">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            <strong class="me-auto">Ошибка!</strong>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Закрыть"></button>
+        </div>
+        <div class="toast-body" id="errorToastBody">
+            Произошла ошибка
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Новый макет с календарем рядом с заголовком -->
+<div class="new-layout fade-in">
+    <!-- Заголовок с календарем -->
+    <div class="header-with-calendar">
+        <div class="main-title-section">
+            <h1 class="main-title">
+                <i class="fas fa-gem"></i> Алмазгеобур
+            </h1>
+            <p class="main-subtitle">Управление базой распознанных визиток</p>
+        </div>
+        
+
+    </div>
+    
+    <!-- Новый макет: база визиток слева, календарь справа -->
+    <div class="data-layout">
+        <!-- База визиток слева -->
+        <div class="data-panel slide-up">
+            <div class="panel-header">
+                <i class="fas fa-list me-2"></i> База распознанных визиток
+            </div>
+        
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>
+                            <a href="javascript:void(0)" onclick="sortTable('@(sortOrder == "Id" ? "Id_desc" : "Id")')" class="text-decoration-none text-dark" style="cursor: pointer;">
+                                <i class="fas fa-hashtag"></i> ID
+                                @if (sortOrder == "Id")
+                                {
+                                    <i class="fas fa-sort-up"></i>
+                                }
+                                else if (sortOrder == "Id_desc")
+                                {
+                                    <i class="fas fa-sort-down"></i>
+                                }
+                                else
+                                {
+                                    <i class="fas fa-sort text-muted"></i>
+                                }
+                            </a>
+                        </th>
+
+                        <th>
+                            <a href="javascript:void(0)" onclick="sortTable('@(sortOrder == "ExtractedText" ? "ExtractedText_desc" : "ExtractedText")')" class="text-decoration-none text-dark" style="cursor: pointer;">
+                                <i class="fas fa-file-text"></i> Текст
+                                @if (sortOrder == "ExtractedText")
+                                {
+                                    <i class="fas fa-sort-up"></i>
+                                }
+                                else if (sortOrder == "ExtractedText_desc")
+                                {
+                                    <i class="fas fa-sort-down"></i>
+                                }
+                                else
+                                {
+                                    <i class="fas fa-sort text-muted"></i>
+                                }
+                            </a>
+                        </th>
+                        <th>
+                            <a href="javascript:void(0)" onclick="sortTable('@(sortOrder == "City" ? "City_desc" : "City")')" class="text-decoration-none text-dark" style="cursor: pointer;">
+                                <i class="fas fa-map-marker-alt"></i> Город
+                                @if (sortOrder == "City")
+                                {
+                                    <i class="fas fa-sort-up"></i>
+                                }
+                                else if (sortOrder == "City_desc")
+                                {
+                                    <i class="fas fa-sort-down"></i>
+                                }
+                                else
+                                {
+                                    <i class="fas fa-sort text-muted"></i>
+                                }
+                            </a>
+                        </th>
+                        <th>
+                            <a href="javascript:void(0)" onclick="sortTable('@(sortOrder == "RepresentativePhone" ? "RepresentativePhone_desc" : "RepresentativePhone")')" class="text-decoration-none text-dark" style="cursor: pointer;">
+                                <i class="fas fa-phone"></i> Телефон
+                                @if (sortOrder == "RepresentativePhone")
+                                {
+                                    <i class="fas fa-sort-up"></i>
+                                }
+                                else if (sortOrder == "RepresentativePhone_desc")
+                                {
+                                    <i class="fas fa-sort-down"></i>
+                                }
+                                else
+                                {
+                                    <i class="fas fa-sort text-muted"></i>
+                                }
+                            </a>
+                        </th>
+                        <th>
+                            <a href="javascript:void(0)" onclick="sortTable('@(sortOrder == "Email" ? "Email_desc" : "Email")')" class="text-decoration-none text-dark" style="cursor: pointer;">
+                                <i class="fas fa-envelope"></i> Email
+                                @if (sortOrder == "Email")
+                                {
+                                    <i class="fas fa-sort-up"></i>
+                                }
+                                else if (sortOrder == "Email_desc")
+                                {
+                                    <i class="fas fa-sort-down"></i>
+                                }
+                                else
+                                {
+                                    <i class="fas fa-sort text-muted"></i>
+                                }
+                            </a>
+                        </th>
+                        <th>
+                            <a href="javascript:void(0)" onclick="sortTable('@(sortOrder == "BirthDate" ? "BirthDate_desc" : "BirthDate")')" class="text-decoration-none text-dark" style="cursor: pointer;">
+                                <i class="fas fa-calendar"></i> Дата рождения
+                                @if (sortOrder == "BirthDate")
+                                {
+                                    <i class="fas fa-sort-up"></i>
+                                }
+                                else if (sortOrder == "BirthDate_desc")
+                                {
+                                    <i class="fas fa-sort-down"></i>
+                                }
+                                else
+                                {
+                                    <i class="fas fa-sort text-muted"></i>
+                                }
+                            </a>
+                        </th>
+
+                        <th>
+                            <a href="javascript:void(0)" onclick="sortTable('@(sortOrder == "CarBrand" ? "CarBrand_desc" : "CarBrand")')" class="text-decoration-none text-dark" style="cursor: pointer;">
+                                <i class="fas fa-car"></i> Автомобиль
+                                @if (sortOrder == "CarBrand")
+                                {
+                                    <i class="fas fa-sort-up"></i>
+                                }
+                                else if (sortOrder == "CarBrand_desc")
+                                {
+                                    <i class="fas fa-sort-down"></i>
+                                }
+                                else
+                                {
+                                    <i class="fas fa-sort text-muted"></i>
+                                }
+                            </a>
+                        </th>
+                        <th>
+                            <a href="javascript:void(0)" onclick="sortTable('@(sortOrder == "IsMarried" ? "IsMarried_desc" : "IsMarried")')" class="text-decoration-none text-dark" style="cursor: pointer;">
+                                <i class="fas fa-heart"></i> Семья
+                                @if (sortOrder == "IsMarried")
+                                {
+                                    <i class="fas fa-sort-up"></i>
+                                }
+                                else if (sortOrder == "IsMarried_desc")
+                                {
+                                    <i class="fas fa-sort-down"></i>
+                                }
+                                else
+                                {
+                                    <i class="fas fa-sort text-muted"></i>
+                                }
+                            </a>
+                        </th>
+                        <th>
+                            <a href="javascript:void(0)" onclick="sortTable('@(sortOrder == "HasChildren" ? "HasChildren_desc" : "HasChildren")')" class="text-decoration-none text-dark" style="cursor: pointer;">
+                                <i class="fas fa-child"></i> Дети
+                                @if (sortOrder == "HasChildren")
+                                {
+                                    <i class="fas fa-sort-up"></i>
+                                }
+                                else if (sortOrder == "HasChildren_desc")
+                                {
+                                    <i class="fas fa-sort-down"></i>
+                                }
+                                else
+                                {
+                                    <i class="fas fa-sort text-muted"></i>
+                                }
+                            </a>
+                        </th>
+                        <th>
+                            <i class="fas fa-cogs"></i> Действия
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var photo in Model)
+                    {
+                        <tr class="hover-lift">
+                            <td>
+                                <span class="badge bg-secondary hover-lift">@photo.Id</span>
+                            </td>
+
+                            <td>
+                                <div class="text-truncate" style="max-width: 140px;" title="@photo.ExtractedText">
+                                    @(photo.ExtractedText.Length > 30 ? photo.ExtractedText.Substring(0, 30) + "..." : photo.ExtractedText)
+                                </div>
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(photo.City))
+                                {
+                                    <span class="badge bg-success hover-lift">@photo.City</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">-</span>
+                                }
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(photo.RepresentativePhone))
+                                {
+                                    <span class="badge bg-primary hover-lift">@photo.RepresentativePhone</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">-</span>
+                                }
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(photo.Email))
+                                {
+                                    <span class="badge bg-info hover-lift">@photo.Email</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">-</span>
+                                }
+                            </td>
+                            <td>
+                                @if (photo.BirthDate.HasValue)
+                                {
+                                    <span class="badge bg-warning hover-lift">@photo.BirthDate.Value.ToString("dd.MM.yyyy")</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">-</span>
+                                }
+                            </td>
+
+                            <td>
+                                @if (!string.IsNullOrEmpty(photo.CarBrand) || !string.IsNullOrEmpty(photo.CarNumber))
+                                {
+                                    <div>
+                                        @if (!string.IsNullOrEmpty(photo.CarBrand))
+                                        {
+                                            <span class="badge bg-dark hover-lift">@photo.CarBrand</span>
+                                        }
+                                        @if (!string.IsNullOrEmpty(photo.CarNumber))
+                                        {
+                                            <span class="badge bg-dark hover-lift">@photo.CarNumber</span>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">-</span>
+                                }
+                            </td>
+                            <td>
+                                @if (photo.IsMarried)
+                                {
+                                    <span class="badge bg-danger hover-lift">
+                                        <i class="fas fa-heart"></i> Женат
+                                    </span>
+                                    @if (!string.IsNullOrEmpty(photo.SpouseFullName))
+                                    {
+                                        <br><small>@photo.SpouseFullName</small>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="text-muted">-</span>
+                                }
+                            </td>
+                            <td>
+                                @if (photo.HasChildren && photo.ChildrenCount > 0)
+                                {
+                                    @if (photo.Children != null && photo.Children.Any())
+                                    {
+                                        <span class="badge bg-info hover-lift">
+                                            <i class="fas fa-child"></i> @photo.Children.Count()
+                                        </span>
+                                        <br>
+                                        @foreach (var child in photo.Children.Take(3))
+                                        {
+                                            <small>@child.Name</small><br>
+                                        }
+                                        @if (photo.Children.Count() > 3)
+                                        {
+                                            <small class="text-muted">+@(photo.Children.Count() - 3)</small>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-info hover-lift">
+                                            <i class="fas fa-child"></i> @photo.ChildrenCount
+                                        </span>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="text-muted">-</span>
+                                }
+                            </td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn btn-sm hover-lift" onclick="editRecord(@photo.Id)" title="Редактировать" style="background: var(--brand-gold); border-color: var(--brand-gold); color: #232323; transition: var(--transition-normal);" onmouseover="this.style.background='var(--brand-gold-dark)'; this.style.borderColor='var(--brand-gold-dark)'; this.style.transform='translateY(-3px)'; this.style.boxShadow='var(--shadow-lg)';" onmouseout="this.style.background='var(--brand-gold)'; this.style.borderColor='var(--brand-gold)'; this.style.transform='translateY(0)'; this.style.boxShadow='var(--shadow-sm)';">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Календарь и оповещения справа -->
+    <div class="calendar-right-panel">
+        <!-- Календарь -->
+        <div class="calendar-right scale-in">
+            <div class="calendar-header">
+                <i class="fas fa-calendar-alt me-2"></i> Календарь
+            </div>
+            
+            @{
+                var monthBirthdays = ViewBag.MonthBirthdays as List<DataAccess.Models.OcrPhoto>;
+                var currentYear = ViewBag.CurrentYear;
+                var currentMonth = ViewBag.CurrentMonth;
+                var monthNames = new[] { 
+                    "Янв", "Фев", "Мар", "Апр", "Май", "Июн",
+                    "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек" 
+                };
+                var fullMonthNames = new[] { 
+                    "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
+                    "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь" 
+                };
+                var currentDate = new DateTime(currentYear, currentMonth, 1);
+                var firstDayOfWeek = (int)currentDate.DayOfWeek;
+                var daysInMonth = DateTime.DaysInMonth(currentYear, currentMonth);
+            }
+            
+            <!-- Навигация по месяцам -->
+            <div class="calendar-nav-compact">
+                <div class="d-flex justify-content-between align-items-center">
+                    <a href="@Url.Action("Index", new { calendarYear = currentMonth == 1 ? currentYear - 1 : currentYear, calendarMonth = currentMonth == 1 ? 12 : currentMonth - 1 })" 
+                       class="btn btn-sm btn-sm-compact">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                    
+                    <span class="calendar-month-title-compact">@monthNames[currentMonth - 1] @currentYear</span>
+                    
+                    <a href="@Url.Action("Index", new { calendarYear = currentMonth == 12 ? currentYear + 1 : currentYear, calendarMonth = currentMonth == 12 ? 1 : currentMonth + 1 })" 
+                       class="btn btn-sm btn-sm-compact">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Компактный календарь -->
+            <div class="calendar-grid-compact">
+                <div class="calendar-weekdays-compact">
+                    <div class="weekday-compact">Пн</div>
+                    <div class="weekday-compact">Вт</div>
+                    <div class="weekday-compact">Ср</div>
+                    <div class="weekday-compact">Чт</div>
+                    <div class="weekday-compact">Пт</div>
+                    <div class="weekday-compact">Сб</div>
+                    <div class="weekday-compact">Вс</div>
+                </div>
+                
+                <div class="calendar-days-compact">
+                    @{
+                        var currentDayOfWeek = firstDayOfWeek == 0 ? 7 : firstDayOfWeek;
+                        
+                        // Пустые ячейки в начале
+                        for (int i = 1; i < currentDayOfWeek; i++)
+                        {
+                            <div class="calendar-day-compact empty"></div>
+                        }
+                        
+                        // Дни месяца
+                        for (int day = 1; day <= daysInMonth; day++)
+                        {
+                            var dayDate = new DateTime(currentYear, currentMonth, day);
+                            var isToday = dayDate.Date == DateTime.UtcNow.Date;
+                            var dayBirthdays = monthBirthdays?.Where(p => 
+                                (p.BirthDate.HasValue && p.BirthDate.Value.Day == day && p.BirthDate.Value.Month == currentMonth) ||
+                                (p.SpouseBirthDate.HasValue && p.SpouseBirthDate.Value.Day == day && p.SpouseBirthDate.Value.Month == currentMonth) ||
+                                p.Children.Any(c => c.BirthDate.HasValue && c.BirthDate.Value.Day == day && c.BirthDate.Value.Month == currentMonth)
+                            ).ToList() ?? new List<DataAccess.Models.OcrPhoto>();
+                            
+                            <div class="calendar-day-compact @(isToday ? "today" : "") @(dayBirthdays.Any() ? "has-birthday" : "")" 
+                                 title="@(dayBirthdays.Any() ? $"{dayBirthdays.Count} день(ей) рождения" : "")">
+                                @day
+                                @if (dayBirthdays.Any())
+                                {
+                                    <div class="birthday-indicator-compact">
+                                        <i class="fas fa-birthday-cake"></i>
+                                    </div>
+                                }
+                            </div>
+                            
+                            // Переход на новую строку
+                            if ((currentDayOfWeek + day - 1) % 7 == 0 && day < daysInMonth)
+                            {
+                                currentDayOfWeek = 1;
+                            }
+                            else
+                            {
+                                currentDayOfWeek++;
+                            }
+                        }
+                        
+                        // Пустые ячейки в конце
+                        var remainingCells = 7 - ((currentDayOfWeek - 1) % 7);
+                        if (remainingCells < 7)
+                        {
+                            for (int i = 0; i < remainingCells; i++)
+                            {
+                                <div class="calendar-day-compact empty"></div>
+                            }
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+        
+        <!-- Оповещение о днях рождения -->
+        <div class="birthday-alert-right">
+            @{
+                var todayBirthdays = monthBirthdays?.Where(p => 
+                    (p.BirthDate.HasValue && p.BirthDate.Value.Day == DateTime.UtcNow.Day && p.BirthDate.Value.Month == DateTime.UtcNow.Month) ||
+                    (p.SpouseBirthDate.HasValue && p.SpouseBirthDate.Value.Day == DateTime.UtcNow.Day && p.SpouseBirthDate.Value.Month == DateTime.UtcNow.Month) ||
+                    p.Children.Any(c => c.BirthDate.HasValue && c.BirthDate.Value.Day == DateTime.UtcNow.Day && c.BirthDate.Value.Month == DateTime.UtcNow.Month)
+                ).ToList() ?? new List<DataAccess.Models.OcrPhoto>();
+                
+                var todayBirthdayCount = todayBirthdays.Count;
+            }
+            
+            @if (todayBirthdayCount > 0)
+            {
+                <div class="alert alert-warning birthday-notification" role="alert">
+                    <div class="birthday-message">
+                        <i class="fas fa-birthday-cake me-2"></i>
+                        <strong>Сегодня день рождения у @todayBirthdayCount @(todayBirthdayCount == 1 ? "человека" : todayBirthdayCount < 5 ? "человек" : "человек")!</strong>
+                    </div>
+                    <div class="birthday-button-container">
+                        <a href="/Home/Calendar" class="btn btn-sm" style="background: var(--brand-gold); border-color: var(--brand-gold); color: #232323; transition: var(--transition-normal);" onmouseover="this.style.background='var(--brand-gold-dark)'; this.style.borderColor='var(--brand-gold-dark)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='var(--shadow-md)';" onmouseout="this.style.background='var(--brand-gold)'; this.style.borderColor='var(--brand-gold)'; this.style.transform='translateY(0)'; this.style.boxShadow='var(--shadow-sm)';">
+                            <i class="fas fa-calendar-alt me-1"></i>
+                            Открыть календарь
+                        </a>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info birthday-info" role="alert">
+                    <div class="birthday-message">
+                        <i class="fas fa-calendar-check me-2"></i>
+                        <span>Сегодня нет дней рождения</span>
+                    </div>
+                    <div class="birthday-button-container">
+                        <a href="/Home/Calendar" class="btn btn-sm" style="background: transparent; border: 2px solid var(--brand-gold); color: var(--brand-gold); transition: var(--transition-normal);" onmouseover="this.style.background='var(--brand-gold)'; this.style.color='#232323'; this.style.transform='translateY(-2px)'; this.style.boxShadow='var(--shadow-md)';" onmouseout="this.style.background='transparent'; this.style.color='var(--brand-gold)'; this.style.transform='translateY(0)'; this.style.boxShadow='var(--shadow-sm)';">
+                            <i class="fas fa-calendar-alt me-1"></i>
+                            Календарь
+                        </a>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Пагинация -->
+@if (totalPages > 1)
+{
+    <nav aria-label="Навигация по страницам">
+        <ul class="pagination justify-content-center mt-4">
+            <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                <a class="page-link" href="javascript:void(0)" onclick="return goToPage(@(currentPage - 1))">&laquo; Назад</a>
+            </li>
+            @for (int i = 1; i <= totalPages; i++)
+            {
+                <li class="page-item @(i == currentPage ? "active" : "")">
+                    <a class="page-link" href="javascript:void(0)" onclick="return goToPage(@i)">@i</a>
+                </li>
+            }
+            <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                <a class="page-link" href="javascript:void(0)" onclick="return goToPage(@(currentPage + 1))">Вперёд &raquo;</a>
+            </li>
+        </ul>
+    </nav>
+}
+
+<!-- Модальное окно для деталей записи -->
+<div class="modal fade" id="detailsModal" tabindex="-1" aria-labelledby="detailsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" style="max-width: 900px;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="detailsModalLabel">
+            <i class="fas fa-gem"></i> Детали записи
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+      </div>
+      <div class="modal-body" id="detailsModalBody">
+        <div class="d-flex justify-content-center align-items-center" style="height: 100px;">
+          <div class="spinner-border text-warning" role="status">
+            <span class="visually-hidden">Загрузка...</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-sm" data-bs-dismiss="modal" style="background: var(--accent-bg); border-color: var(--border-color); color: var(--text-primary); transition: var(--transition-normal);" onmouseover="this.style.background='var(--border-color)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='var(--shadow-md)';" onmouseout="this.style.background='var(--accent-bg)'; this.style.transform='translateY(0)'; this.style.boxShadow='var(--shadow-sm)';">
+          <i class="fas fa-times"></i> Закрыть
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+<script>
+// Глобальные переменные для отслеживания состояния
+let currentSortOrder = '@sortOrder';
+let currentSearchString = '@currentFilter';
+let currentPage = @currentPage;
+let currentPageSize = @pageSize;
+let currentScrollPosition = 0;
+
+// Инициализация модального окна при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    var modalElement = document.getElementById('detailsModal');
+    if (modalElement) {
+        // Обработчик закрытия модального окна
+        modalElement.addEventListener('hidden.bs.modal', function() {
+            console.log('Модальное окно скрыто');
+            // Убираем backdrop
+            var backdrop = document.getElementById('modalBackdrop');
+            if (backdrop) {
+                backdrop.remove();
+            }
+            // Убираем класс modal-open с body
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+        });
+        
+        // Обработчик показа модального окна
+        modalElement.addEventListener('shown.bs.modal', function() {
+            console.log('Модальное окно показано');
+        });
+    }
+});
+
+// Функция для AJAX-сортировки
+function sortTable(sortOrder) {
+    // Сохраняем текущую позицию скролла
+    currentScrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+    
+    // Обновляем глобальную переменную
+    currentSortOrder = sortOrder;
+    
+    // Показываем индикатор загрузки
+    showLoadingIndicator();
+    
+    // Выполняем AJAX-запрос
+    fetch(`/Home/IndexPartial?sortOrder=${encodeURIComponent(sortOrder)}&searchString=${encodeURIComponent(currentSearchString)}&page=${currentPage}&pageSize=${currentPageSize}`)
+        .then(response => response.text())
+        .then(html => {
+            // Обновляем содержимое таблицы
+            updateTableContent(html);
+            
+            // Восстанавливаем позицию скролла
+            setTimeout(() => {
+                window.scrollTo(0, currentScrollPosition);
+            }, 100);
+            
+            // Обновляем URL без перезагрузки страницы
+            updateURL(sortOrder);
+        })
+        .catch(error => {
+            console.error('Ошибка при сортировке:', error);
+            hideLoadingIndicator();
+        });
+}
+
+// Функция для обновления содержимого таблицы
+function updateTableContent(html) {
+    // Создаем временный div для парсинга HTML
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    
+    // Находим таблицу в полученном HTML
+    const newTable = tempDiv.querySelector('.table-responsive');
+    const currentTable = document.querySelector('.table-responsive');
+    
+    if (newTable && currentTable) {
+        // Обновляем содержимое таблицы
+        currentTable.innerHTML = newTable.innerHTML;
+    }
+    
+    // Обновляем пагинацию
+    const newPagination = tempDiv.querySelector('.pagination');
+    const currentPagination = document.querySelector('.pagination');
+    
+    if (newPagination && currentPagination) {
+        currentPagination.innerHTML = newPagination.innerHTML;
+    }
+    
+    // Обновляем глобальные переменные
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('page')) {
+        currentPage = parseInt(urlParams.get('page'));
+    }
+    
+    // Скрываем индикатор загрузки
+    hideLoadingIndicator();
+}
+
+// Функция для показа индикатора загрузки
+function showLoadingIndicator() {
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    if (loadingIndicator) {
+        loadingIndicator.classList.add('show');
+    }
+}
+
+// Функция для скрытия индикатора загрузки
+function hideLoadingIndicator() {
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    if (loadingIndicator) {
+        loadingIndicator.classList.remove('show');
+    }
+}
+
+// Функция для обновления URL без перезагрузки страницы
+function updateURL(sortOrder) {
+    const url = new URL(window.location);
+    url.searchParams.set('sortOrder', sortOrder);
+    url.searchParams.set('page', currentPage);
+    if (currentSearchString) {
+        url.searchParams.set('searchString', currentSearchString);
+    }
+    if (currentPageSize) {
+        url.searchParams.set('pageSize', currentPageSize);
+    }
+    
+    // Обновляем URL без перезагрузки страницы
+    window.history.pushState({}, '', url);
+}
+
+// Функция для AJAX-пагинации
+function goToPage(page) {
+    currentPage = page;
+    currentScrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+    
+    showLoadingIndicator();
+    
+    fetch(`/Home/IndexPartial?sortOrder=${encodeURIComponent(currentSortOrder)}&searchString=${encodeURIComponent(currentSearchString)}&page=${page}&pageSize=${currentPageSize}`)
+        .then(response => response.text())
+        .then(html => {
+            updateTableContent(html);
+            setTimeout(() => {
+                window.scrollTo(0, currentScrollPosition);
+            }, 100);
+            updateURL(currentSortOrder);
+        })
+        .catch(error => {
+            console.error('Ошибка при переходе на страницу:', error);
+            hideLoadingIndicator();
+        });
+    
+    return false; // Предотвращаем переход по ссылке
+}
+
+// Функция для редактирования записи
+function editRecord(id) {
+    // Показываем модальное окно с деталями для редактирования
+    showDetails(id);
+}
+
+// Функция для показа успешного уведомления
+function showSuccessToast(message) {
+    const toast = document.getElementById('successToast');
+    const toastBody = document.getElementById('successToastBody');
+    toastBody.textContent = message;
+    
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+}
+
+// Функция для показа уведомления об ошибке
+function showErrorToast(message) {
+    const toast = document.getElementById('errorToast');
+    const toastBody = document.getElementById('errorToastBody');
+    toastBody.textContent = message;
+    
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+}
+
+// Функция для показа информационного уведомления
+function showInfoToast(message) {
+    // Создаем временный toast для информационных сообщений
+    const toastHtml = `
+        <div class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-info text-white">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong class="me-auto">Информация</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Закрыть"></button>
+            </div>
+            <div class="toast-body">
+                ${message}
+            </div>
+        </div>
+    `;
+    
+    const toastContainer = document.querySelector('.toast-container');
+    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+    
+    const newToast = toastContainer.lastElementChild;
+    const bsToast = new bootstrap.Toast(newToast);
+    bsToast.show();
+    
+    // Удаляем toast после скрытия
+    newToast.addEventListener('hidden.bs.toast', function() {
+        newToast.remove();
+    });
+}
+
+
+
+function showDetails(id) {
+    console.log('showDetails вызвана для ID:', id);
+    
+    // Проверяем, существует ли модальное окно
+    var modalElement = document.getElementById('detailsModal');
+    if (!modalElement) {
+        console.error('Модальное окно не найдено!');
+        return;
+    }
+    
+    // Проверяем, существует ли Bootstrap
+    if (typeof bootstrap === 'undefined') {
+        console.error('Bootstrap не загружен!');
+        return;
+    }
+    
+    // Проверяем, не открыто ли уже модальное окно
+    var existingModal = bootstrap.Modal.getInstance(modalElement);
+    if (existingModal) {
+        existingModal.hide();
+    }
+    
+    // Создаем новое модальное окно
+    var modal = new bootstrap.Modal(modalElement, {
+        backdrop: true,
+        keyboard: true,
+        focus: true
+    });
+    
+    // Показываем спиннер загрузки
+    var modalBody = document.getElementById('detailsModalBody');
+    modalBody.innerHTML = `
+        <div class="d-flex justify-content-center align-items-center" style="height: 100px;">
+            <div class="spinner-border text-warning" role="status">
+                <span class="visually-hidden">Загрузка...</span>
+            </div>
+        </div>
+    `;
+    
+    // Показываем модальное окно
+    try {
+        modal.show();
+        console.log('Модальное окно показано');
+        
+        // Принудительно показываем модальное окно
+        modalElement.classList.add('show');
+        modalElement.style.display = 'block';
+        modalElement.setAttribute('aria-hidden', 'false');
+        
+        // Добавляем backdrop
+        var backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop fade show';
+        backdrop.id = 'modalBackdrop';
+        document.body.appendChild(backdrop);
+        
+    } catch (error) {
+        console.error('Ошибка при показе модального окна:', error);
+    }
+    
+    // Загружаем содержимое
+    fetch('/Home/Details/' + id)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Ошибка загрузки: ' + response.status);
+            }
+            return response.text();
+        })
+        .then(html => {
+            console.log('HTML загружен, обновляем содержимое');
+            modalBody.innerHTML = html;
+            
+            // Инициализируем функции после загрузки
+            setTimeout(() => {
+                if (typeof toggleSpouseFields === 'function') {
+                    toggleSpouseFields();
+                    console.log('toggleSpouseFields вызвана');
+                }
+                if (typeof toggleChildrenFields === 'function') {
+                    toggleChildrenFields();
+                    console.log('toggleChildrenFields вызвана');
+                }
+                if (typeof renderChildrenInputs === 'function') {
+                    renderChildrenInputs();
+                    console.log('renderChildrenInputs вызвана');
+                }
+            }, 100);
+        })
+        .catch(error => {
+            console.error('Ошибка при загрузке деталей:', error);
+            modalBody.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Ошибка при загрузке данных: ${error.message}
+                </div>
+            `;
+        });
+}
+
+function toggleSpouseFields() {
+    var isMarried = document.getElementById('IsMarried').value === "true";
+    document.getElementById('spouseFields').style.display = isMarried ? 'block' : 'none';
+}
+
+function toggleChildrenFields() {
+    var hasChildren = document.getElementById('hasChildren').value === "true";
+    document.getElementById('childrenFields').style.display = hasChildren ? 'block' : 'none';
+}
+
+function saveDetails(event) {
+    event.preventDefault();
+    var form = document.getElementById('editForm');
+    var formData = new FormData(form);
+
+    fetch(form.action, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (response.ok) {
+            document.getElementById('saveResult').innerHTML = '<div class="alert alert-success mt-2">✅ Данные успешно обновлены!</div>';
+            setTimeout(() => {
+                var modal = bootstrap.Modal.getInstance(document.getElementById('detailsModal'));
+                if (modal) modal.hide();
+            }, 1200);
+        } else {
+            document.getElementById('saveResult').innerHTML = '<div class="alert alert-danger mt-2">❌ Ошибка при сохранении</div>';
+        }
+    });
+    return false;
+}
+</script>
+}
+
+@section Styles {
+    <style>
+        /* 
+         * Цветовая палитра главной страницы
+         * Использует более светлые оттенки тех же цветов
+         * Основные цвета: #3a3a3a (средне-серый), #4a4a4a (светло-серый), #5a5a5a (серый)
+         * Брендовые цвета: #D4AF37 (золотой), #B8860B (темно-золотой)
+         * Текстовые цвета: #ffffff (белый), #f0f0f0 (светло-серый), #c0c0c0 (серый)
+         */
+        
+        /* Импорт современных шрифтов */
+        @@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Open+Sans:wght@400;600;700&display=swap');
+        
+        /* Цветовая палитра - посветлее, но с теми же основными цветами */
+        :root {
+            /* Основные цвета - более светлые оттенки */
+            --primary-bg: #3a3a3a;
+            --secondary-bg: #4a4a4a;
+            --accent-bg: #5a5a5a;
+            
+            /* Брендовые цвета - золотые (оставляем как есть) */
+            --brand-gold: #D4AF37;
+            --brand-gold-dark: #B8860B;
+            --brand-gold-light: #f4e4bc;
+            
+            /* Акцентные цвета */
+            --accent-blue: #D4AF37;
+            --accent-blue-light: #B8860B;
+            --accent-green: #28a745;
+            --accent-orange: #fd7e14;
+            --accent-red: #dc3545;
+            --accent-info: #6f42c1;
+            
+            /* Текстовые цвета - более мягкие */
+            --text-primary: #ffffff;
+            --text-secondary: #f0f0f0;
+            --text-muted: #c0c0c0;
+            --text-light: #f8f9fa;
+            
+            /* Границы и тени */
+            --border-color: #D4AF37;
+            --border-light: #B8860B;
+            --shadow-sm: 0 2px 4px rgba(212, 175, 55, 0.15);
+            --shadow-md: 0 4px 8px rgba(212, 175, 55, 0.2);
+            --shadow-lg: 0 8px 16px rgba(212, 175, 55, 0.25);
+            --shadow-xl: 0 12px 24px rgba(212, 175, 55, 0.3);
+            
+            /* Радиусы */
+            --radius-sm: 6px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 24px;
+            
+            /* Переходы */
+            --transition-fast: 0.2s ease;
+            --transition-normal: 0.3s ease;
+            --transition-slow: 0.5s ease;
+        }
+        
+        /* Базовые стили */
+        body {
+            font-family: 'Roboto', 'Open Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--primary-bg);
+            color: var(--text-primary) !important;
+            line-height: 1.6;
+            width: 100%;
+            max-width: none;
+        }
+        
+        /* Убираем ограничения по ширине для основного контейнера */
+        .container, .container-fluid {
+            max-width: none !important;
+            width: 100% !important;
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+        
+        /* Убираем ограничения по ширине для всех основных элементов */
+        .row, .col, .col-* {
+            max-width: none !important;
+            width: auto !important;
+        }
+        
+        /* Принудительно убираем все ограничения по ширине */
+        * {
+            max-width: none !important;
+        }
+        
+        /* Исключения для календаря */
+        .calendar-right-panel,
+        .calendar-right,
+        .birthday-alert-right {
+            max-width: 300px !important;
+            width: 300px !important;
+        }
+        
+        /* Анимации и эффекты */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        .slide-up {
+            animation: slideUp 0.4s ease-out;
+        }
+        
+        .scale-in {
+            animation: scaleIn 0.3s ease-out;
+        }
+        
+        @@keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @@keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @@keyframes scaleIn {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        
+        /* Эффекты при наведении */
+        .hover-lift {
+            transition: var(--transition-normal);
+        }
+        
+        .hover-lift:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        /* Плавные переходы для всех интерактивных элементов */
+        * {
+            transition: var(--transition-fast);
+        }
+        
+        /* Специальные переходы для hover эффектов */
+        .btn, .badge, .table tbody tr, .calendar-day-compact {
+            transition: var(--transition-normal);
+        }
+        
+        /* Новый макет с календарем в углу */
+        .new-layout {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            margin: 0 -1rem;
+            padding: 0 1rem;
+            width: 100%;
+            max-width: none;
+        }
+        
+        /* Заголовок с календарем - более светлые оттенки */
+        .header-with-calendar {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: linear-gradient(135deg, #3a3a3a 0%, #4a4a4a 100%);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            margin: 0 -1rem 2rem -1rem;
+            box-shadow: var(--shadow-lg);
+            border: 2px solid var(--brand-gold);
+            width: 100%;
+            max-width: none;
+        }
+        
+        .main-title-section {
+            text-align: center;
+            margin-bottom: 0;
+        }
+        
+        .main-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--brand-gold);
+            margin-bottom: 1rem;
+            text-shadow: var(--shadow-sm);
+        }
+        
+        .main-title i {
+            color: var(--brand-gold);
+            margin-right: 1rem;
+        }
+        
+        .main-subtitle {
+            font-size: 1.25rem;
+            color: var(--text-primary) !important;
+            font-weight: 400;
+        }
+        
+        /* Основная панель с таблицей - темная тема с мягкими тонами */
+        .main-panel {
+            background: var(--secondary-bg);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border-color);
+            margin: 2rem -1rem 0 -1rem;
+            width: 100%;
+        }
+        
+        /* Новый макет: база визиток слева, календарь справа */
+        .data-layout {
+            display: flex;
+            flex-direction: row;
+            gap: 2.5rem;
+            margin: 2rem 0 0 0;
+            align-items: flex-start;
+            width: 100%;
+            max-width: none;
+            min-width: 100%;
+        }
+        
+        .calendar-right-panel {
+            width: 300px;
+            flex-shrink: 0;
+            flex-grow: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            position: sticky;
+            top: 2rem;
+            align-self: flex-start;
+            margin-left: auto;
+        }
+        
+        .calendar-right {
+            background: var(--secondary-bg);
+            border-radius: var(--radius-lg);
+            padding: 1rem;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+            height: fit-content;
+        }
+        
+        .birthday-alert-right {
+            background: var(--secondary-bg);
+            border-radius: var(--radius-lg);
+            padding: 1rem;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+            height: fit-content;
+        }
+        
+        .data-panel {
+            flex: 1;
+            background: var(--secondary-bg);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border-color);
+            min-width: 0;
+            width: 100%;
+            max-width: none;
+            overflow: visible;
+            flex-grow: 1;
+            flex-shrink: 0;
+        }
+        
+        /* Делаем панели более светлыми */
+        .calendar-right {
+            background: var(--secondary-bg);
+            border: 1px solid var(--border-color);
+        }
+        
+        .birthday-alert-right {
+            background: var(--secondary-bg);
+            border: 1px solid var(--border-color);
+        }
+        
+        .panel-header {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-primary) !important;
+            margin-bottom: 2rem;
+            text-align: center;
+            padding-bottom: 1rem;
+            border-bottom: 3px solid var(--brand-gold);
+            background: var(--accent-bg);
+            padding: 1rem 1.5rem;
+            margin: -1.5rem -1.5rem 1.5rem -1.5rem;
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        }
+        
+        /* Стили для таблицы - темная тема с мягкими тонами */
+        .table {
+            background: var(--secondary-bg);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            width: 100%;
+            table-layout: auto;
+            min-width: 100%;
+            color: var(--text-primary);
+        }
+        
+        /* Убеждаемся, что весь текст в таблице хорошо виден */
+        .table tbody td {
+            color: #ffffff !important;
+            background: var(--secondary-bg);
+        }
+        
+        .table tbody td:nth-child(even) {
+            background: var(--accent-bg);
+        }
+        
+        /* Делаем таблицу более светлой */
+        .table {
+            background: var(--secondary-bg);
+            border: 1px solid var(--border-color);
+        }
+        
+        .table tbody tr {
+            background: var(--secondary-bg);
+        }
+        
+        .table tbody tr:nth-child(even) {
+            background: var(--accent-bg);
+        }
+        
+        /* Специальные стили для текста в ячейках */
+        .table .text-truncate {
+            color: #ffffff !important;
+        }
+        
+        .table .text-muted {
+            color: #b0b0b0 !important;
+        }
+        
+        .table small {
+            color: #e0e0e0 !important;
+        }
+        
+        .table-responsive {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            overflow-x: visible;
+            min-width: 100%;
+        }
+        
+        .table thead th {
+            background: linear-gradient(45deg, #D4AF37 0%, #B8860B 100%);
+            color: #232323 !important;
+            font-weight: 600;
+            border: none;
+            padding: 1rem 0.75rem;
+            font-size: 0.9rem;
+            text-align: center;
+            transition: var(--transition-fast);
+            white-space: nowrap;
+            overflow: visible;
+            text-overflow: clip;
+        }
+        
+        .table thead th:hover {
+            background: linear-gradient(45deg, #B8860B 0%, #D4AF37 100%);
+            transform: translateY(-1px);
+        }
+        
+        .table thead th a {
+            color: #232323 !important;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        .table tbody tr {
+            transition: var(--transition-fast);
+            background: var(--secondary-bg);
+        }
+        
+        .table tbody tr:nth-child(even) {
+            background: var(--accent-bg);
+        }
+        
+        .table tbody tr:hover {
+            background: rgba(212, 175, 55, 0.1);
+            transform: scale(1.01);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .table tbody td {
+            padding: 1rem 0.75rem;
+            border: 1px solid var(--border-color);
+            vertical-align: middle;
+            text-align: center;
+            white-space: nowrap;
+            overflow: visible;
+            text-overflow: clip;
+            color: var(--text-primary) !important;
+        }
+        
+        /* Специальные стили для столбца с текстом */
+        .table tbody td:nth-child(2) {
+            text-align: left;
+            min-width: 150px;
+            max-width: none;
+            color: #ffffff !important;
+        }
+        
+        /* Стили для столбца с email */
+        .table tbody td:nth-child(5) {
+            text-align: left;
+            min-width: 120px;
+            max-width: none;
+            color: #ffffff !important;
+        }
+        
+        /* Стили для столбца с телефоном */
+        .table tbody td:nth-child(4) {
+            text-align: center;
+            min-width: 100px;
+            max-width: none;
+            color: #ffffff !important;
+        }
+        
+        /* Улучшенные badge'и - мягкие цвета для темной темы */
+        .badge {
+            font-size: 0.85rem;
+            font-weight: 600;
+            padding: 0.5rem 0.75rem;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-light);
+            transition: var(--transition-normal);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        
+        .badge:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        /* Специальные стили для разных типов badge'ей - мягкие цвета */
+        .badge.bg-secondary {
+            background: #6c757d !important;
+            color: white !important;
+        }
+        
+        .badge.bg-success {
+            background: #28a745 !important;
+            color: white !important;
+        }
+        
+        .badge.bg-primary {
+            background: var(--brand-gold) !important;
+            color: #232323 !important;
+        }
+        
+        .badge.bg-info {
+            background: var(--accent-info) !important;
+            color: white !important;
+        }
+        
+        .badge.bg-warning {
+            background: var(--brand-gold) !important;
+            color: #232323 !important;
+        }
+        
+        .badge.bg-dark {
+            background: #343a40 !important;
+            color: white !important;
+        }
+        
+        .badge.bg-danger {
+            background: #dc3545 !important;
+            color: white !important;
+        }
+        
+        /* Стили для текста в ячейках - исправляем видимость */
+        .text-truncate {
+            max-width: 140px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: var(--text-primary) !important;
+        }
+        
+        .text-muted {
+            color: var(--text-muted) !important;
+        }
+        
+        /* Стили для маленького текста */
+        small {
+            font-size: 0.85rem;
+            color: var(--text-secondary) !important;
+            font-weight: 500;
+        }
+        
+        /* Стили для разделителей в ячейках */
+        .table td br + small {
+            margin-top: 0.25rem;
+            display: inline-block;
+        }
+        
+        /* Стили для иконок в ячейках */
+        .table td .fas {
+            margin-right: 0.25rem;
+            color: #e0e0e0 !important;
+        }
+        
+        /* Стили для пустых ячеек с "-" */
+        .table td:contains("-") {
+            color: var(--text-muted) !important;
+        }
+        
+        /* Альтернативный способ для пустых ячеек */
+        .table td {
+            color: #ffffff !important;
+        }
+        
+        .table td:empty::after {
+            content: "-";
+            color: #b0b0b0 !important;
+        }
+        
+        /* Улучшенные стили для кнопок - мягкие цвета */
+        .btn {
+            border-radius: var(--radius-md);
+            font-weight: 500;
+            transition: var(--transition-normal);
+            border: none;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, var(--accent-green) 0%, #20c997 100%);
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: linear-gradient(135deg, #20c997 0%, var(--accent-green) 100%);
+        }
+        
+        /* Индикатор загрузки - темная тема с мягкими тонами */
+        .loading-indicator {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--secondary-bg);
+            color: var(--text-primary);
+            padding: 1.5rem 2.5rem;
+            border-radius: var(--radius-lg);
+            z-index: 9999;
+            display: none;
+            box-shadow: var(--shadow-xl);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--brand-gold);
+        }
+        
+        .loading-indicator.show {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        /* Toast-уведомления - темная тема с мягкими тонами */
+        .toast {
+            min-width: 350px;
+            box-shadow: var(--shadow-lg);
+            border-radius: var(--radius-md);
+            border: none;
+            background: var(--secondary-bg);
+            color: var(--text-primary);
+        }
+        
+        .toast-header {
+            border-bottom: none;
+            border-radius: var(--radius-md) var(--radius-md) 0 0;
+        }
+        
+        .toast-body {
+            padding: 1.25rem;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+        
+        /* Стили для пагинации - темная тема */
+        .pagination {
+            margin: 3rem -1rem 0 -1rem;
+            justify-content: center;
+            padding: 0 1rem;
+        }
+        
+        .pagination .page-link {
+            margin: 0 0.25rem;
+            border-radius: var(--radius-md);
+            transition: var(--transition-normal);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.75rem 1rem;
+            font-weight: 500;
+            background: var(--accent-bg);
+        }
+        
+        .pagination .page-link:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+            background: var(--brand-gold);
+            border-color: var(--brand-gold-dark);
+            color: #232323;
+        }
+        
+        .pagination .page-item.active .page-link {
+            background: var(--brand-gold);
+            border-color: var(--brand-gold-dark);
+            color: #232323;
+        }
+        
+        /* Стили для кнопок действий */
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            border-radius: var(--radius-md);
+            transition: var(--transition-normal);
+            font-weight: 500;
+        }
+        
+        .btn-sm:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        /* Стили для модального окна - более светлая тема */
+        .modal-content {
+            border-radius: 1rem;
+            box-shadow: 0 0.5rem 1.5rem rgba(0,0,0,0.15);
+            background: var(--secondary-bg);
+            border: 1px solid var(--border-color);
+        }
+        
+        .modal-header {
+            background: linear-gradient(45deg, #D4AF37 0%, #B8860B 100%);
+            color: #232323;
+            border-bottom: none;
+            border-radius: 1rem 1rem 0 0;
+        }
+        
+        .modal-title {
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+        
+        .btn-close {
+            filter: invert(1);
+        }
+        
+        .modal-body {
+            background: var(--secondary-bg);
+            color: var(--text-primary);
+        }
+        
+        .modal-footer {
+            background: var(--accent-bg);
+            border-top: 1px solid var(--border-color);
+            border-radius: 0 0 1rem 1rem;
+        }
+        
+        /* Делаем модальное окно более светлым */
+        .modal-content {
+            background: var(--secondary-bg);
+        }
+        
+        .modal-body {
+            background: var(--secondary-bg);
+        }
+        
+        .modal-footer {
+            background: var(--accent-bg);
+        }
+        
+        /* Стили для таблицы в модальном окне */
+        .modal-body .table thead th {
+            background: linear-gradient(45deg, #D4AF37 0%, #B8860B 100%);
+            color: #232323;
+            border: none;
+        }
+        
+        .modal-body .table tbody tr {
+            background: var(--secondary-bg);
+            color: var(--text-primary);
+        }
+        
+        .modal-body .table tbody tr:nth-child(even) {
+            background: var(--accent-bg);
+        }
+        
+        .modal-body .table tbody tr:hover {
+            background: rgba(212, 175, 55, 0.1);
+        }
+        
+        /* Стили для форм в модальном окне */
+        .modal-body .form-control,
+        .modal-body .form-select {
+            background: var(--accent-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: var(--radius-md);
+        }
+        
+        .modal-body .form-control:focus,
+        .modal-body .form-select:focus {
+            background: var(--accent-bg);
+            border-color: var(--brand-gold);
+            color: var(--text-primary);
+            box-shadow: 0 0 0 0.2rem rgba(212, 175, 55, 0.25);
+        }
+        
+        /* Делаем формы более светлыми */
+        .modal-body .form-control,
+        .modal-body .form-select {
+            background: #6a6a6a;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+        
+        .modal-body .form-control:focus,
+        .modal-body .form-select:focus {
+            background: #7a7a7a;
+            border-color: var(--brand-gold);
+            color: var(--text-primary);
+        }
+        
+        .modal-body .form-label {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+        
+        .modal-body .form-text {
+            color: var(--text-muted);
+        }
+        
+        /* Стили для кнопок в модальном окне */
+        .modal-footer .btn {
+            border-radius: var(--radius-md);
+            font-weight: 500;
+            transition: var(--transition-normal);
+            border: none;
+        }
+        
+        .modal-footer .btn-secondary {
+            background: var(--accent-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+        
+        .modal-footer .btn-secondary:hover {
+            background: var(--border-color);
+            color: var(--text-primary);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .modal-footer .btn-primary {
+            background: var(--brand-gold);
+            color: #232323;
+        }
+        
+        .modal-footer .btn-primary:hover {
+            background: var(--brand-gold-dark);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        /* Стили для алертов в модальном окне */
+        .modal-body .alert {
+            border-radius: var(--radius-md);
+            border: none;
+            background: var(--accent-bg);
+            color: var(--text-primary);
+        }
+        
+        .modal-body .alert-success {
+            background: rgba(40, 167, 69, 0.3);
+            border-left: 4px solid var(--accent-green);
+            color: var(--text-primary);
+        }
+        
+        .modal-body .alert-danger {
+            background: rgba(220, 53, 69, 0.3);
+            border-left: 4px solid var(--accent-red);
+            color: var(--text-primary);
+        }
+        
+        .modal-body .alert-info {
+            background: rgba(111, 66, 193, 0.3);
+            border-left: 4px solid var(--accent-info);
+            color: var(--text-primary);
+        }
+        
+        /* Делаем алерты более светлыми */
+        .modal-body .alert {
+            background: #6a6a6a;
+        }
+        
+        .modal-body .alert-success {
+            background: rgba(40, 167, 69, 0.4);
+        }
+        
+        .modal-body .alert-danger {
+            background: rgba(220, 53, 69, 0.4);
+        }
+        
+        .modal-body .alert-info {
+            background: rgba(111, 66, 193, 0.4);
+        }
+        
+        /* Стили для спиннера загрузки в модальном окне */
+        .modal-body .spinner-border {
+            color: var(--brand-gold);
+        }
+        
+        .modal-body .spinner-border.text-warning {
+            color: var(--brand-gold) !important;
+        }
+        
+        /* Календарь справа - как на странице календаря (темная тема) */
+        .calendar-header {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            text-align: center;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--brand-gold);
+        }
+        
+        /* Компактная навигация по месяцам */
+        .calendar-nav-compact {
+            margin-bottom: 0.5rem;
+        }
+        
+        .calendar-month-title-compact {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #232323;
+            background: var(--brand-gold);
+            padding: 0.2rem 0.4rem;
+            border-radius: 6px;
+        }
+        
+        .btn-sm-compact {
+            padding: 0.2rem 0.4rem;
+            font-size: 0.7rem;
+            background: var(--brand-gold);
+            border-color: var(--brand-gold);
+            color: #232323;
+        }
+        
+        .btn-sm-compact:hover {
+            background: var(--brand-gold-dark);
+            border-color: var(--brand-gold-dark);
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        /* Компактная календарная сетка - мягкие цвета */
+        .calendar-grid-compact {
+            background-color: var(--accent-bg);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+            border: 1px solid var(--border-color);
+        }
+        
+        .calendar-weekdays-compact {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            background: linear-gradient(45deg, #D4AF37 0%, #B8860B 100%);
+        }
+        
+        .weekday-compact {
+            padding: 0.5rem 0.25rem;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.7rem;
+            color: #232323;
+            background: transparent;
+        }
+        
+        .weekday-compact:last-child {
+            border-right: none;
+        }
+        
+        .calendar-days-compact {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+            background-color: var(--accent-bg);
+        }
+        
+        .calendar-day-compact {
+            min-height: 32px;
+            padding: 0.25rem;
+            background-color: var(--secondary-bg);
+            border: 1px solid var(--border-color);
+            position: relative;
+            transition: var(--transition-normal);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.8rem;
+            color: var(--text-primary);
+        }
+        
+        .calendar-day-compact:hover {
+            background-color: var(--accent-bg);
+            transform: scale(1.05);
+            box-shadow: var(--shadow-sm);
+            border-color: var(--brand-gold);
+        }
+        
+        .calendar-day-compact.empty {
+            background-color: var(--accent-bg);
+            cursor: default;
+            color: var(--text-muted);
+        }
+        
+        .calendar-day-compact.empty:hover {
+            transform: none;
+            box-shadow: none;
+            background-color: var(--accent-bg);
+        }
+        
+        .calendar-day-compact.today {
+            background-color: var(--brand-gold);
+            border-color: var(--brand-gold-dark);
+            font-weight: 700;
+            color: #232323;
+            box-shadow: var(--shadow-md);
+        }
+        
+        .calendar-day-compact.has-birthday {
+            background-color: var(--accent-orange);
+            border-color: var(--accent-orange);
+            color: white;
+            position: relative;
+        }
+        
+        .calendar-day-compact.today.has-birthday {
+            background-color: var(--brand-gold);
+            border-color: var(--brand-gold-dark);
+            color: #232323;
+        }
+        
+        .calendar-day-compact.has-birthday:not(.today) {
+            background-color: rgba(253, 126, 20, 0.3);
+            border-color: var(--accent-orange);
+            color: var(--text-primary);
+        }
+        
+        .birthday-indicator-compact {
+            position: absolute;
+            top: 1px;
+            right: 1px;
+            color: var(--accent-red);
+            font-size: 0.6rem;
+            opacity: 0.9;
+            text-shadow: 0 0 2px rgba(255, 255, 255, 0.8);
+        }
+        
+        /* Стили для кнопки оповещения о днях рождения - мягкие цвета */
+        .birthday-alert {
+            margin-top: 1rem;
+        }
+        
+        .birthday-notification {
+            background: var(--brand-gold-light);
+            border: 2px solid var(--brand-gold);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            padding: 1rem;
+            margin: 0;
+            text-align: center;
+        }
+        
+        .birthday-notification .birthday-message {
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .birthday-notification .btn-primary {
+            background: var(--brand-gold);
+            border: none;
+            color: #232323;
+            font-weight: 600;
+            padding: 0.5rem 1.5rem;
+            border-radius: var(--radius-md);
+            transition: var(--transition-normal);
+            box-shadow: var(--shadow-sm);
+            width: 100%;
+        }
+        
+        .birthday-notification .btn-primary:hover {
+            background: var(--brand-gold-dark);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .birthday-info {
+            background: var(--accent-info);
+            border: 2px solid var(--accent-info);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            padding: 1rem;
+            margin: 0;
+            text-align: center;
+        }
+        
+        .birthday-info .birthday-message {
+            color: white;
+            font-size: 0.9rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .birthday-info .btn-outline-primary {
+            border: 2px solid var(--brand-gold);
+            color: var(--brand-gold);
+            background: transparent;
+            font-weight: 600;
+            padding: 0.5rem 1.5rem;
+            border-radius: var(--radius-md);
+            transition: var(--transition-normal);
+            width: 100%;
+        }
+        
+        .birthday-info .btn-outline-primary:hover {
+            background: var(--brand-gold);
+            color: #232323;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        /* Настраиваем таблицу с горизонтальной прокруткой */
+        .data-panel .table-responsive {
+            width: 100%;
+            max-width: none;
+            overflow-x: auto;
+            margin: 0;
+            padding: 0;
+            flex: 1;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+        }
+        
+        /* Убираем ограничения по ширине для самой таблицы */
+        .data-panel .table {
+            width: 100%;
+            max-width: none;
+            min-width: 100%;
+            table-layout: auto;
+            flex: 1;
+        }
+        
+        /* Настройка горизонтальной прокрутки для таблицы */
+        .table-responsive {
+            flex: 1 !important;
+            width: 100% !important;
+            max-width: none !important;
+            overflow-x: auto !important;
+            scrollbar-width: thin;
+            scrollbar-color: var(--brand-gold) var(--accent-bg);
+        }
+        
+        .table {
+            flex: 1 !important;
+            width: 100% !important;
+            max-width: none !important;
+            min-width: 900px;
+        }
+        
+        /* Стили для скроллбара */
+        .table-responsive::-webkit-scrollbar {
+            height: 8px;
+        }
+        
+        .table-responsive::-webkit-scrollbar-track {
+            background: var(--accent-bg);
+            border-radius: 4px;
+        }
+        
+        .table-responsive::-webkit-scrollbar-thumb {
+            background: var(--brand-gold);
+            border-radius: 4px;
+        }
+        
+        .table-responsive::-webkit-scrollbar-thumb:hover {
+            background: var(--brand-gold-dark);
+        }
+        
+        /* Минимальная ширина столбцов для размещения календаря справа */
+        .table th:nth-child(1), .table td:nth-child(1) { min-width: 50px; }
+        .table th:nth-child(2), .table td:nth-child(2) { min-width: 150px; }
+        .table th:nth-child(3), .table td:nth-child(3) { min-width: 70px; }
+        .table th:nth-child(4), .table td:nth-child(4) { min-width: 100px; }
+        .table th:nth-child(5), .table td:nth-child(5) { min-width: 120px; }
+        .table th:nth-child(6), .table td:nth-child(6) { min-width: 90px; }
+        .table th:nth-child(7), .table td:nth-child(7) { min-width: 100px; }
+        .table th:nth-child(8), .table td:nth-child(8) { min-width: 110px; }
+        .table th:nth-child(9), .table td:nth-child(9) { min-width: 80px; }
+        .table th:nth-child(10), .table td:nth-child(10) { min-width: 70px; }
+        
+        /* Адаптивность для больших экранов */
+        @@media (min-width: 1200px) {
+            .data-layout {
+                gap: 3rem;
+            }
+            
+            .calendar-right-panel {
+                width: 320px;
+            }
+        }
+        
+        /* Адаптивность для средних экранов */
+        @@media (min-width: 992px) and (max-width: 1199px) {
+            .data-layout {
+                gap: 2rem;
+            }
+            
+            .calendar-right-panel {
+                width: 300px;
+            }
+        }
+        
+        /* Адаптивность для мобильных устройств */
+        @@media (max-width: 768px) {
+            .hero-title {
+                font-size: 2rem;
+                padding-top: 1rem;
+            }
+            
+            .hero-subtitle {
+                font-size: 1rem;
+            }
+            
+            .action-buttons {
+                justify-content: center;
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .table-responsive {
+                font-size: 0.875rem;
+                overflow-x: auto;
+            }
+            
+            .table {
+                table-layout: auto;
+            }
+            
+            /* На мобильных устройствах разрешаем перенос текста */
+            .table th, .table td {
+                white-space: normal;
+                min-width: auto;
+                max-width: none;
+            }
+            
+            /* На мобильных убираем специальные настройки ширины */
+            .table thead th:nth-child(2),
+            .table thead th:nth-child(4),
+            .table thead th:nth-child(5),
+            .table tbody td:nth-child(2),
+            .table tbody td:nth-child(4),
+            .table tbody td:nth-child(5) {
+                min-width: auto;
+                max-width: none;
+                text-align: center;
+            }
+            
+            /* На мобильных возвращаем горизонтальную прокрутку если нужно */
+            .data-panel .table-responsive {
+                overflow-x: auto;
+            }
+            
+            /* На мобильных уменьшаем ширину столбцов еще больше */
+            .table th:nth-child(1), .table td:nth-child(1) { min-width: 40px !important; }
+            .table th:nth-child(2), .table td:nth-child(2) { min-width: 120px !important; }
+            .table th:nth-child(3), .table td:nth-child(3) { min-width: 60px !important; }
+            .table th:nth-child(4), .table td:nth-child(4) { min-width: 80px !important; }
+            .table th:nth-child(5), .table td:nth-child(5) { min-width: 100px !important; }
+            .table th:nth-child(6), .table td:nth-child(6) { min-width: 70px !important; }
+            .table th:nth-child(7), .table td:nth-child(7) { min-width: 80px !important; }
+            .table th:nth-child(8), .table td:nth-child(8) { min-width: 90px !important; }
+            .table th:nth-child(9), .table td:nth-child(9) { min-width: 60px !important; }
+            .table th:nth-child(10), .table td:nth-child(10) { min-width: 60px !important; }
+            
+            /* На мобильных принудительно включаем горизонтальную прокрутку */
+            .table-responsive {
+                overflow-x: auto !important;
+                min-width: 700px !important;
+            }
+            
+            .header-with-calendar {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+                margin-bottom: 1.5rem;
+            }
+            
+            .main-title-section {
+                margin-bottom: 1.5rem;
+                margin-right: 0;
+                text-align: center;
+            }
+            
+            .data-layout {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .calendar-right-panel {
+                width: 100%;
+                max-width: 320px;
+                margin: 0 auto;
+                position: static;
+            }
+            
+            .birthday-alert-right {
+                margin-top: 0.75rem;
+            }
+            
+            .birthday-notification,
+            .birthday-info {
+                padding: 0.5rem 0.75rem;
+            }
+            
+            .birthday-notification .btn-primary,
+            .birthday-info .btn-outline-primary {
+                padding: 0.4rem 0.75rem;
+                font-size: 0.8rem;
+            }
+            
+            .data-panel {
+                padding: 1rem;
+                width: 100%;
+                max-width: 100vw;
+                overflow-x: auto;
+            }
+            
+            .data-panel .table-responsive {
+                overflow-x: auto;
+            }
+            
+            .data-panel .table {
+                min-width: auto;
+            }
+            
+            .table thead th {
+                font-size: 0.8rem;
+                padding: 0.75rem 0.5rem;
+            }
+            
+            .table tbody td {
+                padding: 0.75rem 0.5rem;
+                font-size: 0.8rem;
+            }
+            
+            .badge {
+                font-size: 0.75rem;
+                padding: 0.4rem 0.6rem;
+            }
+            
+            .pagination .page-link {
+                padding: 0.5rem 0.75rem;
+                font-size: 0.875rem;
+            }
+            
+            /* На мобильных убираем ограничения по ширине */
+            .new-layout,
+            .header-with-calendar,
+            .data-layout,
+            .data-panel {
+                width: 100% !important;
+                max-width: none !important;
+                overflow-x: auto;
+            }
+            
+            /* На мобильных календарь под таблицей */
+            .data-layout {
+                flex-direction: column !important;
+                gap: 1rem !important;
+            }
+            
+            .calendar-right-panel {
+                width: 100% !important;
+                max-width: 300px !important;
+                margin: 0 auto !important;
+                position: static !important;
+            }
+            
+            /* На мобильных обновляем цвета для лучшей читаемости */
+            .table thead th {
+                background: linear-gradient(45deg, #D4AF37 0%, #B8860B 100%) !important;
+                color: #232323 !important;
+            }
+            
+            .badge {
+                color: white !important;
+            }
+            
+            .table tbody td {
+                color: #ffffff !important;
+            }
+            
+            .table .text-truncate {
+                color: #ffffff !important;
+            }
+        }
+        
+        @@media (max-width: 480px) {
+            .main-title {
+                font-size: 2rem;
+            }
+            
+            .main-subtitle {
+                font-size: 1rem;
+            }
+            
+            .main-panel .panel-header {
+                font-size: 1.25rem;
+            }
+            
+            .calendar-right-panel {
+                padding: 0.75rem;
+                width: 100%;
+                max-width: 280px;
+            }
+            
+            .calendar-day-compact {
+                min-height: 28px;
+                font-size: 0.7rem;
+            }
+            
+            .header-with-calendar {
+                padding: 1.5rem;
+            }
+            
+            .table-responsive {
+                margin: 0;
+                padding: 0;
+            }
+            
+            /* На очень маленьких экранах убираем все ограничения по ширине */
+            .new-layout,
+            .header-with-calendar,
+            .data-layout,
+            .data-panel,
+            .table-responsive,
+            .table {
+                width: 100% !important;
+                max-width: none !important;
+                min-width: auto !important;
+                overflow-x: auto;
+            }
+            
+            /* На очень маленьких экранах календарь под таблицей */
+            .data-layout {
+                flex-direction: column !important;
+                gap: 0.5rem !important;
+            }
+            
+            .calendar-right-panel {
+                width: 100% !important;
+                max-width: 300px !important;
+                margin: 0 auto !important;
+                position: static !important;
+            }
+        }
+    </style>
+}

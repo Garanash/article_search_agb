@@ -1,0 +1,506 @@
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Календарь дней рождения";
+    
+    var year = ViewBag.Year;
+    var month = ViewBag.Month;
+    var birthdays = ViewBag.Birthdays as List<DataAccess.Models.OcrPhoto>;
+    var todayBirthdays = ViewBag.TodayBirthdays as List<DataAccess.Models.OcrPhoto>;
+    
+    var currentDate = new DateTime(year, month, 1);
+    var firstDayOfWeek = (int)currentDate.DayOfWeek;
+    var daysInMonth = DateTime.DaysInMonth(year, month);
+    
+    var monthNames = new[] { 
+        "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
+        "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь" 
+    };
+}
+
+<div class="hero-section">
+    <div class="container">
+        <h1 class="hero-title">
+            <i class="fas fa-calendar-alt"></i> Календарь дней рождения
+        </h1>
+    </div>
+</div>
+
+<div class="container mt-4">
+    <!-- Навигация по месяцам -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <a href="@Url.Action("Calendar", new { year = month == 1 ? year - 1 : year, month = month == 1 ? 12 : month - 1 })" 
+                   class="btn btn-outline-primary">
+                    <i class="fas fa-chevron-left"></i> Предыдущий месяц
+                </a>
+                
+                <h2 class="mb-0">@monthNames[month - 1] @year</h2>
+                
+                <a href="@Url.Action("Calendar", new { year = month == 12 ? year + 1 : year, month = month == 12 ? 1 : month + 1 })" 
+                   class="btn btn-outline-primary">
+                    Следующий месяц <i class="fas fa-chevron-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Календарь -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="calendar">
+                        <!-- Заголовки дней недели -->
+                        <div class="calendar-header">
+                            <div class="calendar-day-header">Пн</div>
+                            <div class="calendar-day-header">Вт</div>
+                            <div class="calendar-day-header">Ср</div>
+                            <div class="calendar-day-header">Чт</div>
+                            <div class="calendar-day-header">Пт</div>
+                            <div class="calendar-day-header">Сб</div>
+                            <div class="calendar-day-header">Вс</div>
+                        </div>
+
+                        <!-- Дни календаря -->
+                        <div class="calendar-body">
+                            @{
+                                var dayCounter = 1;
+                                var currentDayOfWeek = firstDayOfWeek == 0 ? 7 : firstDayOfWeek; // Понедельник = 1
+                                
+                                // Пустые ячейки в начале
+                                for (int i = 1; i < currentDayOfWeek; i++)
+                                {
+                                    <div class="calendar-day empty"></div>
+                                }
+                                
+                                // Дни месяца
+                                for (int day = 1; day <= daysInMonth; day++)
+                                {
+                                    var dayDate = new DateTime(year, month, day);
+                                    var isToday = dayDate.Date == DateTime.UtcNow.Date;
+                                    var dayBirthdays = birthdays?.Where(p => 
+                                        (p.BirthDate.HasValue && p.BirthDate.Value.Day == day && p.BirthDate.Value.Month == month) ||
+                                        (p.SpouseBirthDate.HasValue && p.SpouseBirthDate.Value.Day == day && p.SpouseBirthDate.Value.Month == month) ||
+                                        p.Children.Any(c => c.BirthDate.HasValue && c.BirthDate.Value.Day == day && c.BirthDate.Value.Month == month)
+                                    ).ToList() ?? new List<DataAccess.Models.OcrPhoto>();
+                                    
+                                    <div class="calendar-day @(isToday ? "today" : "") @(dayBirthdays.Any() ? "has-birthday" : "")">
+                                        <div class="day-number">@day</div>
+                                        @if (dayBirthdays.Any())
+                                        {
+                                            <div class="birthday-indicator">
+                                                <i class="fas fa-birthday-cake"></i>
+                                                <span class="birthday-count">@dayBirthdays.Count</span>
+                                            </div>
+                                        }
+                                    </div>
+                                    
+                                    // Переход на новую строку
+                                    if ((currentDayOfWeek + day - 1) % 7 == 0 && day < daysInMonth)
+                                    {
+                                        currentDayOfWeek = 1;
+                                    }
+                                    else
+                                    {
+                                        currentDayOfWeek++;
+                                    }
+                                }
+                                
+                                // Пустые ячейки в конце
+                                var remainingCells = 7 - ((currentDayOfWeek - 1) % 7);
+                                if (remainingCells < 7)
+                                {
+                                    for (int i = 0; i < remainingCells; i++)
+                                    {
+                                        <div class="calendar-day empty"></div>
+                                    }
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+<!-- Информация о днях рождения сегодня -->
+@if (todayBirthdays?.Any() == true)
+{
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-birthday-cake text-danger"></i>
+                        Дни рождения сегодня (@DateTime.UtcNow.ToString("dd.MM.yyyy"))
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        @foreach (var person in todayBirthdays)
+                        {
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="birthday-card" onclick="toggleBirthdayCard(this)" style="cursor: pointer;">
+                                    <div class="birthday-card-header">
+                                        <i class="fas fa-user"></i>
+                                        <span class="person-name">
+                                            @if (!string.IsNullOrEmpty(person.ExtractedText))
+                                            {
+                                                @person.ExtractedText
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">Без имени</span>
+                                            }
+                                        </span>
+                                        <i class="fas fa-chevron-down expand-icon"></i>
+                                    </div>
+                                    <div class="birthday-card-body collapsed">
+                                        <!-- Основная информация (всегда видна) -->
+                                        <div class="basic-info">
+                                            @if (person.BirthDate?.Day == DateTime.UtcNow.Day && person.BirthDate?.Month == DateTime.UtcNow.Month)
+                                            {
+                                                <p><i class="fas fa-birthday-cake"></i> Основной контакт</p>
+                                            }
+                                            else if (person.SpouseBirthDate?.Day == DateTime.UtcNow.Day && person.SpouseBirthDate?.Month == DateTime.UtcNow.Month)
+                                            {
+                                                <p><i class="fas fa-heart"></i> Супруг(а)</p>
+                                            }
+                                            else
+                                            {
+                                                <p><i class="fas fa-child"></i> Дети</p>
+                                            }
+                                            
+                                            <!-- Город и телефон -->
+                                            <p><i class="fas fa-map-marker-alt"></i> @(person.City ?? "Город не указан")</p>
+                                            <p><i class="fas fa-phone"></i> @(person.RepresentativePhone ?? "Телефон не указан")</p>
+                                            <p><i class="fas fa-envelope"></i> @(person.Email ?? "Email не указан")</p>
+                                            
+                                            @if (person.BirthDate?.Day == DateTime.UtcNow.Day && person.BirthDate?.Month == DateTime.UtcNow.Month)
+                                            {
+                                                @if (person.BirthDate.HasValue)
+                                                {
+                                                    var age = DateTime.UtcNow.Year - person.BirthDate.Value.Year;
+                                                    if (DateTime.UtcNow < person.BirthDate.Value.AddYears(age)) age--;
+                                                    <p><i class="fas fa-calendar"></i> Возраст: @age лет</p>
+                                                }
+                                            }
+                                            else if (person.SpouseBirthDate?.Day == DateTime.UtcNow.Day && person.SpouseBirthDate?.Month == DateTime.UtcNow.Month)
+                                            {
+                                                @if (person.SpouseBirthDate.HasValue)
+                                                {
+                                                    var age = DateTime.UtcNow.Year - person.SpouseBirthDate.Value.Year;
+                                                    if (DateTime.UtcNow < person.SpouseBirthDate.Value.AddYears(age)) age--;
+                                                    <p><i class="fas fa-calendar"></i> Возраст: @age лет</p>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                @foreach (var child in person.Children.Where(c => c.BirthDate?.Day == DateTime.UtcNow.Day && c.BirthDate?.Month == DateTime.UtcNow.Month))
+                                                {
+                                                    @if (child.BirthDate.HasValue)
+                                                    {
+                                                        var age = DateTime.UtcNow.Year - child.BirthDate.Value.Year;
+                                                        if (DateTime.UtcNow < child.BirthDate.Value.AddYears(age)) age--;
+                                                        <p><i class="fas fa-calendar"></i> Возраст: @age лет</p>
+                                                    }
+                                                }
+                                            }
+                                        </div>
+                                        
+                                        <!-- Дополнительная информация (скрыта по умолчанию) -->
+                                        <div class="detailed-info" style="display: none;">
+                                            <hr>
+                                            <h6>Полная информация:</h6>
+                                            
+                                            <!-- Фотография визитки -->
+                                            @if (person.ImageData != null && person.ImageData.Length > 0)
+                                            {
+                                                <div class="mb-3">
+                                                    <h6><i class="fas fa-image"></i> Фотография визитки:</h6>
+                                                    <div class="visiting-card-image">
+                                                        <img src="data:image/jpeg;base64,@Convert.ToBase64String(person.ImageData)" 
+                                                             alt="Фотография визитки" 
+                                                             class="img-fluid rounded"
+                                                             style="max-width: 100%; max-height: 300px; object-fit: contain;">
+                                                    </div>
+                                                </div>
+                                            }
+                                            
+                                            @if (!string.IsNullOrEmpty(person.ExtractedText))
+                                            {
+                                                <p><strong>Текст:</strong> @person.ExtractedText</p>
+                                            }
+                                            
+                                            @if (person.IsMarried && !string.IsNullOrEmpty(person.SpouseFullName))
+                                            {
+                                                <p><strong>Супруг(а):</strong> @person.SpouseFullName</p>
+                                                @if (person.SpouseBirthDate.HasValue)
+                                                {
+                                                    <p><strong>Дата рождения супруга:</strong> @person.SpouseBirthDate.Value.ToString("dd.MM.yyyy")</p>
+                                                }
+                                            }
+                                            
+                                            @if (person.HasChildren && person.Children != null && person.Children.Any())
+                                            {
+                                                <p><strong>Дети:</strong></p>
+                                                @foreach (var child in person.Children)
+                                                {
+                                                    <div class="ms-3">
+                                                        <p><i class="fas fa-child"></i> @child.Name</p>
+                                                        @if (child.Age.HasValue)
+                                                        {
+                                                            <p><i class="fas fa-calendar"></i> Возраст: @child.Age лет</p>
+                                                        }
+                                                        @if (child.BirthDate.HasValue)
+                                                        {
+                                                            <p><i class="fas fa-calendar"></i> Дата рождения: @child.BirthDate.Value.ToString("dd.MM.yyyy")</p>
+                                                        }
+                                                    </div>
+                                                }
+                                            }
+                                            
+                                            @if (!string.IsNullOrEmpty(person.CarBrand) || !string.IsNullOrEmpty(person.CarNumber))
+                                            {
+                                                <p><strong>Автомобиль:</strong></p>
+                                                @if (!string.IsNullOrEmpty(person.CarBrand))
+                                                {
+                                                    <p><i class="fas fa-car"></i> Марка: @person.CarBrand</p>
+                                                }
+                                                @if (!string.IsNullOrEmpty(person.CarNumber))
+                                                {
+                                                    <p><i class="fas fa-car"></i> Номер: @person.CarNumber</p>
+                                                }
+                                            }
+                                            
+                                            <p><strong>Дата получения:</strong> @person.ReceivedAt.ToString("dd.MM.yyyy HH:mm")</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                Сегодня (@DateTime.UtcNow.ToString("dd.MM.yyyy")) нет дней рождения
+            </div>
+        </div>
+    </div>
+}
+
+@section Styles {
+    <style>
+        .calendar {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .calendar-header {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+            background-color: #f8f9fa;
+            border-radius: 0.5rem 0.5rem 0 0;
+        }
+        
+        .calendar-day-header {
+            padding: 1rem;
+            text-align: center;
+            font-weight: 600;
+            background-color: #e9ecef;
+            color: #495057;
+        }
+        
+        .calendar-body {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+            background-color: #f8f9fa;
+        }
+        
+        .calendar-day {
+            min-height: 100px;
+            padding: 0.5rem;
+            background-color: white;
+            border: 1px solid #dee2e6;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+        
+        .calendar-day:hover {
+            background-color: #f8f9fa;
+            transform: scale(1.02);
+        }
+        
+        .calendar-day.empty {
+            background-color: #f8f9fa;
+        }
+        
+        .calendar-day.today {
+            background-color: #d4edda;
+            border-color: #28a745;
+        }
+        
+        .calendar-day.has-birthday {
+            background-color: #fff3cd;
+            border-color: #ffc107;
+        }
+        
+        .calendar-day.today.has-birthday {
+            background-color: #d1ecf1;
+            border-color: #17a2b8;
+        }
+        
+        .day-number {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: #495057;
+        }
+        
+        .birthday-indicator {
+            position: absolute;
+            top: 0.25rem;
+            right: 0.25rem;
+            background-color: #dc3545;
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+        }
+        
+        .birthday-count {
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        
+        .birthday-card {
+            border: 1px solid #dee2e6;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            background-color: #fff;
+            transition: all 0.2s ease;
+        }
+        
+        .birthday-card:hover {
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            transform: translateY(-2px);
+        }
+        
+        .birthday-card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .birthday-card-header i {
+            color: #dc3545;
+            font-size: 1.2rem;
+        }
+        
+        .person-name {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .birthday-card-body p {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        
+        .birthday-card-body i {
+            width: 16px;
+            color: #6c757d;
+        }
+        
+        .birthday-card {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .birthday-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .birthday-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .expand-icon {
+            transition: transform 0.3s ease;
+        }
+        
+        .birthday-card.expanded .expand-icon {
+            transform: rotate(180deg);
+        }
+        
+        .basic-info {
+            margin-bottom: 0.5rem;
+        }
+        
+        .detailed-info {
+            border-top: 1px solid #e9ecef;
+            padding-top: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        .detailed-info h6 {
+            color: #495057;
+            margin-bottom: 0.5rem;
+        }
+        
+        .visiting-card-image {
+            border: 1px solid #dee2e6;
+            border-radius: 0.5rem;
+            padding: 0.5rem;
+            background-color: #f8f9fa;
+            text-align: center;
+        }
+        
+        .visiting-card-image img {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease;
+        }
+        
+        .visiting-card-image img:hover {
+            transform: scale(1.05);
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        function toggleBirthdayCard(card) {
+            const body = card.querySelector('.birthday-card-body');
+            const detailedInfo = body.querySelector('.detailed-info');
+            const expandIcon = card.querySelector('.expand-icon');
+            
+            if (detailedInfo.style.display === 'none') {
+                detailedInfo.style.display = 'block';
+                card.classList.add('expanded');
+            } else {
+                detailedInfo.style.display = 'none';
+                card.classList.remove('expanded');
+            }
+        }
+    </script>
+} 

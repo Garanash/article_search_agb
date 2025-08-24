@@ -1,0 +1,60 @@
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8" />
+    <title>Регистрация | Алмазгеобур OCR</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #232323 0%, #2c2c2c 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .auth-box {
+            background: #232323;
+            border: 2px solid #D4AF37;
+            border-radius: 20px;
+            color: #fff;
+            box-shadow: 0 8px 32px rgba(212, 175, 55, 0.2);
+            padding: 40px 30px;
+            width: 100%;
+            max-width: 400px;
+        }
+        .btn-gold {
+            background: linear-gradient(45deg, #D4AF37 0%, #B8860B 100%);
+            color: #232323;
+            font-weight: 600;
+            border-radius: 25px;
+            border: none;
+        }
+        .btn-gold:hover {
+            background: linear-gradient(45deg, #B8860B 0%, #D4AF37 100%);
+            color: #fff;
+        }
+        .text-gold {
+            color: #D4AF37 !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-box">
+        <h3 class="mb-4 text-center text-gold">Регистрация</h3>
+        <form method="post" action="/Account/Register">
+            <input type="text" name="email" class="form-control mb-3" placeholder="Email" required>
+            <input type="password" name="password" class="form-control mb-3" placeholder="Пароль" required>
+            <input type="password" name="password2" class="form-control mb-3" placeholder="Повторите пароль" required>
+            <button type="submit" class="btn btn-gold w-100 mb-2">Зарегистрироваться</button>
+        </form>
+        <div class="text-center mt-3">
+            <span>Уже есть аккаунт?</span>
+            <a href="/Account/Login" class="text-gold">Войти</a>
+        </div>
+    </div>
+</body>
+</html> 

@@ -1,28 +1,35 @@
+/* eslint-disable no-undef, no-unused-vars */
 import React from 'react';
-import { Layout, Menu, Button, Tooltip, Avatar, Badge } from 'antd';
+import { Layout, Menu, Avatar, Typography, Space, Button, Tooltip, Badge } from 'antd';
 import {
   DashboardOutlined,
   FileTextOutlined,
-  TeamOutlined,
-  BarChartOutlined,
-  MessageOutlined,
   FolderOutlined,
-  MailOutlined,
+  MessageOutlined,
   PhoneOutlined,
+  ShoppingOutlined,
+  FormOutlined,
+  InboxOutlined,
   UserOutlined,
-  SettingOutlined,
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
-  DatabaseOutlined,
-  SecurityScanOutlined,
-  AuditOutlined,
-  GlobalOutlined,
   FileProtectOutlined,
   PlusOutlined,
-  InboxOutlined
+  InboxOutlined as ArchiveIcon,
+  SecurityScanOutlined,
+  TeamOutlined,
+  BarChartOutlined,
+  UserOutlined as UserIcon,
+  SettingOutlined,
+  LogoutOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
+  MailOutlined,
+  AuditOutlined,
+  DatabaseOutlined,
+  GlobalOutlined
 } from '@ant-design/icons';
 
 const { Sider } = Layout;
+const { Text } = Typography;
 
 interface ProfessionalSidebarProps {
   activeTab: string;
@@ -45,9 +52,21 @@ const ProfessionalSidebar: React.FC<ProfessionalSidebarProps> = ({
 }) => {
   const mainMenuItems = [
     { key: 'dashboard', icon: <DashboardOutlined />, label: 'Главная', },
+    { key: 'about-us', icon: <TeamOutlined />, label: 'О нас', },
     { key: 'articles', icon: <FileTextOutlined />, label: 'Поиск артикулов', },
     { key: 'documents', icon: <FolderOutlined />, label: 'Документы', },
     { key: 'directory', icon: <PhoneOutlined />, label: 'Телефонный справочник', },
+    { 
+      key: 'orders', 
+      icon: <ShoppingOutlined />, 
+      label: 'Заказы на услуги',
+      children: [
+        { key: 'order-form', icon: <FormOutlined />, label: 'Форма заказа' },
+        { key: 'orders-archive', icon: <InboxOutlined />, label: 'Архив заявок' },
+        { key: 'job-application', icon: <UserOutlined />, label: 'Форма для соискателя' },
+        { key: 'applicants-catalog', icon: <TeamOutlined />, label: 'Каталог соискателей' },
+      ],
+    },
     { 
       key: 'passports', 
       icon: <FileProtectOutlined />, 
@@ -57,6 +76,7 @@ const ProfessionalSidebar: React.FC<ProfessionalSidebarProps> = ({
         { key: 'passport-archive', icon: <InboxOutlined />, label: 'Архив паспортов' },
       ],
     },
+    { key: 'document-recognition', icon: <FileTextOutlined />, label: 'Распознавание документов', },
   ];
 
   const adminMenuItems = [

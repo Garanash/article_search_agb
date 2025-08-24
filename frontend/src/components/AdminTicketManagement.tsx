@@ -234,7 +234,11 @@ const AdminTicketManagement: React.FC = () => {
         pagination={{
           pageSize: 10,
           showSizeChanger: true,
-          showTotal: (total) => `Всего: ${total} обращений`
+          showTotal: (total) => `Всего: ${total} обращений`,
+          pageSizeOptions: ['10', '20', '50'],
+          size: 'default',
+          position: ['bottomCenter'],
+          style: { marginTop: '16px' }
         }}
         scroll={{ x: 1000 }}
       />
